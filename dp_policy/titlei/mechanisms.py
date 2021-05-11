@@ -1,7 +1,8 @@
 import pandas as pd
 from typing import Tuple
 import numpy as np
-from diffprivlib.mechanisms.laplace import Laplace as LaplaceMech, LaplaceTruncated
+from diffprivlib.mechanisms import Laplace as LaplaceMech
+from diffprivlib.mechanisms import Gaussian as GaussianMech
 from diffprivlib.accountant import BudgetAccountant
 
 
@@ -34,18 +35,16 @@ class GroundTruth(Mechanism):
         return (self.saipe[key] for key in ["Estimated Total Population", "Estimated Population 5-17", "Estimated number of relevant children 5 to 17 years old in poverty who are related to the householder"])
 
 
-class Laplace(Mechanism):
-    """
-    Following Abowd & Schmutte (2019), return \hat{E}_l = E_l + e_l, where e_l \sim Laplace(1/\epsilon). 
-
-    Recall that the sensitivity of the counts here is simply 1.
-    """
+class DiffPriv(Mechanism):
     def __init__(self, saipe, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.saipe = saipe
-        self.mechanism = LaplaceMech(epsilon=self.epsilon, delta=self.delta, sensitivity=1.0)
+        self.mechanism = None
 
     def poverty_estimates(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        if self.mechanism is None:
+            raise NotImplementedError
+
         pop_total = self.saipe["Estimated Total Population"].apply(self.mechanism.randomise)
         children_total = self.saipe["Estimated Population 5-17"].apply(self.mechanism.randomise)
         children_poverty = self.saipe["Estimated number of relevant children 5 to 17 years old in poverty who are related to the householder"].apply(self.mechanism.randomise)
@@ -53,3 +52,21 @@ class Laplace(Mechanism):
         # print("After estimation, privacy acc:", self.accountant.total())
         # no negative values, please
         return np.clip(pop_total, 0, None), np.clip(children_total, 0, None), np.clip(children_poverty, 0, None)
+
+
+class Laplace(DiffPriv):
+    """
+    Following Abowd & Schmutte (2019), return \hat{E}_l = E_l + e_l, where e_l \sim Laplace(1/\epsilon). 
+
+    Recall that the sensitivity of the counts here is simply 1.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mechanism = LaplaceMech(epsilon=self.epsilon, delta=self.delta, sensitivity=1.0)
+
+
+class Gaussian(DiffPriv):
+    ""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mechanism = GaussianMech(epsilon=self.epsilon, delta=self.delta, sensitivity=1.0)
