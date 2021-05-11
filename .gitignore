@@ -2,3 +2,4 @@
 .vscode
 *.egg-info
 results/*
+*__pycache__
