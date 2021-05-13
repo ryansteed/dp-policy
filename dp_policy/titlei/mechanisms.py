@@ -2,7 +2,7 @@ import pandas as pd
 from typing import Tuple
 import numpy as np
 from diffprivlib.mechanisms import Laplace as LaplaceMech
-from diffprivlib.mechanisms import Gaussian as GaussianMech
+from diffprivlib.mechanisms import GaussianAnalytic as GaussianMech
 from diffprivlib.accountant import BudgetAccountant
 
 
