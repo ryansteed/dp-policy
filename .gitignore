@@ -3,4 +3,8 @@
 *.egg-info
 results/*
 *__pycache__
-*.R*
+.Rproj.user
+.Rhistory
+*.Rproj
+.RData
+default.profraw

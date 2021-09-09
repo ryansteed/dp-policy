@@ -1,0 +1,98 @@
+---
+title: "Regression Analysis"
+author: "Ryan Steed"
+date: "9/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r deps}
+library(stargazer)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r load}
+children = function(x) {
+  return()
+}
+df = read.csv("results/discrimination_laplace.csv") %>%
+  mutate_at(
+    vars(matches("\\d*est$")), list(`children`= ~(. / race_1est * true_children_total))
+  ) %>%
+  mutate(
+    prop_white = race_2est / race_1est,
+    nonwhite_children = true_children_total - race_2est_children,
+    # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
+    misalloc = (est_grant_total / sum(est_grant_total) - true_grant_total / sum(true_grant_total)) * sum(true_grant_total)
+  )
+df
+```
+
+## Costs & benefits across groups
+```{r misalloc-dist}
+# misalloc per non-white student
+ggplot(df, aes(x=nonwhite_children, y=misalloc)) +
+  geom_point()
+
+# average misalloc per student
+ggplot(df, aes(x=misalloc / true_children_total)) +
+  geom_histogram(bins=100)
+# average misalloc per eligible student
+ggplot(df, aes(x=misalloc / true_children_eligible)) +
+  geom_histogram(bins=100)
+
+# total misalloc per student ("burden")
+comparison = df %>%
+  select(ends_with("est_children"), prop_white, misalloc, true_children_total) %>%
+  pivot_longer(
+    ends_with("est_children"),
+    values_to="children",
+    names_to="race",
+    names_transform = list(race = readr::parse_number)
+  ) %>%
+  mutate(benefit = misalloc * children / true_children_total)  %>%
+  group_by(race) %>%
+  summarise(benefit_per_child = sum(benefit, na.rm=TRUE) / sum(children, na.rm=TRUE))
+comparison
+
+# misalloc_nonwhite = df$misalloc * (1-df$prop_white) / sum(df$nonwhite_children, na.rm=TRUE)
+# misalloc_white = df$misalloc * df$prop_white / sum(df$race_2est_children, na.rm=TRUE)
+# t.test(misalloc_white, misalloc_nonwhite)
+```
+  
+## Effect of race on misallocations
+### OLS
+
+```{r ols}
+lm = lm(misalloc ~ prop_white, data=df)
+lm_cov = lm(misalloc ~ prop_white + true_pop_total + true_children_total + true_children_poverty, data=df)
+lm2 = lm(sqrt(misalloc^2) ~ prop_white, data=df)
+lm2_cov = lm(sqrt(misalloc^2) ~ prop_white + true_pop_total + true_children_total + true_children_poverty, data=df)
+
+stargazer(
+  lm, lm_cov, lm2, lm2_cov,
+  type="text",
+  title="Correlation between race and noise-induced error.",
+  covariate.labels=c("Proportion white-only individuals", "Total pop", "Total children", "Total children in poverty"),
+  label="discrimination"
+  # out="results/discrimination.tex"
+)
+```
+
+## Diff in diff
+```{r diff}
+df_diff = df %>%
+  mutate(
+    est_grant_total_norm = est_grant_total / sum(est_grant_total) * sum(true_grant_total)
+  ) %>%
+  pivot_longer(
+    c("true_grant_total", "est_grant_total_norm"),
+    values_to="grant_total"
+  )
+df_diff
+```
+
