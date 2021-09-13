@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from math import floor, ceil
 
 
@@ -8,31 +9,47 @@ def get_saipe(path):
     return saipe
 
 
-def get_race(path):
+def get_acs_data(path, name):
     """Method for loading and formatting ACS data by school district from NCES website.
     https://nces.ed.gov/programs/edge/TableViewer/acs/2018
 
     Args:
         path (str): path to txt file downloaded form the link above
     """
-    race = pd.read_csv(path, sep="|")
+    data = pd.read_csv(path, sep="|")
+    data["LEAID"] = data.LEAID.astype(str)
     # strip out NA district ID's
-    race = race[race["LEAID"] != 'N']
+    # data = data[data["LEAID"] != 'N']
     # separate LEAID into FIPS code and district ID
-    race["District ID"] = race["LEAID"].str[2:].astype(int)
-    race["State FIPS Code"] = race["LEAID"].str[:2].astype(int)
-    race = race.set_index(["State FIPS Code", "District ID"])
-    race = race.drop(columns=["GeoId", "Geography", "Year", "Iteration", "LEAID"])
-    race = race.rename(columns = {
-        col: f"race_{col[7:]}" for col in race.columns
-    })
-    return race
+    data["District ID"] = data["LEAID"].str[-5:].astype(int)
+    data["State FIPS Code"] = data["LEAID"].str[:-5].astype(int)
+    data = data.set_index(["State FIPS Code", "District ID"])
+    data = data.drop(columns=["GeoId", "Geography", "Year", "Iteration", "LEAID"])
+
+    varnames = pd.read_excel(
+        "../data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx",
+        sheet_name="CDP_ChildPop",
+        index_col=0
+    )
+    drop = []
+    new = {}
+    for c in data.columns:
+        try:
+            new[c] = "{} - {}".format(
+                varnames.loc[c].vlabel.split(";")[-1].lstrip(),
+                re.sub(r'\d+', '', c.split("_")[-1])
+            )
+        except KeyError:
+            drop.append(c)
+    data = data.drop(columns=drop).rename(columns=new)
+
+    return data
 
 
 def get_sppe(path):
-    states = { 'Alabama': 'AL', 'Alaska': 'AK', 'American Samoa': 'AS', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC', 'Florida': 'FL', 'Georgia': 'GA', 'Guam': 'GU', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD', 'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Northern Mariana Islands':'MP', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Puerto Rico': 'PR', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT', 'Virgin Islands': 'VI', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY' }
+    states = {'Alabama': 'AL', 'Alaska': 'AK', 'American Samoa': 'AS', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC', 'Florida': 'FL', 'Georgia': 'GA', 'Guam': 'GU', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD', 'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Northern Mariana Islands':'MP', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Puerto Rico': 'PR', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT', 'Virgin Islands': 'VI', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY' }
     states = pd.DataFrame(states.items(), columns=["state", "abbrv"])
-    
+
     # quirk of original data file - need to change DC's name for join
     states[states.state == "District of Columbia"] = "District Of Columbia Public Schools"
 
