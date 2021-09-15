@@ -14,7 +14,8 @@ def titlei_funding(
     grants = saipe.rename(columns={
         "Estimated Total Population": "true_pop_total",
         "Estimated Population 5-17": "true_children_total",
-        "Estimated number of relevant children 5 to 17 years old in poverty who are related to the householder": "true_children_poverty"
+        "Estimated number of relevant children 5 to 17 years old in poverty"
+        "who are related to the householder": "true_children_poverty"
     })
     pop_total, children_total, children_poverty = mechanism.poverty_estimates(
         *mech_args, **mech_kwargs
