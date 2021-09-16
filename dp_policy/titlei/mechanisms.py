@@ -40,7 +40,7 @@ class GroundTruth(Mechanism):
             "Estimated Total Population",
             "Estimated Population 5-17",
             "Estimated number of relevant children 5 to 17 years old"
-            "in poverty who are related to the householder"
+            " in poverty who are related to the householder"
         ])
 
 
@@ -53,6 +53,7 @@ class DiffPriv(Mechanism):
     def poverty_estimates(
         self
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
         if self.mechanism is None:
             raise NotImplementedError
 
@@ -62,7 +63,7 @@ class DiffPriv(Mechanism):
             .apply(self.mechanism.randomise)
         children_poverty = self.saipe[
             "Estimated number of relevant children 5 to 17 years old"
-            "in poverty who are related to the householder"
+            " in poverty who are related to the householder"
         ].apply(self.mechanism.randomise)
 
         # print("After estimation, privacy acc:", self.accountant.total())

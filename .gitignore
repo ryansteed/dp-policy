@@ -8,3 +8,4 @@ results/*
 *.Rproj
 .RData
 default.profraw
+*__pycache__

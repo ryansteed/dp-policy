@@ -6,7 +6,7 @@ from math import floor, ceil
 def get_saipe(path):
     saipe = pd.read_excel(path, header=2)\
         .set_index(["State FIPS Code", "District ID"])
-    saipe["median_cv"] = saipe.apply(
+    saipe["cv"] = saipe.apply(
         lambda x: median_cv(x["Estimated Total Population"]),
         axis=1
     )

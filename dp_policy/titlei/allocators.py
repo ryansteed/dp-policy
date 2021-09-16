@@ -2,6 +2,7 @@ from dp_policy.titlei.utils import weighting
 
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 
 
 class Allocator:
@@ -24,6 +25,16 @@ class Allocator:
     def calc_alloc(self):
         """
         Appends the allocated grants as columns to the estimates DataFrame.
+
+        Must generate at least `true_grant_total` and `est_grant_total`.
+
+        returns:
+            pd.DataFrame: current estimates
+        """
+        raise NotImplementedError
+
+    def calc_uncertainty(self):
+        """Calculate upper and lower confidence bounds.
         """
         raise NotImplementedError
 
@@ -51,6 +62,17 @@ class AbowdAllocator(Allocator):
             adj_sppe * self.estimates.true_children_eligible
         self.estimates["est_grant_total"] = \
             adj_sppe * self.estimates.est_children_eligible
+        return self.estimates
+
+    def calc_uncertainty(self, alpha=0.05):
+        z = stats.norm.ppf(1-alpha/2)
+        self.estimates["true_se"] = \
+            self.estimates.true_grant_total * self.estimates.cv
+        self.estimates["true_ci_lower"] = \
+            self.estimates.true_grant_total - self.estimates.true_se * z
+        self.estimates["true_ci_upper"] = \
+            self.estimates.true_grant_total + self.estimates.true_se * z
+        return self.estimates.true_ci_lower, self.estimates.true_ci_upper
 
 
 class SonnenbergAuthorizer(Allocator):
@@ -60,7 +82,6 @@ class SonnenbergAuthorizer(Allocator):
 
         # calculate grant amounts for true/randomized values
         for prefix in ("true", "est"):
-
             # BASIC GRANTS
             # authorization calculation
             self.estimates[f"{prefix}_grant_basic"] = \
@@ -109,3 +130,31 @@ class SonnenbergAuthorizer(Allocator):
 
             # EFIG
             # TODO
+
+        self.estimates = SonnenbergAuthorizer.calc_total(self.estimates)
+
+    def calc_uncertainty(self, alpha=0.05):
+        z = stats.norm.ppf(1-alpha/2)
+        adj_sppe, adj_sppe_efig = self.adj_sppe()
+        # see Notion for notes on how to calculate these
+        # basic grants
+        cv_z = self.estimates.cv * z
+        self.estimates["true_grant_basic_ci_upper"] = \
+            10 / (1 + cv_z) + \
+            adj_sppe * self.estimates.true_grant_basic * (1 + cv_z)
+        self.estimates["true_grant_basic_ci_lower"] = \
+            10 / (1 - cv_z) + \
+            adj_sppe * self.estimates.true_grant_basic * (1 - cv_z)
+        # return self.estimates.true_ci_lower, self.estimates.true_ci_upper
+
+    @staticmethod
+    def calc_total(results):
+        results["true_grant_total"] = \
+            results["true_grant_basic"] + \
+            results["true_grant_concentration"] + \
+            results["true_grant_targeted"]
+        results["est_grant_total"] = \
+            results["est_grant_basic"] + \
+            results["est_grant_concentration"] + \
+            results["est_grant_targeted"]
+        return results

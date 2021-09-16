@@ -1,21 +1,15 @@
 import pandas as pd
 
 
-def titlei_funding(
-    saipe, allocator, mechanism, sppe, weighting, *mech_args,
+def titlei_data(
+    saipe, mechanism, sppe, *mech_args,
     verbose=True, **mech_kwargs
 ):
-    """
-    congress_cap - proportion of a student's edu congress agrees to fund
-
-    Returns augmented SAIPE dataframe with randomized estimates and
-    true/randomized grant amounts.
-    """
     grants = saipe.rename(columns={
         "Estimated Total Population": "true_pop_total",
         "Estimated Population 5-17": "true_children_total",
         "Estimated number of relevant children 5 to 17 years old in poverty"
-        "who are related to the householder": "true_children_poverty"
+        " who are related to the householder": "true_children_poverty"
     })
     pop_total, children_total, children_poverty = mechanism.poverty_estimates(
         *mech_args, **mech_kwargs
@@ -40,6 +34,19 @@ def titlei_funding(
     grants = grants.dropna(subset=["sppe"])
     grants.sppe = grants.sppe.astype(float)
 
-    alloc = allocator(grants)
+    return grants
 
+
+def titlei_funding(
+    allocator, *grants_args, **grants_kwargs
+):
+    """
+    congress_cap - proportion of a student's edu congress agrees to fund
+
+    Returns augmented SAIPE dataframe with randomized estimates and
+    true/randomized grant amounts.
+    """
+    alloc = allocator(
+        titlei_data(*grants_args, **grants_kwargs)
+    )
     return alloc.allocations()
