@@ -88,7 +88,16 @@ class SonnenbergAuthorizer(Allocator):
             self.estimates[f"{prefix}_grant_basic"] = \
                 self.estimates[f"{prefix}_children_eligible"] * adj_sppe
             # For basic grants, LEA must have >10 eligible children
-            eligible = self.estimates[f"{prefix}_children_eligible"] >= 10
+            # AND >2% eligible
+            # NOTE: second criteria off for now, for explanation purposes
+            # TODO: turn second criteria back on, also adjust CI calc
+            count_eligible = \
+                self.estimates[f"{prefix}_children_eligible"] >= 10
+            # share_eligible = (
+            #     self.estimates[f"{prefix}_children_eligible"]
+            #     / self.estimates[f"{prefix}_children_total"]
+            # ) >= 0.02
+            eligible = count_eligible  # & share_eligible
             self.estimates.loc[~eligible, f"{prefix}_grant_basic"] = 0.0
 
             # CONCENTRATION GRANTS

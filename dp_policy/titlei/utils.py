@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import os
 from math import floor, ceil
 
 
@@ -21,12 +22,11 @@ def get_acs_data(path, name):
         path (str): path to txt file downloaded form the link above
     """
     data = pd.read_csv(path, sep="|")
-    data["LEAID"] = data.LEAID.astype(str)
     # strip out NA district ID's
     # data = data[data["LEAID"] != 'N']
     # separate LEAID into FIPS code and district ID
-    data["District ID"] = data["LEAID"].str[-5:].astype(int)
-    data["State FIPS Code"] = data["LEAID"].str[:-5].astype(int)
+    data["District ID"], data["State FIPS Code"] = \
+        split_leaids(data.LEAID)
     data = data.set_index(["State FIPS Code", "District ID"])
     data = data.drop(
         columns=["GeoId", "Geography", "Year", "Iteration", "LEAID"]
@@ -50,6 +50,11 @@ def get_acs_data(path, name):
     data = data.drop(columns=drop).rename(columns=new)
 
     return data
+
+
+def split_leaids(leaids: pd.Series):
+    leaids = leaids.astype(str)
+    return leaids.str[-5:].astype(int), leaids.str[:-5].astype(int)
 
 
 def get_sppe(path):
@@ -99,6 +104,30 @@ def median_cv(total_pop):
     elif total_pop <= 65000:
         return 0.23
     return 0.15
+
+
+def get_allocation_data(dir: str):
+    """Fetch true Title I allocations.
+
+    Args:
+        dir (str): directory containing state-level files.
+    """
+    data = []
+    for f in os.listdir(dir):
+        state = pd.read_excel(
+            os.path.join(dir, f),
+            header=1,
+            names=["LEAID", "District", "Allocation_2020"],
+            usecols=[0, 1, 2],
+            skipfooter=7,
+            na_values=["No Data", "End of Table", ""]
+        )
+        state["state"] = f
+        data.append(state)
+    df = pd.concat(data)
+    df["District ID"], df["State FIPS Code"] = \
+        split_leaids(df.LEAID)
+    return df.set_index(["State FIPS Code", "District ID"])
 
 
 def weighting(eligible, pop):
