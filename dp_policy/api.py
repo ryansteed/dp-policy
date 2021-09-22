@@ -23,9 +23,11 @@ def titlei_data(
     grants["est_children_eligible"] = grants.est_children_poverty
 
     # join in SPPE
-    grants = grants\
+    grants = grants.reset_index()\
         .merge(sppe, left_on="State Postal Code", right_on="abbrv")\
-        .drop(columns=['abbrv', 'state']).rename(columns={'ppe': 'sppe'})
+        .drop(columns=['abbrv', 'state']).rename(columns={'ppe': 'sppe'})\
+        .set_index(["State FIPS Code", "District ID"])
+
     if verbose:
         print(
             "[WARN] Dropping districts with missing SPPE data:",
@@ -41,8 +43,6 @@ def titlei_funding(
     allocator, *grants_args, **grants_kwargs
 ):
     """
-    congress_cap - proportion of a student's edu congress agrees to fund
-
     Returns augmented SAIPE dataframe with randomized estimates and
     true/randomized grant amounts.
     """

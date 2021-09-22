@@ -1,4 +1,4 @@
-from dp_policy.titlei.utils import weighting
+from dp_policy.titlei.utils import weighting, get_allocation_data
 
 import numpy as np
 import pandas as pd
@@ -19,11 +19,11 @@ class Allocator:
         self.adj_sppe_bounds_efig = adj_sppe_bounds_efig
 
     def allocations(self, **uncertainty_params) -> pd.DataFrame:
-        self.calc_alloc()
+        self.calc_auth()
         self.calc_uncertainty(**uncertainty_params)
         return self.estimates
 
-    def calc_alloc(self):
+    def calc_auth(self):
         """
         Appends the allocated grants as columns to the estimates DataFrame.
 
@@ -38,6 +38,10 @@ class Allocator:
         """Calculate upper and lower confidence bounds.
         """
         raise NotImplementedError
+    
+    def normalize(self):
+        """Normalize authorization amounts to allocation amounts.
+        """
 
     def adj_sppe(self):
         avg_sppe = np.mean(self.estimates.sppe)
@@ -51,11 +55,57 @@ class Allocator:
         return adj_sppe_trunc, adj_sppe_efig
 
 
+class Authorizer(Allocator):
+    def grant_types(self):
+        raise NotImplementedError
+
+    def allocations(self, **uncertainty_params) -> pd.DataFrame:
+        super().allocations(**uncertainty_params)
+        self.normalize()
+        return self.estimates
+
+    def normalize(self):
+        # get last year's budget
+        true_allocs = get_allocation_data("../data/titlei-allocations_20")
+        budget = true_allocs["Allocation_2020"].sum()
+        authorization_amounts = [
+            f"{prefix}_grant_{kind}"
+            for prefix in ("true", "est")
+            for kind in self.grant_types()
+        ] + [
+            f"{prefix}_grant_{kind}_{suffix}"
+            for prefix in ("true", "est")
+            for kind in (t for t in self.grant_types() if t != "total")
+            for suffix in ("ci_upper", "ci_lower")
+        ] + ["true_ci_upper", "true_ci_lower"]
+        auth_total = self.estimates.true_grant_total.sum()
+        self.estimates.loc[:, authorization_amounts] = \
+            self.estimates[authorization_amounts].apply(
+                lambda x: Authorizer.normalize_to_budget(x, budget)
+            )
+        alloc_total = self.estimates.true_grant_total.sum()
+        print(f"{auth_total} authorized reduced to {alloc_total} allocated.")
+
+    @staticmethod
+    def normalize_to_budget(authorizations, total_budget):
+        """Scale authorizations proportional to total federal budget.
+
+        Args:
+            total_budget (int): Estimated total budget for Title I this year.
+        """
+        return authorizations / authorizations.sum() * total_budget
+
+
 class AbowdAllocator(Allocator):
     """
     As described in https://arxiv.org/pdf/1808.06303.pdf
     """
-    def calc_alloc(self):
+    def grant_types(self):
+        return (
+            "total"
+        )
+
+    def calc_auth(self):
         adj_sppe, _ = self.adj_sppe()
 
         self.estimates["adj_sppe"] = adj_sppe
@@ -76,13 +126,22 @@ class AbowdAllocator(Allocator):
         return self.estimates.true_ci_lower, self.estimates.true_ci_upper
 
 
-class SonnenbergAuthorizer(Allocator):
-    def calc_alloc(self):
+class SonnenbergAuthorizer(Authorizer):
+    def grant_types(self):
+        return (
+            "basic",
+            "concentration",
+            "targeted",
+            "total"
+        )
+
+    def calc_auth(self):
         # calc adj. SPPE
         adj_sppe, adj_sppe_efig = self.adj_sppe()
 
+        prefixes = ("true", "est")
         # calculate grant amounts for true/randomized values
-        for prefix in ("true", "est"):
+        for prefix in prefixes:
             # BASIC GRANTS
             # authorization calculation
             self.estimates[f"{prefix}_grant_basic"] = \
@@ -92,12 +151,12 @@ class SonnenbergAuthorizer(Allocator):
             # NOTE: second criteria off for now, for explanation purposes
             # TODO: turn second criteria back on, also adjust CI calc
             count_eligible = \
-                self.estimates[f"{prefix}_children_eligible"] >= 10
-            # share_eligible = (
-            #     self.estimates[f"{prefix}_children_eligible"]
-            #     / self.estimates[f"{prefix}_children_total"]
-            # ) >= 0.02
-            eligible = count_eligible  # & share_eligible
+                self.estimates[f"{prefix}_children_eligible"] > 10
+            share_eligible = (
+                self.estimates[f"{prefix}_children_eligible"]
+                / self.estimates[f"{prefix}_children_total"]
+            ) > 0.02
+            eligible = count_eligible & share_eligible
             self.estimates.loc[~eligible, f"{prefix}_grant_basic"] = 0.0
 
             # CONCENTRATION GRANTS
@@ -108,10 +167,10 @@ class SonnenbergAuthorizer(Allocator):
             self.estimates[f"{prefix}_grant_concentration"] = \
                 self.estimates[f"{prefix}_grant_basic"]
             count_eligible = \
-                self.estimates[f"{prefix}_children_eligible"] >= 6500
+                self.estimates[f"{prefix}_children_eligible"] > 6500
             prop = self.estimates[f"{prefix}_children_eligible"] \
                 / self.estimates[f"{prefix}_children_total"]
-            prop_eligible = prop >= 0.15
+            prop_eligible = prop > 0.15
             eligible = count_eligible | prop_eligible
             self.estimates.loc[
                 ~eligible, f"{prefix}_grant_concentration"
@@ -131,10 +190,10 @@ class SonnenbergAuthorizer(Allocator):
             # for targeted grants, LEAs must:
             # meet basic eligibility AND have >5% eligible
             count_eligible = \
-                self.estimates[f"{prefix}_children_eligible"] >= 10
+                self.estimates[f"{prefix}_children_eligible"] > 10
             share_eligible = self.estimates[f"{prefix}_children_eligible"] \
                 / self.estimates[f"{prefix}_children_total"]
-            prop_eligible = share_eligible >= 0.05
+            prop_eligible = share_eligible > 0.05
             eligible = count_eligible & prop_eligible
             self.estimates.loc[~eligible, f"{prefix}_grant_targeted"] = 0.0
 
