@@ -38,7 +38,7 @@ class Allocator:
         """Calculate upper and lower confidence bounds.
         """
         raise NotImplementedError
-    
+
     def normalize(self):
         """Normalize authorization amounts to allocation amounts.
         """
@@ -148,8 +148,6 @@ class SonnenbergAuthorizer(Authorizer):
                 self.estimates[f"{prefix}_children_eligible"] * adj_sppe
             # For basic grants, LEA must have >10 eligible children
             # AND >2% eligible
-            # NOTE: second criteria off for now, for explanation purposes
-            # TODO: turn second criteria back on, also adjust CI calc
             count_eligible = \
                 self.estimates[f"{prefix}_children_eligible"] > 10
             share_eligible = (
@@ -222,13 +220,13 @@ class SonnenbergAuthorizer(Authorizer):
             self.estimates[f"{prefix}_grant_basic_ci_upper"] = \
                 k * mu_hat * (1 + cv_z)
             self.estimates.loc[
-                mu_hat < 10 / (1 + cv_z),
+                mu_hat < np.maximum(10, 0.02*nu_hat*(1-e_nu)) / (1+cv_z),
                 f"{prefix}_grant_basic_ci_upper"
             ] = 0.0
             self.estimates[f"{prefix}_grant_basic_ci_lower"] = \
                 k * mu_hat * (1 - cv_z)
             self.estimates.loc[
-                mu_hat < 10 / (1 - cv_z),
+                mu_hat < np.maximum(10, 0.02*nu_hat*(1+e_nu)) / (1-cv_z),
                 f"{prefix}_grant_basic_ci_lower"
             ] = 0.0
 
