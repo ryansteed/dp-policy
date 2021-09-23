@@ -18,9 +18,12 @@ class Allocator:
         self.adj_sppe_bounds = adj_sppe_bounds
         self.adj_sppe_bounds_efig = adj_sppe_bounds_efig
 
-    def allocations(self, **uncertainty_params) -> pd.DataFrame:
+    def allocations(
+        self, uncertainty=True, **uncertainty_params
+    ) -> pd.DataFrame:
         self.calc_auth()
-        self.calc_uncertainty(**uncertainty_params)
+        if uncertainty:
+            self.calc_uncertainty(**uncertainty_params)
         return self.estimates
 
     def calc_auth(self):
@@ -59,32 +62,40 @@ class Authorizer(Allocator):
     def grant_types(self):
         raise NotImplementedError
 
-    def allocations(self, **uncertainty_params) -> pd.DataFrame:
-        super().allocations(**uncertainty_params)
-        self.normalize()
+    def allocations(
+        self, uncertainty=True, **uncertainty_params
+    ) -> pd.DataFrame:
+        super().allocations(uncertainty=uncertainty, **uncertainty_params)
+        self.normalize(uncertainty=uncertainty)
         return self.estimates
 
-    def normalize(self):
+    def normalize(self, uncertainty=True):
         # get last year's budget
         true_allocs = get_allocation_data("../data/titlei-allocations_20")
-        budget = true_allocs["Allocation_2020"].sum()
-        authorization_amounts = [
-            f"{prefix}_grant_{kind}"
-            for prefix in ("true", "est")
-            for kind in self.grant_types()
-        ] + [
-            f"{prefix}_grant_{kind}_{suffix}"
-            for prefix in ("true", "est")
-            for kind in (t for t in self.grant_types() if t != "total")
-            for suffix in ("ci_upper", "ci_lower")
-        ] + ["true_ci_upper", "true_ci_lower"]
-        auth_total = self.estimates.true_grant_total.sum()
-        self.estimates.loc[:, authorization_amounts] = \
-            self.estimates[authorization_amounts].apply(
-                lambda x: Authorizer.normalize_to_budget(x, budget)
+        actual_budget = true_allocs["Allocation_2020"].sum()
+        for prefix in ("true", "est"):
+            current_budget = self.estimates[f"{prefix}_grant_total"].sum()
+            authorization_amounts = [
+                f"{prefix}_grant_{kind}"
+                for kind in self.grant_types()
+            ]
+            if uncertainty:
+                authorization_amounts += [
+                    f"{prefix}_grant_{kind}_{suffix}"
+                    for kind in (t for t in self.grant_types() if t != "total")
+                    for suffix in ("ci_upper", "ci_lower")
+                ] + [f"{prefix}_ci_upper", f"{prefix}_ci_lower"]
+            auth_total = self.estimates.true_grant_total.sum()
+            self.estimates.loc[:, authorization_amounts] = \
+                self.estimates[authorization_amounts].apply(
+                    lambda x: Authorizer.normalize_to_budget(
+                        x, actual_budget
+                    )
+                )
+            print(
+                f"{current_budget} authorized reduced"
+                f"to {actual_budget} allocated."
             )
-        alloc_total = self.estimates.true_grant_total.sum()
-        print(f"{auth_total} authorized reduced to {alloc_total} allocated.")
 
     @staticmethod
     def normalize_to_budget(authorizations, total_budget):
@@ -155,7 +166,10 @@ class SonnenbergAuthorizer(Authorizer):
                 / self.estimates[f"{prefix}_children_total"]
             ) > 0.02
             eligible = count_eligible & share_eligible
-            self.estimates.loc[~eligible, f"{prefix}_grant_basic"] = 0.0
+            self.estimates.loc[
+                ~eligible,
+                f"{prefix}_grant_basic"
+            ] = 0.0
 
             # CONCENTRATION GRANTS
             # For concentration grants, LEAs must meet basic eligibility
@@ -193,10 +207,19 @@ class SonnenbergAuthorizer(Authorizer):
                 / self.estimates[f"{prefix}_children_total"]
             prop_eligible = share_eligible > 0.05
             eligible = count_eligible & prop_eligible
-            self.estimates.loc[~eligible, f"{prefix}_grant_targeted"] = 0.0
+            self.estimates.loc[
+                ~eligible, f"{prefix}_grant_targeted"
+            ] = 0.0
 
             # EFIG
             # TODO
+
+            # clip lower bound to zero
+            for grant_type in ["basic", "concentration", "targeted"]:
+                self.estimates.loc[
+                    self.estimates[f"{prefix}_grant_{grant_type}"] < 0.0,
+                    f"{prefix}_grant_{grant_type}"
+                ] = 0.0
 
         self.estimates = SonnenbergAuthorizer.calc_total(self.estimates)
 
@@ -272,6 +295,15 @@ class SonnenbergAuthorizer(Authorizer):
 
             # totals
             for bound in ("upper", "lower"):
+                # clip lower bound to zero
+                for grant_type in ["basic", "concentration", "targeted"]:
+                    self.estimates.loc[
+                        self.estimates[
+                            f"{prefix}_grant_{grant_type}_ci_{bound}"
+                        ] < 0.0,
+                        f"{prefix}_grant_{grant_type}_ci_{bound}"
+                    ] = 0.0
+
                 self.estimates[f"{prefix}_ci_{bound}"] = \
                     self.estimates[f"{prefix}_grant_basic_ci_{bound}"] + \
                     self.estimates[
@@ -292,6 +324,16 @@ class SonnenbergAuthorizer(Authorizer):
                 ).sum()
                 assert overlapping == 0,\
                     f"{overlapping} overlapping bounds for {grant_type}"
+                assert (self.estimates[
+                    f"{prefix}_grant_{grant_type}_ci_upper"
+                ] < self.estimates[
+                    f"{prefix}_grant_{grant_type}"
+                ]).sum() == 0
+                assert (self.estimates[
+                    f"{prefix}_grant_{grant_type}_ci_lower"
+                ] > self.estimates[
+                    f"{prefix}_grant_{grant_type}"
+                ]).sum() == 0
 
         return self.estimates.true_ci_lower, self.estimates.true_ci_upper
 

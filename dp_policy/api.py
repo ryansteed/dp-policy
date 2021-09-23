@@ -40,13 +40,13 @@ def titlei_data(
 
 
 def titlei_funding(
-    allocator, *grants_args, **grants_kwargs
+    allocator, saipe, mechanism, sppe, uncertainty=True, **grants_kwargs
 ):
     """
     Returns augmented SAIPE dataframe with randomized estimates and
     true/randomized grant amounts.
     """
     alloc = allocator(
-        titlei_data(*grants_args, **grants_kwargs)
+        titlei_data(saipe, mechanism, sppe, **grants_kwargs)
     )
-    return alloc.allocations()
+    return alloc.allocations(uncertainty=uncertainty)
