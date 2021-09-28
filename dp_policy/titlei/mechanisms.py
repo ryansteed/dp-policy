@@ -68,8 +68,10 @@ class DiffPriv(Mechanism):
 
         # print("After estimation, privacy acc:", self.accountant.total())
         # no negative values, please
-        return np.clip(pop_total, 0, None), np.clip(children_total, 0, None),\
-            np.clip(children_poverty, 0, None)
+        # also rounding counts - post-processing
+        return np.round(np.clip(pop_total, 0, None)),\
+            np.round(np.clip(children_total, 0, None)),\
+            np.round(np.clip(children_poverty, 0, None))
 
 
 class Laplace(DiffPriv):
@@ -84,7 +86,7 @@ class Laplace(DiffPriv):
         self.mechanism = LaplaceMech(
             epsilon=self.epsilon,
             delta=self.delta,
-            sensitivity=1.0
+            sensitivity=3.0
         )
 
 
@@ -95,5 +97,5 @@ class Gaussian(DiffPriv):
         self.mechanism = GaussianMech(
             epsilon=self.epsilon,
             delta=self.delta,
-            sensitivity=1.0
+            sensitivity=3.0
         )
