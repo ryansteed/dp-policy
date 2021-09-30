@@ -165,9 +165,10 @@ class SonnenbergAuthorizer(Authorizer):
                 self.estimates[f"{prefix}_children_eligible"]
                 / self.estimates[f"{prefix}_children_total"]
             ) > 0.02
-            eligible = count_eligible & share_eligible
+            self.estimates[f"{prefix}_eligible_basic"] = \
+                count_eligible & share_eligible
             self.estimates.loc[
-                ~eligible,
+                ~self.estimates[f"{prefix}_eligible_basic"],
                 f"{prefix}_grant_basic"
             ] = 0.0
 
@@ -183,9 +184,11 @@ class SonnenbergAuthorizer(Authorizer):
             prop = self.estimates[f"{prefix}_children_eligible"] \
                 / self.estimates[f"{prefix}_children_total"]
             prop_eligible = prop > 0.15
-            eligible = count_eligible | prop_eligible
+            self.estimates[f"{prefix}_eligible_concentration"] = \
+                count_eligible | prop_eligible
             self.estimates.loc[
-                ~eligible, f"{prefix}_grant_concentration"
+                ~self.estimates[f"{prefix}_eligible_concentration"],
+                f"{prefix}_grant_concentration"
             ] = 0.0
 
             # TARGETED GRANTS
@@ -206,9 +209,11 @@ class SonnenbergAuthorizer(Authorizer):
             share_eligible = self.estimates[f"{prefix}_children_eligible"] \
                 / self.estimates[f"{prefix}_children_total"]
             prop_eligible = share_eligible > 0.05
-            eligible = count_eligible & prop_eligible
+            self.estimates[f"{prefix}_eligible_targeted"] = \
+                count_eligible & prop_eligible
             self.estimates.loc[
-                ~eligible, f"{prefix}_grant_targeted"
+                ~self.estimates[f"{prefix}_eligible_targeted"],
+                f"{prefix}_grant_targeted"
             ] = 0.0
 
             # EFIG
@@ -235,107 +240,168 @@ class SonnenbergAuthorizer(Authorizer):
         cv_z = self.estimates.cv * z
 
         for prefix in ["true", "est"]:
-            mu_hat = self.estimates[f"{prefix}_children_eligible"]
-            nu_hat = self.estimates[f"{prefix}_children_total"]
-            k, _ = self.adj_sppe()
-            # see Notion for notes on how to calculate these
-            # basic grants
-            self.estimates[f"{prefix}_grant_basic_ci_upper"] = \
-                k * mu_hat * (1 + cv_z)
-            self.estimates.loc[
-                mu_hat < np.maximum(10, 0.02*nu_hat*(1-e_nu)) / (1+cv_z),
-                f"{prefix}_grant_basic_ci_upper"
-            ] = 0.0
-            self.estimates[f"{prefix}_grant_basic_ci_lower"] = \
-                k * mu_hat * (1 - cv_z)
-            self.estimates.loc[
-                mu_hat < np.maximum(10, 0.02*nu_hat*(1+e_nu)) / (1-cv_z),
-                f"{prefix}_grant_basic_ci_lower"
-            ] = 0.0
+            self.calc_bounds(prefix, cv_z, e_nu)
 
-            # concentration grants
-            self.estimates[f"{prefix}_grant_concentration_ci_upper"] = \
-                k * mu_hat * (1 + cv_z)
-            self.estimates.loc[
-                mu_hat < np.minimum(
-                    6500 / 1 + cv_z,
-                    0.15*nu_hat*(1-e_nu)/(1+cv_z)
-                ),
-                f"{prefix}_grant_concentration_ci_upper"
-            ] = 0.0
-            self.estimates[f"{prefix}_grant_concentration_ci_lower"] = \
-                k * mu_hat * (1 - cv_z)
-            self.estimates.loc[
-                mu_hat < np.minimum(
-                    6500 / 1 - cv_z,
-                    0.15*nu_hat*(1+e_nu)/(1-cv_z)
-                ),
-                f"{prefix}_grant_concentration_ci_lower"
-            ] = 0.0
-
-            # targeted grants
-            self.estimates[f"{prefix}_grant_targeted_ci_upper"] = \
-                k * np.apply_along_axis(
-                    lambda x: weighting(x[0], x[1]), 1,
-                    np.column_stack((mu_hat*(1+cv_z), nu_hat*(1-e_nu)))
-                )
-            self.estimates.loc[
-                mu_hat < np.maximum(10, 0.05*nu_hat) / (1 + cv_z),
-                f"{prefix}_grant_targeted_ci_upper"
-            ] = 0.0
-            self.estimates[f"{prefix}_grant_targeted_ci_lower"] = \
-                k * np.apply_along_axis(
-                    lambda x: weighting(x[0], x[1]), 1,
-                    np.column_stack((mu_hat*(1-cv_z), nu_hat*(1+e_nu)))
-                )
-            self.estimates.loc[
-                mu_hat < np.maximum(10, 0.05*nu_hat) / (1 - cv_z),
-                f"{prefix}_grant_targeted_ci_lower"
-            ] = 0.0
-
-            # totals
-            for bound in ("upper", "lower"):
-                # clip lower bound to zero
-                for grant_type in ["basic", "concentration", "targeted"]:
-                    self.estimates.loc[
-                        self.estimates[
-                            f"{prefix}_grant_{grant_type}_ci_{bound}"
-                        ] < 0.0,
-                        f"{prefix}_grant_{grant_type}_ci_{bound}"
-                    ] = 0.0
-
-                self.estimates[f"{prefix}_ci_{bound}"] = \
-                    self.estimates[f"{prefix}_grant_basic_ci_{bound}"] + \
-                    self.estimates[
-                        f"{prefix}_grant_concentration_ci_{bound}"
-                    ] + \
-                    self.estimates[f"{prefix}_grant_targeted_ci_{bound}"]
-
-            # sanity check the bounds are on the right sides
-            for grant_type in ["basic", "concentration", "targeted"]:
-                overlapping = (
-                    (
-                        self.estimates[
-                            f"{prefix}_grant_{grant_type}_ci_upper"
-                        ] - self.estimates[
-                            f"{prefix}_grant_{grant_type}_ci_lower"
-                        ]
-                    ) < 0.0
-                ).sum()
-                assert overlapping == 0,\
-                    f"{overlapping} overlapping bounds for {grant_type}"
-                assert (self.estimates[
-                    f"{prefix}_grant_{grant_type}_ci_upper"
-                ] < self.estimates[
-                    f"{prefix}_grant_{grant_type}"
-                ]).sum() == 0
-                assert (self.estimates[
-                    f"{prefix}_grant_{grant_type}_ci_lower"
-                ] > self.estimates[
-                    f"{prefix}_grant_{grant_type}"
-                ]).sum() == 0
+        self.calc_expected_loss()
 
         return self.estimates.true_ci_lower, self.estimates.true_ci_upper
+
+    def calc_bounds(self, prefix, cv_z, e_nu):
+        mu_hat, _, nu_hat, k = self.get_vars(prefix)
+
+        # see Notion for notes on how to calculate these
+        # basic grants
+        self.estimates[f"{prefix}_grant_basic_ci_upper"] = \
+            k * mu_hat * (1 + cv_z)
+        self.estimates.loc[
+            mu_hat < np.maximum(10, 0.02*nu_hat*(1-e_nu)) / (1+cv_z),
+            f"{prefix}_grant_basic_ci_upper"
+        ] = 0.0
+        self.estimates[f"{prefix}_grant_basic_ci_lower"] = \
+            k * mu_hat * (1 - cv_z)
+        self.estimates.loc[
+            mu_hat < np.maximum(10, 0.02*nu_hat*(1+e_nu)) / (1-cv_z),
+            f"{prefix}_grant_basic_ci_lower"
+        ] = 0.0
+
+        # concentration grants
+        self.estimates[f"{prefix}_grant_concentration_ci_upper"] = \
+            k * mu_hat * (1 + cv_z)
+        self.estimates.loc[
+            mu_hat < np.minimum(
+                6500 / 1 + cv_z,
+                0.15*nu_hat*(1-e_nu)/(1+cv_z)
+            ),
+            f"{prefix}_grant_concentration_ci_upper"
+        ] = 0.0
+        self.estimates[f"{prefix}_grant_concentration_ci_lower"] = \
+            k * mu_hat * (1 - cv_z)
+        self.estimates.loc[
+            mu_hat < np.minimum(
+                6500 / 1 - cv_z,
+                0.15*nu_hat*(1+e_nu)/(1-cv_z)
+            ),
+            f"{prefix}_grant_concentration_ci_lower"
+        ] = 0.0
+
+        # targeted grants
+        self.estimates[f"{prefix}_grant_targeted_ci_upper"] = \
+            k * np.apply_along_axis(
+                lambda x: weighting(x[0], x[1]), 1,
+                np.column_stack((mu_hat*(1+cv_z), nu_hat*(1-e_nu)))
+            )
+        self.estimates.loc[
+            mu_hat < np.maximum(10, 0.05*nu_hat) / (1 + cv_z),
+            f"{prefix}_grant_targeted_ci_upper"
+        ] = 0.0
+        self.estimates[f"{prefix}_grant_targeted_ci_lower"] = \
+            k * np.apply_along_axis(
+                lambda x: weighting(x[0], x[1]), 1,
+                np.column_stack((mu_hat*(1-cv_z), nu_hat*(1+e_nu)))
+            )
+        self.estimates.loc[
+            mu_hat < np.maximum(10, 0.05*nu_hat) / (1 - cv_z),
+            f"{prefix}_grant_targeted_ci_lower"
+        ] = 0.0
+
+        # totals
+        for bound in ("upper", "lower"):
+            # clip lower bound to zero
+            for grant_type in ["basic", "concentration", "targeted"]:
+                self.estimates.loc[
+                    self.estimates[
+                        f"{prefix}_grant_{grant_type}_ci_{bound}"
+                    ] < 0.0,
+                    f"{prefix}_grant_{grant_type}_ci_{bound}"
+                ] = 0.0
+
+            self.estimates[f"{prefix}_ci_{bound}"] = \
+                self.estimates[f"{prefix}_grant_basic_ci_{bound}"] + \
+                self.estimates[
+                    f"{prefix}_grant_concentration_ci_{bound}"
+                ] + \
+                self.estimates[f"{prefix}_grant_targeted_ci_{bound}"]
+
+        # sanity check the bounds are on the right sides
+        for grant_type in ["basic", "concentration", "targeted"]:
+            overlapping = (
+                (
+                    self.estimates[
+                        f"{prefix}_grant_{grant_type}_ci_upper"
+                    ] - self.estimates[
+                        f"{prefix}_grant_{grant_type}_ci_lower"
+                    ]
+                ) < 0.0
+            ).sum()
+            assert overlapping == 0,\
+                f"{overlapping} overlapping bounds for {grant_type}"
+            assert (self.estimates[
+                f"{prefix}_grant_{grant_type}_ci_upper"
+            ] < self.estimates[
+                f"{prefix}_grant_{grant_type}"
+            ]).sum() == 0
+            assert (self.estimates[
+                f"{prefix}_grant_{grant_type}_ci_lower"
+            ] > self.estimates[
+                f"{prefix}_grant_{grant_type}"
+            ]).sum() == 0
+
+    def calc_prob_eligibility(self):
+        mu_hat, sigma_mu, nu_hat, _ = self.get_vars("true")
+
+        # basic
+        self.estimates["prob_el_basic"] = \
+            SonnenbergAuthorizer._calc_prob(
+                nu_hat, mu_hat, sigma_mu, 10, 0.02
+            )
+        # concentration
+        self.estimates["prob_el_concentration"] = \
+            SonnenbergAuthorizer._calc_prob(
+                nu_hat, mu_hat, sigma_mu, 6500, 0.15, union=True
+            )
+        # targeted
+        self.estimates["prob_el_targeted"] = \
+            SonnenbergAuthorizer._calc_prob(
+                nu_hat, mu_hat, sigma_mu, 10, 0.05
+            )
+
+    @staticmethod
+    def _calc_prob(
+        nu_hat, mu_hat, sigma_mu,
+        raw: float, prop: float, union: bool = False
+    ):
+        """Calculate the likelihood of eligibility when there are two required
+        conditions.
+
+        Args:
+            raw_ub (float): lower bound on poverty count
+            prop_ub (float): lower bound on poverty share
+            union (bool): if the eligibility requirement is a union
+        """
+        # assumes e_nu = 0
+        return np.where(
+            (nu_hat > raw / prop) if union else (nu_hat <= raw / prop),
+            1 - stats.norm.cdf((raw-mu_hat)/sigma_mu),
+            1 - stats.norm.cdf((prop*nu_hat - mu_hat)/sigma_mu)
+        )  # nu is point mass
+
+    def calc_expected_loss(self):
+        # assumes e_nu = 0
+        self.calc_prob_eligibility()
+
+        # basic
+        mu_hat, _, _, k = self.get_vars("true")
+        expected_y = k*mu_hat*self.estimates["prob_el_basic"]
+        y_hat = self.estimates.true_grant_basic
+        self.estimates["expected_loss_basic"] = expected_y - y_hat
+        return self.estimates.expected_loss_basic
+
+    def get_vars(self, prefix):
+        mu_hat = self.estimates[f"{prefix}_children_eligible"]
+        sigma_mu = self.estimates.cv * mu_hat
+        nu_hat = self.estimates[f"{prefix}_children_total"]
+        k, _ = self.adj_sppe()
+        return mu_hat, sigma_mu, nu_hat, k
 
     @staticmethod
     def calc_total(results):
