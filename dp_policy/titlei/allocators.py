@@ -39,6 +39,7 @@ class Allocator:
 
     def calc_uncertainty(self):
         """Calculate upper and lower confidence bounds.
+        NOTE: doesn't account for hold harmless provision.
         """
         raise NotImplementedError
 
@@ -66,13 +67,13 @@ class Authorizer(Allocator):
         self, uncertainty=True, **uncertainty_params
     ) -> pd.DataFrame:
         super().allocations(uncertainty=uncertainty, **uncertainty_params)
-        self.normalize(uncertainty=uncertainty)
+        self._normalize(uncertainty=uncertainty)
         return self.estimates
 
-    def normalize(self, uncertainty=True):
-        # get last year's budget
+    def _normalize(self, uncertainty=True):
+        # get this year's budget
         true_allocs = get_allocation_data("../data/titlei-allocations_20")
-        actual_budget = true_allocs["Allocation_2020"].sum()
+        actual_budget = true_allocs["HistAlloc"].sum()
         for prefix in ("true", "est"):
             current_budget = self.estimates[f"{prefix}_grant_total"].sum()
             authorization_amounts = [
@@ -138,6 +139,17 @@ class AbowdAllocator(Allocator):
 
 
 class SonnenbergAuthorizer(Authorizer):
+    def __init__(self, *args, hold_harmless=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hold_harmless = hold_harmless
+
+    def allocations(
+        self, uncertainty=True, **uncertainty_params
+    ) -> pd.DataFrame:
+        super().allocations(uncertainty=uncertainty, **uncertainty_params)
+        if self.hold_harmless:
+            self._hold_harmless()
+
     def grant_types(self):
         return (
             "basic",
@@ -414,3 +426,21 @@ class SonnenbergAuthorizer(Authorizer):
             results["est_grant_concentration"] + \
             results["est_grant_targeted"]
         return results
+
+    def _hold_harmless(self):
+        print("Holding harmless")
+        # load last year's allocs - watch out for endogeneity
+        # get this year's budget
+        true_allocs = get_allocation_data("../data/titlei-allocations_19")\
+            .rename(columns={
+                'HistAlloc': 'alloc_2019'
+            })
+        self.estimates = self.estimates.join(
+            true_allocs["alloc_2019"]
+        )
+        for prefix in ("true", "est"):
+            for grant_type in ["basic", "concentration", "targeted"]:
+                pass
+        # limit losses to 15%
+
+        raise NotImplementedError

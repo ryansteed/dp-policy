@@ -117,7 +117,7 @@ def get_allocation_data(dir: str):
         state = pd.read_excel(
             os.path.join(dir, f),
             header=1,
-            names=["LEAID", "District", "Allocation_2020"],
+            names=["LEAID", "District", "HistAlloc"],
             usecols=[0, 1, 2],
             skipfooter=7,
             na_values=["No Data", "End of Table", ""]
