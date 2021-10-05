@@ -11,12 +11,14 @@ class Allocator:
         estimates,
         congress_cap=0.4,
         adj_sppe_bounds=[0.32, 0.48],
-        adj_sppe_bounds_efig=[0.34, 0.46]
+        adj_sppe_bounds_efig=[0.34, 0.46],
+        verbose=False
     ):
         self.estimates = estimates
         self.congress_cap = congress_cap
         self.adj_sppe_bounds = adj_sppe_bounds
         self.adj_sppe_bounds_efig = adj_sppe_bounds_efig
+        self.verbose = verbose
 
     def allocations(
         self, uncertainty=True, **uncertainty_params
@@ -93,10 +95,11 @@ class Authorizer(Allocator):
                         x, actual_budget
                     )
                 )
-            print(
-                f"{current_budget} authorized reduced"
-                f"to {actual_budget} allocated."
-            )
+            if self.verbose:
+                print(
+                    f"{current_budget} authorized reduced "
+                    f"to {actual_budget} allocated."
+                )
 
     @staticmethod
     def normalize_to_budget(authorizations, total_budget):
@@ -149,6 +152,7 @@ class SonnenbergAuthorizer(Authorizer):
         super().allocations(uncertainty=uncertainty, **uncertainty_params)
         if self.hold_harmless:
             self._hold_harmless()
+        return self.estimates
 
     def grant_types(self):
         return (

@@ -16,10 +16,7 @@ library(ggplot2)
 ```
 
 ```{r load}
-children = function(x) {
-  return()
-}
-df = read.csv("results/discrimination_laplace.csv") %>%
+df = read.csv("results/discrimination.csv") %>%
   mutate_at(
     vars(matches("\\d*est$")), list(`children`= ~(. / race_1est * true_children_total))
   ) %>%
@@ -27,7 +24,7 @@ df = read.csv("results/discrimination_laplace.csv") %>%
     prop_white = race_2est / race_1est,
     nonwhite_children = true_children_total - race_2est_children,
     # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
-    misalloc = (est_grant_total / sum(est_grant_total) - true_grant_total / sum(true_grant_total)) * sum(true_grant_total)
+    misalloc = est_grant_total - true_grant_total
   )
 df
 ```

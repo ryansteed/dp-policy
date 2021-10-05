@@ -41,8 +41,9 @@ def get_acs_data(path, name):
     new = {}
     for c in data.columns:
         try:
-            new[c] = "{} - {}".format(
+            new[c] = "{} ({}) - {}".format(
                 varnames.loc[c].vlabel.split(";")[-1].lstrip(),
+                varnames.loc[c].vlabel.split(";")[2].lstrip(),
                 re.sub(r'\d+', '', c.split("_")[-1])
             )
         except KeyError:

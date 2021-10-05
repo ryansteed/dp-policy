@@ -11,9 +11,10 @@ class Mechanism:
     a class for the different privacy mechanisms we might employ to compute
     poverty estimates
     """
-    def __init__(self, epsilon, delta):
+    def __init__(self, epsilon, delta, sensitivity=2.0):
         self.epsilon = epsilon
         self.delta = delta
+        self.sensitivity = sensitivity
         # for advanced composition
         self.accountant = BudgetAccountant(delta=self.delta)
         self.accountant.set_default()
@@ -86,16 +87,15 @@ class Laplace(DiffPriv):
         self.mechanism = LaplaceMech(
             epsilon=self.epsilon,
             delta=self.delta,
-            sensitivity=3.0
+            sensitivity=self.sensitivity
         )
 
 
 class Gaussian(DiffPriv):
-    ""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mechanism = GaussianMech(
             epsilon=self.epsilon,
             delta=self.delta,
-            sensitivity=3.0
+            sensitivity=self.sensitivity
         )
