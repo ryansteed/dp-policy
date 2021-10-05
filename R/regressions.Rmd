@@ -23,11 +23,13 @@ raw
 ```{r clean}
 # use short df
 # df = raw %>% filter(trial < 10)
-df = df %>%
+df = raw %>%
   clean_names() %>%
   mutate_at(
     vars(matches("race_pct$")), list(`children`= ~(. * true_children_total))
-  ) %>%
+  ) 
+df
+df = df %>%
   mutate(
     prop_white = white_race_pct,
     nonwhite_children = true_children_total * prop_white,
@@ -76,9 +78,9 @@ t.test(misalloc_white, misalloc_nonwhite)
 
 ```{r ols}
 lm = lm(misalloc ~ prop_white, data=df)
-lm_cov = lm(misalloc ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial) + factor(district_id) + state_fips_code, data=df)
+lm_cov = lm(misalloc ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial), data=df)
 lm2 = lm(sqrt(misalloc^2) ~ prop_white, data=df)
-lm2_cov = lm(sqrt(misalloc^2) ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial) + factor(district_id) + state_fips_code, data=df)
+lm2_cov = lm(sqrt(misalloc^2) ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial), data=df)
 
 stargazer(
   lm, lm_cov, lm2, lm2_cov,
