@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r deps}
 library(stargazer)
 library(tidyverse)
-library(ggplot2)
 library(janitor)
 ```
 
@@ -26,12 +25,12 @@ raw
 df = raw %>%
   clean_names() %>%
   mutate_at(
-    vars(matches("race_pct$")), list(`children`= ~(. * true_children_total))
+    vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
   ) 
 df
 df = df %>%
   mutate(
-    prop_white = white_race_pct,
+    prop_white = white_race_pct / 100,
     nonwhite_children = true_children_total * prop_white,
     # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
     misalloc = est_grant_total - true_grant_total
@@ -40,9 +39,27 @@ df
 ```
 
 ## Costs & benefits across groups
-```{r misalloc-dist}
-grouped = df %>% filter(trial == 0)
+```{r average_across_trials}
+grouped = df %>% 
+  group_by(state_fips_code, district_id) %>%
+  summarise(misalloc = mean(misalloc)) %>%
+  ungroup() %>%
+  left_join(
+    df %>% select(
+      state_fips_code, 
+      district_id, 
+      nonwhite_children,
+      true_children_eligible,
+      true_children_total, 
+      prop_white,
+      ends_with("race_pct_children")
+    ) %>% unique(),
+    by=c("state_fips_code", "district_id")
+  )
+grouped
+```
 
+```{r dist}
 # misalloc per non-white student
 ggplot(grouped, aes(x=nonwhite_children, y=misalloc)) +
   geom_point()
@@ -51,26 +68,58 @@ ggplot(grouped, aes(x=nonwhite_children, y=misalloc)) +
 ggplot(grouped, aes(x=misalloc / true_children_total)) +
   geom_histogram(bins=100)
 # average misalloc per eligible student
-ggplot(df, aes(x=misalloc / true_children_eligible)) +
+ggplot(df, aes(x=misalloc / true_children_total)) +
   geom_histogram(bins=100)
 
 # total misalloc per student ("burden")
-# DEPRECATE - UPDATE FOR NEW RACE DATA
 comparison = grouped %>%
-  select(ends_with("race_pct_children"), prop_white, misalloc, true_children_total) %>%
   pivot_longer(
     ends_with("race_pct_children"),
-    values_to="children",
+    values_to="children_of_race",
     names_to="race"
   ) %>%
-  mutate(benefit = misalloc * children / true_children_total)  %>%
-  group_by(race) %>%
-  summarise(benefit_per_child = sum(benefit, na.rm=TRUE) / sum(children, na.rm=TRUE))
-comparison
+  mutate(
+    race=str_replace(race, "_race_pct_children", "")
+  ) %>%
+  # assuming misallocation is spread evenly across children,
+  mutate(benefit_per_child = misalloc * children_of_race / true_children_total)
 
-misalloc_nonwhite = df$misalloc * (1-df$prop_white)
-misalloc_white = df$misalloc * df$prop_white
-t.test(misalloc_white, misalloc_nonwhite)
+
+comparison_all = comparison %>%
+  group_by(race) %>%
+  mutate(
+    race_avg_benefit_per_child = mean(benefit_per_child)
+  )  %>%
+  ungroup()
+
+grid = ggplot(comparison_all, aes(x=log(benefit_per_child-min(benefit_per_child)))) +
+  geom_histogram(bins=100) +
+  facet_wrap(~race, ncol=3, scales="free_y")
+
+comparison_mean = comparison %>%
+  group_by(race) %>% 
+  summarise(
+    avg_benefit_per_child = log(mean(benefit_per_child-min(benefit_per_child)-min(benefit_per_child))),
+    med_benefit_per_child = median(log(benefit_per_child-min(benefit_per_child)), na.rm=TRUE)
+  ) %>%
+  ungroup()
+
+grid + 
+  geom_vline(aes(xintercept=avg_benefit_per_child), comparison_mean, color="red") +
+  geom_vline(aes(xintercept=med_benefit_per_child), comparison_mean, color="blue")
+
+ggplot(comparison_all, aes(x=reorder(race, race_avg_benefit_per_child), y=log(benefit_per_child-min(benefit_per_child)))) +
+  geom_boxplot(notch=TRUE) +
+  coord_flip()
+
+ggplot(comparison_mean, aes(x=reorder(race, avg_benefit_per_child), y=avg_benefit_per_child)) +
+  geom_col() +
+  coord_flip()
+
+
+# misalloc_nonwhite = df$misalloc * (1-df$prop_white)
+# misalloc_white = df$misalloc * df$prop_white
+# t.test(misalloc_white, misalloc_nonwhite)
 ```
   
 ## Effect of race on misallocations

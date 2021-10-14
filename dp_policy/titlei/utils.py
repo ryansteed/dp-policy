@@ -29,7 +29,7 @@ def get_acs_data(path, name):
         split_leaids(data.LEAID)
     data = data.set_index(["State FIPS Code", "District ID"])
     data = data.drop(
-        columns=["GeoId", "Geography", "Year", "Iteration", "LEAID"]
+        columns=["GeoId", "Geography", "Year", "Iteration"]
     )
 
     varnames = pd.read_excel(
@@ -49,12 +49,12 @@ def get_acs_data(path, name):
         except KeyError:
             drop.append(c)
     data = data.drop(columns=drop).rename(columns=new)
-
     return data
 
 
 def split_leaids(leaids: pd.Series):
-    leaids = leaids.astype(str)
+    # get the last seven digits of the ID
+    leaids = leaids.astype(str).str[-7:]
     return leaids.str[-5:].astype(int), leaids.str[:-5].astype(int)
 
 
