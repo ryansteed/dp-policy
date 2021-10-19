@@ -26,14 +26,16 @@ df = raw %>%
   clean_names() %>%
   mutate_at(
     vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
-  ) 
+  )
 df
 df = df %>%
   mutate(
     prop_white = white_race_pct / 100,
     nonwhite_children = true_children_total * prop_white,
     # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
-    misalloc = est_grant_total - true_grant_total
+    misalloc = est_grant_total - true_grant_total,
+    not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
+    average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(average_household_size_of_renter_occupied_unit_housing_tenure_est)
   )
 df
 ```
@@ -52,16 +54,34 @@ grouped = df %>%
       true_children_eligible,
       true_children_total, 
       prop_white,
-      ends_with("race_pct_children")
+      ends_with("race_pct_children"),
+      language_other_than_english_language_spoken_at_home_pct,
+      language_other_than_english_language_spoken_at_home_est,
+      foreign_born_place_of_birth_est,
+      foreign_born_place_of_birth_pct,
+      not_a_u_s_citizen_u_s_citizenship_status_est,
+      not_a_u_s_citizen_u_s_citizenship_status_pct,
+      renter_occupied_housing_tenure_pct,
+      renter_occupied_housing_tenure_est,
+      average_household_size_of_renter_occupied_unit_housing_tenure_est
     ) %>% unique(),
     by=c("state_fips_code", "district_id")
+  ) %>%
+  mutate(
+    misalloc_per_child = misalloc / true_children_total
   )
 grouped
+
+# optional - filter to only look at edge cases
+# grouped = grouped  %>%
+#   filter(
+#     misalloc > mean(misalloc_per_child) + 2*sd(misalloc_per_child) | misalloc_per_child < mean(misalloc_per_child) - 2*sd(misalloc_per_child)
+#   )
 ```
 
-```{r dist}
+```{r race}
 # misalloc per non-white student
-ggplot(grouped, aes(x=nonwhite_children, y=misalloc)) +
+ggplot(grouped, aes(x=prop_white, y=misalloc_per_child)) +
   geom_point()
 
 # average misalloc per student
@@ -120,6 +140,63 @@ ggplot(comparison_mean, aes(x=reorder(race, avg_benefit_per_child), y=avg_benefi
 # misalloc_nonwhite = df$misalloc * (1-df$prop_white)
 # misalloc_white = df$misalloc * df$prop_white
 # t.test(misalloc_white, misalloc_nonwhite)
+```
+
+```{r language}
+lang = ggplot(grouped, aes(x=language_other_than_english_language_spoken_at_home_pct/100, y=misalloc_per_child)) 
+lang + geom_point()
+lang + geom_hex(bins=30)
+```
+
+```{r foreign}
+foreign = ggplot(grouped, aes(x=foreign_born_place_of_birth_pct/100, y=misalloc_per_child)) 
+foreign + geom_point()
+foreign + geom_hex(bins=30)
+```
+
+```{r ctznshp}
+ctznshp = ggplot(grouped, aes(x=not_a_u_s_citizen_u_s_citizenship_status_pct/100, y=misalloc_per_child)) 
+ctznshp + geom_point()
+ctznshp + geom_hex(bins=30)
+```
+
+```{r renters}
+renters = ggplot(grouped, aes(x=renter_occupied_housing_tenure_pct/100, y=misalloc_per_child)) 
+renters + geom_point()
+renters + geom_hex(bins=30)
+```
+
+```{r household_size}
+household_size = ggplot(grouped, aes(x=average_household_size_of_renter_occupied_unit_housing_tenure_est, y=misalloc_per_child)) 
+household_size + geom_point()
+household_size + geom_hex(bins=30)
+```
+
+```{r two-way}
+
+grouped_extreme = grouped  %>%
+  filter(
+    misalloc > mean(misalloc_per_child) + 2*sd(misalloc_per_child) | misalloc_per_child < mean(misalloc_per_child) - 2*sd(misalloc_per_child)
+  )
+
+grouped_extreme$highlight = grouped_extreme$misalloc_per_child > mean(grouped_extreme$misalloc_per_child) + 2*sd(grouped_extreme$misalloc_per_child) |
+  grouped_extreme$misalloc_per_child < mean(grouped_extreme$misalloc_per_child) - 2*sd(grouped_extreme$misalloc_per_child)
+
+ggplot(grouped_extreme, aes(x=prop_white, y=log(true_children_total), color=misalloc_per_child)) +
+  geom_point(size=1) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=prop_white, y=log(true_children_total), color=misalloc_per_child)) +
+  scale_colour_gradient2()
+  # scale_colour_distiller(type="div")
+
+ggplot(grouped_extreme, aes(x=prop_white, y=foreign_born_place_of_birth_pct/100, color=misalloc_per_child)) +
+  geom_point(size=1) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=prop_white, y=foreign_born_place_of_birth_pct/100, color=misalloc_per_child)) +
+  scale_colour_gradient2()
+
+ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_children_total), color=misalloc_per_child)) +
+  geom_point(size=1) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_children_total), color=misalloc_per_child)) +
+  scale_colour_gradient2()
 ```
   
 ## Effect of race on misallocations
