@@ -19,6 +19,13 @@ library(janitor)
 raw = read.csv("results/discrimination.csv")
 raw
 ```
+```{r income}
+# mask = raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est == '250,000+'
+# sum(mask)
+# gsub('[\\+]|[,]', '', as.character(raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est))[mask]
+# as.numeric(gsub('[\\+]|[,]', '', as.character(raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est)))[mask]
+```
+
 ```{r clean}
 # use short df
 # df = raw %>% filter(trial < 10)
@@ -35,7 +42,8 @@ df = df %>%
     # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
     misalloc = est_grant_total - true_grant_total,
     not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
-    average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(average_household_size_of_renter_occupied_unit_housing_tenure_est)
+    average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
+    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est)))
   )
 df
 ```
@@ -51,10 +59,11 @@ grouped = df %>%
       state_fips_code, 
       district_id, 
       nonwhite_children,
+      true_pop_total,
       true_children_eligible,
       true_children_total, 
       prop_white,
-      ends_with("race_pct_children"),
+      ends_with("race_pct"),
       language_other_than_english_language_spoken_at_home_pct,
       language_other_than_english_language_spoken_at_home_est,
       foreign_born_place_of_birth_est,
@@ -63,7 +72,8 @@ grouped = df %>%
       not_a_u_s_citizen_u_s_citizenship_status_pct,
       renter_occupied_housing_tenure_pct,
       renter_occupied_housing_tenure_est,
-      average_household_size_of_renter_occupied_unit_housing_tenure_est
+      average_household_size_of_renter_occupied_unit_housing_tenure_est,
+      median_income_est
     ) %>% unique(),
     by=c("state_fips_code", "district_id")
   ) %>%
@@ -93,48 +103,57 @@ ggplot(df, aes(x=misalloc / true_children_total)) +
 
 # total misalloc per student ("burden")
 comparison = grouped %>%
+  mutate(na_race_pct = 1-rowSums(across(ends_with("race_pct")))) %>%
   pivot_longer(
-    ends_with("race_pct_children"),
-    values_to="children_of_race",
+    ends_with("race_pct"),
+    values_to="race_pct",
     names_to="race"
   ) %>%
   mutate(
-    race=str_replace(race, "_race_pct_children", "")
+    race=str_replace(race, "_race_pct", "")
   ) %>%
   # assuming misallocation is spread evenly across children,
-  mutate(benefit_per_child = misalloc * children_of_race / true_children_total)
+  mutate(benefit = misalloc * race_pct / 100)
 
+comparison
 
 comparison_all = comparison %>%
   group_by(race) %>%
   mutate(
-    race_avg_benefit_per_child = mean(benefit_per_child)
+    race_avg_benefit = mean(benefit),
+    race_med_benefit = median(benefit)
   )  %>%
   ungroup()
 
-grid = ggplot(comparison_all, aes(x=log(benefit_per_child-min(benefit_per_child)))) +
+cuberoot = function(x) {
+  return(sign(x)*abs(x)^(1/3))
+}
+
+grid = ggplot(comparison_all, aes(x=cuberoot(benefit))) +
   geom_histogram(bins=100) +
   facet_wrap(~race, ncol=3, scales="free_y")
 
-comparison_mean = comparison %>%
-  group_by(race) %>% 
-  summarise(
-    avg_benefit_per_child = log(mean(benefit_per_child-min(benefit_per_child)-min(benefit_per_child))),
-    med_benefit_per_child = median(log(benefit_per_child-min(benefit_per_child)), na.rm=TRUE)
-  ) %>%
-  ungroup()
-
 grid + 
-  geom_vline(aes(xintercept=avg_benefit_per_child), comparison_mean, color="red") +
-  geom_vline(aes(xintercept=med_benefit_per_child), comparison_mean, color="blue")
+  geom_vline(aes(xintercept=cuberoot(race_avg_benefit)), comparison_all, color="red") +
+  geom_vline(aes(xintercept=cuberoot(race_med_benefit)), comparison_all, color="blue")
 
-ggplot(comparison_all, aes(x=reorder(race, race_avg_benefit_per_child), y=log(benefit_per_child-min(benefit_per_child)))) +
+ggplot(comparison_all, aes(x=reorder(race, race_avg_benefit), y=cuberoot(benefit))) +
   geom_boxplot(notch=TRUE) +
   coord_flip()
 
-ggplot(comparison_mean, aes(x=reorder(race, avg_benefit_per_child), y=avg_benefit_per_child)) +
+comparison_mean = comparison %>%
+  group_by(race) %>%
+  summarise(
+    avg_benefit = mean(benefit),
+    med_benefit = median(benefit)
+  ) %>%
+  ungroup()
+
+ggplot(comparison_mean, aes(x=reorder(race, avg_benefit), y=avg_benefit)) +
   geom_col() +
   coord_flip()
+
+mean(comparison$misalloc / comparison$true_children_total)
 
 
 # misalloc_nonwhite = df$misalloc * (1-df$prop_white)
@@ -142,33 +161,52 @@ ggplot(comparison_mean, aes(x=reorder(race, avg_benefit_per_child), y=avg_benefi
 # t.test(misalloc_white, misalloc_nonwhite)
 ```
 
+```{r population}
+income = ggplot(grouped, aes(x=log(true_pop_total), y=misalloc_per_child)) 
+income + geom_point() +
+  stat_cor(method="pearson")
+income + geom_hex(bins=30)
+```
+
+```{r income}
+income = ggplot(grouped, aes(x=median_income_est, y=misalloc_per_child)) 
+income + geom_point() +
+  stat_cor(method="pearson")
+income + geom_hex(bins=30)
+```
+
 ```{r language}
 lang = ggplot(grouped, aes(x=language_other_than_english_language_spoken_at_home_pct/100, y=misalloc_per_child)) 
-lang + geom_point()
+lang + geom_point() +
+  stat_cor(method="pearson")
 lang + geom_hex(bins=30)
 ```
 
 ```{r foreign}
 foreign = ggplot(grouped, aes(x=foreign_born_place_of_birth_pct/100, y=misalloc_per_child)) 
-foreign + geom_point()
+foreign + geom_point() +
+  stat_cor(method="pearson")
 foreign + geom_hex(bins=30)
 ```
 
 ```{r ctznshp}
 ctznshp = ggplot(grouped, aes(x=not_a_u_s_citizen_u_s_citizenship_status_pct/100, y=misalloc_per_child)) 
-ctznshp + geom_point()
+ctznshp + geom_point() +
+  stat_cor(method="pearson")
 ctznshp + geom_hex(bins=30)
 ```
 
 ```{r renters}
 renters = ggplot(grouped, aes(x=renter_occupied_housing_tenure_pct/100, y=misalloc_per_child)) 
-renters + geom_point()
+renters + geom_point() +
+  stat_cor(method="pearson")
 renters + geom_hex(bins=30)
 ```
 
 ```{r household_size}
 household_size = ggplot(grouped, aes(x=average_household_size_of_renter_occupied_unit_housing_tenure_est, y=misalloc_per_child)) 
-household_size + geom_point()
+household_size + geom_point() +
+  stat_cor(method="pearson")
 household_size + geom_hex(bins=30)
 ```
 
@@ -182,20 +220,24 @@ grouped_extreme = grouped  %>%
 grouped_extreme$highlight = grouped_extreme$misalloc_per_child > mean(grouped_extreme$misalloc_per_child) + 2*sd(grouped_extreme$misalloc_per_child) |
   grouped_extreme$misalloc_per_child < mean(grouped_extreme$misalloc_per_child) - 2*sd(grouped_extreme$misalloc_per_child)
 
-ggplot(grouped_extreme, aes(x=prop_white, y=log(true_children_total), color=misalloc_per_child)) +
+ggplot(grouped_extreme, aes(x=prop_white, y=log(true_pop_total), color=misalloc_per_child)) +
   geom_point(size=1) +
-  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=prop_white, y=log(true_children_total), color=misalloc_per_child)) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=prop_white, y=log(true_pop_total), color=misalloc_per_child)) +
   scale_colour_gradient2()
-  # scale_colour_distiller(type="div")
+
+ggplot(grouped_extreme, aes(x=median_income_est, y=log(true_pop_total), color=misalloc_per_child)) +
+  geom_point(size=1) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=median_income_est, y=log(true_pop_total), color=misalloc_per_child)) +
+  scale_colour_gradient2()
 
 ggplot(grouped_extreme, aes(x=prop_white, y=foreign_born_place_of_birth_pct/100, color=misalloc_per_child)) +
   geom_point(size=1) +
   geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=prop_white, y=foreign_born_place_of_birth_pct/100, color=misalloc_per_child)) +
   scale_colour_gradient2()
 
-ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_children_total), color=misalloc_per_child)) +
+ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_pop_total), color=misalloc_per_child)) +
   geom_point(size=1) +
-  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_children_total), color=misalloc_per_child)) +
+  geom_point(data=subset(grouped_extreme, highlight), mapping=aes(x=language_other_than_english_language_spoken_at_home_pct, y=log(true_pop_total), color=misalloc_per_child)) +
   scale_colour_gradient2()
 ```
   
@@ -203,16 +245,41 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
 ### OLS
 
 ```{r ols}
-lm = lm(misalloc ~ prop_white, data=df)
-lm_cov = lm(misalloc ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial), data=df)
-lm2 = lm(sqrt(misalloc^2) ~ prop_white, data=df)
-lm2_cov = lm(sqrt(misalloc^2) ~ prop_white + true_pop_total + true_children_total + true_children_poverty  + factor(trial), data=df)
+filtered = df 
+  # %>% filter(misalloc > mean(misalloc) + 2*sd(misalloc) | misalloc < mean(misalloc) - 2*sd(misalloc))
+
+lm = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct, data=filtered)
+lm_cov = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty, data=filtered)
+lm_cov2 = lm(
+  misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty +
+      log(true_pop_total) +
+      language_other_than_english_language_spoken_at_home_pct +
+      foreign_born_place_of_birth_pct +
+      not_a_u_s_citizen_u_s_citizenship_status_pct +
+      renter_occupied_housing_tenure_pct +
+      average_household_size_of_renter_occupied_unit_housing_tenure_est +
+      median_income_est,
+  data=filtered
+)
+lm2 = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct, data=filtered)
+lm2_cov = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty, data=filtered)
+lm2_cov2 = lm(
+  sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty +
+      log(true_pop_total) +
+      language_other_than_english_language_spoken_at_home_pct +
+      foreign_born_place_of_birth_pct +
+      not_a_u_s_citizen_u_s_citizenship_status_pct +
+      renter_occupied_housing_tenure_pct +
+      average_household_size_of_renter_occupied_unit_housing_tenure_est +
+      median_income_est, 
+  data=filtered
+)
 
 stargazer(
-  lm, lm_cov, lm2, lm2_cov,
+  lm, lm_cov, lm_cov2, lm2, lm2_cov, lm2_cov2,
   type="text",
-  title="Correlation between race and noise-induced error.",
-  covariate.labels=c("Proportion white-only individuals", "Total pop", "Total children", "Total children in poverty"),
+  title="Correlation between covariates and DP-induced misallocation. Positive = more received under DP.",
+  covariate.labels=c("Proportion White", "Proportion Black", "Proportion Asian", "Total # children", "Total # children in poverty", "Log population", "% language other than English spoken at home", "% foreign-born", "% not a U.S. citizen", "% Renters", "Avg. household size", "Median income"),
   label="discrimination",
   omit=c("trial", "district_id", "state_fips_code")
   # out="results/discrimination.tex"
