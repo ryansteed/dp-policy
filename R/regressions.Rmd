@@ -241,6 +241,11 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
   scale_colour_gradient2()
 ```
   
+## Geography
+```{r shapefiles}
+
+```
+
 ## Effect of race on misallocations
 ### OLS
 

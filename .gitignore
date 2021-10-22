@@ -9,3 +9,4 @@ results/*
 .RData
 default.profraw
 *__pycache__
+data/shapefiles/*/
