@@ -66,10 +66,11 @@ class Authorizer(Allocator):
         raise NotImplementedError
 
     def allocations(
-        self, uncertainty=True, **uncertainty_params
+        self, uncertainty=True, normalize=True, **uncertainty_params
     ) -> pd.DataFrame:
         super().allocations(uncertainty=uncertainty, **uncertainty_params)
-        self._normalize(uncertainty=uncertainty)
+        if normalize:
+            self._normalize(uncertainty=uncertainty)
         return self.estimates
 
     def _normalize(self, uncertainty=True):
@@ -88,7 +89,6 @@ class Authorizer(Allocator):
                     for kind in (t for t in self.grant_types() if t != "total")
                     for suffix in ("ci_upper", "ci_lower")
                 ] + [f"{prefix}_ci_upper", f"{prefix}_ci_lower"]
-            auth_total = self.estimates.true_grant_total.sum()
             self.estimates.loc[:, authorization_amounts] = \
                 self.estimates[authorization_amounts].apply(
                     lambda x: Authorizer.normalize_to_budget(

@@ -41,7 +41,7 @@ def titlei_data(
 
 def titlei_funding(
     allocator, saipe, mechanism, sppe,
-    uncertainty=True, allocator_kwargs={},
+    uncertainty=True, normalize=True, allocator_kwargs={},
     **grants_kwargs
 ):
     """
@@ -52,4 +52,4 @@ def titlei_funding(
         titlei_data(saipe, mechanism, sppe, **grants_kwargs),
         **allocator_kwargs
     )
-    return alloc.allocations(uncertainty=uncertainty)
+    return alloc.allocations(uncertainty=uncertainty, normalize=normalize)

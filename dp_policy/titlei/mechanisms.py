@@ -46,10 +46,12 @@ class GroundTruth(Mechanism):
 
 
 class DiffPriv(Mechanism):
-    def __init__(self, saipe, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, saipe, epsilon, delta, round=False, clip=True, **kwargs):
+        super().__init__(epsilon, delta, **kwargs)
         self.saipe = saipe
         self.mechanism = None
+        self.round = round
+        self.clip = clip
 
     def poverty_estimates(
         self
@@ -70,9 +72,16 @@ class DiffPriv(Mechanism):
         # print("After estimation, privacy acc:", self.accountant.total())
         # no negative values, please
         # also rounding counts - post-processing
-        return np.round(np.clip(pop_total, 0, None)),\
-            np.round(np.clip(children_total, 0, None)),\
-            np.round(np.clip(children_poverty, 0, None))
+        return self.post_processing(pop_total),\
+            self.post_processing(children_total),\
+            self.post_processing(children_poverty)
+
+    def post_processing(self, count):
+        if self.round:
+            count = np.round(count)
+        if self.clip:
+            count = np.clip(count, 0, None)
+        return count
 
 
 class Laplace(DiffPriv):

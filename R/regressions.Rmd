@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r deps}
 library(stargazer)
 library(tidyverse)
+library(ggpubr)
 library(janitor)
 ```
 
@@ -103,8 +104,8 @@ ggplot(df, aes(x=misalloc / true_children_total)) +
 
 # total misalloc per student ("burden")
 comparison = grouped %>%
-  mutate(na_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
-  mutate(na_race_pct = if_else(na_race_pct < 0, 0, na_race_pct)) %>%
+  mutate(two_or_more_races_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
+  mutate(two_or_more_races_race_pct = if_else(two_or_more_races_race_pct < 0, 0, two_or_more_races_race_pct)) %>%
   pivot_longer(
     ends_with("race_pct"),
     values_to="race_pct",
@@ -145,18 +146,27 @@ grid = ggplot(
   aes(x=cuberoot(misalloc_per_child))
 ) +
   geom_histogram(bins=100) +
-  facet_wrap(~race, ncol=3, scales="free_y")
+  facet_wrap(~race, ncol=3, scales="free_y") +
+  ggtitle("Misallocation by Race") +
+  xlab("Misallocation (DP minus no-DP) per child") +
+  ylab("# children")
 grid +
   geom_vline(mapping=aes(xintercept=cuberoot(race_benefit_per_child)), data=comparison_mean, color="red")
 
 
 ggplot(hist, aes(x=reorder(race, race_benefit_per_child), y=cuberoot(misalloc_per_child))) +
   geom_boxplot(notch=TRUE) +
-  coord_flip()
+  coord_flip() +
+  ggtitle("Misallocation by Race") +
+  ylab("Misallocation (DP minus no-DP) per child (cube root)") +
+  xlab("Census Race Category")
 
 ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child), y=race_benefit_per_child)) +
   geom_col() +
-  coord_flip()
+  coord_flip() +
+  ggtitle("Average Misallocation by Race") +
+  xlab("Census Race Category") +
+  ylab("Race-weighted misallocation (DP minus no DP) per child")
 
 mean(comparison$misalloc / comparison$true_children_total)
 
@@ -169,21 +179,28 @@ mean(comparison$misalloc / comparison$true_children_total)
 ```{r population}
 income = ggplot(grouped, aes(x=log(true_pop_total), y=misalloc_per_child)) 
 income + geom_point() +
-  stat_cor(method="pearson")
+  stat_cor(method="pearson") +
+  xlab("Log population") +
+  ylab("Misallocation per child")
+
 income + geom_hex(bins=30)
 ```
 
 ```{r income}
 income = ggplot(grouped, aes(x=median_income_est, y=misalloc_per_child)) 
 income + geom_point() +
-  stat_cor(method="pearson")
+  stat_cor(method="pearson") +
+  xlab("Median income") +
+  ylab("Misallocation per child")
 income + geom_hex(bins=30)
 ```
 
 ```{r language}
 lang = ggplot(grouped, aes(x=language_other_than_english_language_spoken_at_home_pct/100, y=misalloc_per_child)) 
 lang + geom_point() +
-  stat_cor(method="pearson")
+  stat_cor(method="pearson") +
+  xlab("% language other than English spoken at home") +
+  ylab("Misallocation per child")
 lang + geom_hex(bins=30)
 ```
 
@@ -197,14 +214,18 @@ foreign + geom_hex(bins=30)
 ```{r ctznshp}
 ctznshp = ggplot(grouped, aes(x=not_a_u_s_citizen_u_s_citizenship_status_pct/100, y=misalloc_per_child)) 
 ctznshp + geom_point() +
-  stat_cor(method="pearson")
+  stat_cor(method="pearson") +
+  xlab("% not a U.S. citizen") +
+  ylab("Misallocation per child")
 ctznshp + geom_hex(bins=30)
 ```
 
 ```{r renters}
 renters = ggplot(grouped, aes(x=renter_occupied_housing_tenure_pct/100, y=misalloc_per_child)) 
 renters + geom_point() +
-  stat_cor(method="pearson")
+  stat_cor(method="pearson") +
+  xlab("% renter-occupied housing") +
+  ylab("Misallocation per child")
 renters + geom_hex(bins=30)
 ```
 
