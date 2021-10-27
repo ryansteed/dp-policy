@@ -103,7 +103,8 @@ ggplot(df, aes(x=misalloc / true_children_total)) +
 
 # total misalloc per student ("burden")
 comparison = grouped %>%
-  mutate(na_race_pct = 1-rowSums(across(ends_with("race_pct")))) %>%
+  mutate(na_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
+  mutate(na_race_pct = if_else(na_race_pct < 0, 0, na_race_pct)) %>%
   pivot_longer(
     ends_with("race_pct"),
     values_to="race_pct",
@@ -113,43 +114,47 @@ comparison = grouped %>%
     race=str_replace(race, "_race_pct", "")
   ) %>%
   # assuming misallocation is spread evenly across children,
-  mutate(benefit = misalloc * race_pct / 100)
-
-comparison
-
-comparison_all = comparison %>%
-  group_by(race) %>%
-  mutate(
-    race_avg_benefit = mean(benefit),
-    race_med_benefit = median(benefit)
-  )  %>%
-  ungroup()
+  mutate(benefit = misalloc_per_child / race_pct * 100)
 
 cuberoot = function(x) {
   return(sign(x)*abs(x)^(1/3))
 }
 
-grid = ggplot(comparison_all, aes(x=cuberoot(benefit))) +
+comparison_all = comparison %>%
+  group_by(race) %>%
+  mutate(
+    race_avg_benefit = mean(benefit),
+    race_med_benefit = median(benefit),
+    children_of_race = round(true_children_total * race_pct / 100),
+    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race)
+  )  %>%
+  ungroup()
+
+comparison_mean = comparison_all %>%
+  group_by(race) %>%
+  summarise(
+    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race)
+  )
+
+hist = comparison_all %>%
+  select(children_of_race, race, misalloc_per_child, race_benefit_per_child) %>%
+  uncount(children_of_race)
+
+grid = ggplot(
+  hist,
+  aes(x=cuberoot(misalloc_per_child))
+) +
   geom_histogram(bins=100) +
   facet_wrap(~race, ncol=3, scales="free_y")
+grid +
+  geom_vline(mapping=aes(xintercept=cuberoot(race_benefit_per_child)), data=comparison_mean, color="red")
 
-grid + 
-  geom_vline(aes(xintercept=cuberoot(race_avg_benefit)), comparison_all, color="red") +
-  geom_vline(aes(xintercept=cuberoot(race_med_benefit)), comparison_all, color="blue")
 
-ggplot(comparison_all, aes(x=reorder(race, race_avg_benefit), y=cuberoot(benefit))) +
+ggplot(hist, aes(x=reorder(race, race_benefit_per_child), y=cuberoot(misalloc_per_child))) +
   geom_boxplot(notch=TRUE) +
   coord_flip()
 
-comparison_mean = comparison %>%
-  group_by(race) %>%
-  summarise(
-    avg_benefit = mean(benefit),
-    med_benefit = median(benefit)
-  ) %>%
-  ungroup()
-
-ggplot(comparison_mean, aes(x=reorder(race, avg_benefit), y=avg_benefit)) +
+ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child), y=race_benefit_per_child)) +
   geom_col() +
   coord_flip()
 
