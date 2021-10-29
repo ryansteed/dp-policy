@@ -60,6 +60,7 @@ grouped = df %>%
       state_fips_code, 
       district_id, 
       nonwhite_children,
+      true_grant_total,
       true_pop_total,
       true_children_eligible,
       true_children_total, 
@@ -127,14 +128,17 @@ comparison_all = comparison %>%
     race_avg_benefit = mean(benefit),
     race_med_benefit = median(benefit),
     children_of_race = round(true_children_total * race_pct / 100),
-    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race)
+    children_of_race_eligible = round(true_children_eligible * race_pct / 100),
+    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race),
+    race_benefit_per_child_eligible = sum(misalloc * race_pct / 100) / sum(children_of_race_eligible)
   )  %>%
   ungroup()
 
 comparison_mean = comparison_all %>%
   group_by(race) %>%
   summarise(
-    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race)
+    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race),
+    race_benefit_per_child_eligible = sum(misalloc * race_pct / 100) / sum(children_of_race_eligible)
   )
 
 hist = comparison_all %>%
@@ -167,6 +171,13 @@ ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child), y=race_benef
   ggtitle("Average Misallocation by Race") +
   xlab("Census Race Category") +
   ylab("Race-weighted misallocation (DP minus no DP) per child")
+
+ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child_eligible), y=race_benefit_per_child_eligible)) +
+  geom_col() +
+  coord_flip() +
+  ggtitle("Average Misallocation by Race - Eligible Children") +
+  xlab("Census Race Category") +
+  ylab("Race-weighted misallocation (DP minus no DP) per child (eligible)")
 
 mean(comparison$misalloc / comparison$true_children_total)
 
