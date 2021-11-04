@@ -32,5 +32,3 @@ Code-wise,
 - [Step 2] `dp_policy.titlei.mechanisms` wraps a library for DP mechanisms I found - this is how I'm quickly adding the DP noise. Could be easily adapted for step 2, or you could just draw your own samples.
 
 - [Step 3] `dp_policy.titlei.allocators.SonnenbergAuthorizer`, the main allocation calculator - for step 3, turning your table of estimates into allocations. I would just copy the method invocations and parameters used in `dp_policy.api.titlei_funding` and `notebooks/titlei.ipynb`
-
-Some things that might be useful
