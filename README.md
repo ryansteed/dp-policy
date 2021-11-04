@@ -33,4 +33,4 @@ Code-wise,
 
 - [Step 3] `dp_policy.titlei.allocators.SonnenbergAuthorizer`, the main allocation calculator - for step 3, turning your table of estimates into allocations. I would just copy the method invocations and parameters used in `dp_policy.api.titlei_funding` and `notebooks/titlei.ipynb`
 
-Some things that might be useful
+For visualizations and other analysis, there may already be useful code in `notebooks/titlei.ipynb`, depending on what you want to do.
