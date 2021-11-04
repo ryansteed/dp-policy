@@ -10,6 +10,9 @@ setup(
         'pandas',
         'matplotlib',
         'numpy',
-        'diffprivlib'
+        'diffprivlib',
+        'geopandas',
+        'tqdm',
+        'seaborn'
     ]
 )
