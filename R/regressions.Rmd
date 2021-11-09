@@ -18,7 +18,6 @@ library(janitor)
 
 ```{r load}
 raw = read.csv("results/discrimination.csv")
-raw
 ```
 ```{r income}
 # mask = raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est == '250,000+'
@@ -46,7 +45,6 @@ df = df %>%
     average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
     median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est)))
   )
-df
 ```
 
 ## Costs & benefits across groups
@@ -92,6 +90,10 @@ grouped
 ```
 
 ```{r race}
+kind = "hispanic"
+# kind = "race"
+# kind = "intersectional"
+
 # misalloc per non-white student
 ggplot(grouped, aes(x=prop_white, y=misalloc_per_child)) +
   geom_point()
@@ -103,10 +105,26 @@ ggplot(grouped, aes(x=misalloc / true_children_total)) +
 ggplot(df, aes(x=misalloc / true_children_total)) +
   geom_histogram(bins=100)
 
+comparison = grouped
+
+if (kind == "hispanic") {
+  comparison = comparison %>%
+    select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
+} else {
+  comparison = comparison %>%
+    select(!ends_with("hispanic_or_latino_and_race_pct"))
+}
+
+remainder = comparison %>%
+  select(ends_with("race_pct")) %>%
+  mutate(sum = rowSums(across(everything())))
+
+print(remainder %>% filter(sum == max(sum)))
+
 # total misalloc per student ("burden")
-comparison = grouped %>%
-  mutate(two_or_more_races_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
-  mutate(two_or_more_races_race_pct = if_else(two_or_more_races_race_pct < 0, 0, two_or_more_races_race_pct)) %>%
+comparison = comparison %>%
+  mutate(other_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
+  mutate(other_race_pct = if_else(other_race_pct < 0, 0, other_race_pct)) %>%
   pivot_longer(
     ends_with("race_pct"),
     values_to="race_pct",
@@ -117,6 +135,8 @@ comparison = grouped %>%
   ) %>%
   # assuming misallocation is spread evenly across children,
   mutate(benefit = misalloc_per_child / race_pct * 100)
+
+comparison$race %>% unique()
 
 cuberoot = function(x) {
   return(sign(x)*abs(x)^(1/3))
