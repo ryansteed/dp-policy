@@ -90,8 +90,9 @@ grouped
 ```
 
 ```{r race}
-kind = "hispanic"
-# kind = "race"
+# kind = "hispanic"
+# kind = "race_aggregate"
+kind = "race"
 # kind = "intersectional"
 
 # misalloc per non-white student
@@ -110,21 +111,41 @@ comparison = grouped
 if (kind == "hispanic") {
   comparison = comparison %>%
     select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
+} else if (kind == "race_aggregate") {
+  comparison = comparison %>%
+    mutate(
+      white_agg_race_pct = white_race_pct,
+      black_or_african_american_agg_race_pct = black_or_african_american_race_pct,
+      tribal_grouping_agg_race_pct = rowSums(across(ends_with("tribal_grouping_race_pct"))),
+      asian_agg_race_pct = asian_race_pct,
+      pacific_islander_agg_race_pct = rowSums(across(c(
+        "native_hawaiian_race_pct",
+        "guamanian_or_chamorro_race_pct",
+        "samoan_race_pct"
+      ))),
+      some_other_race_agg_race_pct = some_other_race_race_pct,
+      two_or_more_races_agg_race_pct = two_or_more_races_race_pct
+    ) %>%
+    select(ends_with("agg_race_pct") | !ends_with("race_pct"))
 } else {
   comparison = comparison %>%
-    select(!ends_with("hispanic_or_latino_and_race_pct"))
+    select(!ends_with("hispanic_or_latino_and_race_pct")) %>%
+    select(
+      !asian_race_pct
+    )
 }
 
 remainder = comparison %>%
   select(ends_with("race_pct")) %>%
   mutate(sum = rowSums(across(everything())))
 
-print(remainder %>% filter(sum == max(sum)))
+# per the census, should add to 100 - https://www.census.gov/quickfacts/fact/note/US/RHI625219
+print(remainder %>% filter(sum > 105.0))
 
 # total misalloc per student ("burden")
 comparison = comparison %>%
-  mutate(other_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
-  mutate(other_race_pct = if_else(other_race_pct < 0, 0, other_race_pct)) %>%
+  # mutate(other_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
+  # mutate(other_race_pct = if_else(other_race_pct < 0, 0, other_race_pct)) %>%
   pivot_longer(
     ends_with("race_pct"),
     values_to="race_pct",
@@ -137,6 +158,8 @@ comparison = comparison %>%
   mutate(benefit = misalloc_per_child / race_pct * 100)
 
 comparison$race %>% unique()
+
+# return()
 
 cuberoot = function(x) {
   return(sign(x)*abs(x)^(1/3))
