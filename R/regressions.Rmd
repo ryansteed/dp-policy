@@ -14,6 +14,9 @@ library(stargazer)
 library(tidyverse)
 library(ggpubr)
 library(janitor)
+library(mgcv)
+library(lmtest)
+library(tidymv)
 ```
 
 ```{r load}
@@ -34,7 +37,6 @@ df = raw %>%
   mutate_at(
     vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
   )
-df
 df = df %>%
   mutate(
     prop_white = white_race_pct / 100,
@@ -43,7 +45,9 @@ df = df %>%
     misalloc = est_grant_total - true_grant_total,
     not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
     average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
-    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est)))
+    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
+    misalloc_per_child = misalloc / true_children_total,
+    hhi = 
   )
 ```
 
@@ -321,10 +325,6 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
   scale_colour_gradient2()
 ```
   
-## Geography
-```{r shapefiles}
-
-```
 
 ## Effect of race on misallocations
 ### OLS
@@ -368,6 +368,126 @@ stargazer(
   label="discrimination",
   omit=c("trial", "district_id", "state_fips_code")
   # out="results/discrimination.tex"
+)
+```
+
+```{r gam}
+sq_share = function(x) {
+  return((x/100)^2)
+}
+
+df_abbrv = df %>%
+  select(
+    !ends_with("hispanic_or_latino_and_race_pct"),
+    !asian_race_pct
+  ) %>%
+  mutate(
+    hhi = sq_share(white_race_pct) +
+      sq_share(black_or_african_american_race_pct) +
+      sq_share(cherokee_tribal_grouping_race_pct) +
+      sq_share(chippewa_tribal_grouping_race_pct) +
+      sq_share(navajo_tribal_grouping_race_pct) +
+      sq_share(sioux_tribal_grouping_race_pct) +
+      sq_share(asian_indian_race_pct) +
+      sq_share(chinese_race_pct) +
+      sq_share(filipino_race_pct) +
+      sq_share(japanese_race_pct) +
+      sq_share(korean_race_pct) +
+      sq_share(vietnamese_race_pct) +
+      sq_share(other_asian_race_pct) +
+      sq_share(native_hawaiian_race_pct) +
+      sq_share(guamanian_or_chamorro_race_pct) +
+      sq_share(samoan_race_pct) +
+      sq_share(some_other_race_race_pct) +
+      sq_share(two_or_more_races_race_pct)
+  ) %>%
+  filter(trial == 10)
+
+nrow(df_abbrv)
+
+# min(df_abbrv$misalloc_per_child)
+
+# ggplot(df_abbrv, aes(x=prop_white, y=misalloc_per_child)) +
+#   geom_point(alpha=0.1) +
+#   geom_smooth()
+
+lm_fit = lm(misalloc ~ prop_white, data=df_abbrv)
+lm_fit
+gam_fit = gam(misalloc ~ s(prop_white, bs="cr"), data=df_abbrv)
+gam_fit
+
+anova(lm_fit, gam_fit)
+```
+
+```{r gam-mr}
+lm_mr = lm(
+  misalloc ~ prop_white +
+      true_children_total + 
+      true_children_poverty +
+      log(true_pop_total) +
+      median_income_est +
+      hhi,
+      # language_other_than_english_language_spoken_at_home_pct +
+      # foreign_born_place_of_birth_pct +
+      # not_a_u_s_citizen_u_s_citizenship_status_pct +
+      # renter_occupied_housing_tenure_pct +
+      # average_household_size_of_renter_occupied_unit_housing_tenure_est +
+  data=df_abbrv
+)
+summary(lm_mr)
+
+gam_mr = gam(
+  misalloc ~ s(prop_white, bs="tp") +
+      s(median_income_est, bs="tp") +
+      s(true_children_total, bs="tp") +
+      s(true_children_poverty, bs="tp") +
+      s(hhi, bs="tp"),
+      # ti(
+      #   language_other_than_english_language_spoken_at_home_pct,
+      #   foreign_born_place_of_birth_pct,
+      #   not_a_u_s_citizen_u_s_citizenship_status_pct
+      # ) +
+      # ti(
+      #   renter_occupied_housing_tenure_pct,
+      #   average_household_size_of_renter_occupied_unit_housing_tenure_est
+      # ),
+  method="REML", # restricted MLE
+  data=df_abbrv
+)
+summary(gam_mr)
+
+anova(lm_mr, gam_mr)
+```
+
+```{r gam_viz}
+# plot_smooths(
+#   model=gam_fit,
+#   series=prop_white
+# )
+
+plot_smooths(
+  model=gam_mr,
+  series=prop_white
+)
+
+plot_smooths(
+  model=gam_mr,
+  series=median_income_est
+)
+
+plot_smooths(
+  model=gam_mr,
+  series=true_children_poverty
+)
+
+plot_smooths(
+  model=gam_mr,
+  series=true_children_total
+)
+
+plot_smooths(
+  model=gam_mr,
+  series=hhi
 )
 ```
 
