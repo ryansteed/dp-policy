@@ -399,11 +399,14 @@ df_abbrv = df %>%
       sq_share(guamanian_or_chamorro_race_pct) +
       sq_share(samoan_race_pct) +
       sq_share(some_other_race_race_pct) +
-      sq_share(two_or_more_races_race_pct)
+      sq_share(two_or_more_races_race_pct),
+    prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100
   ) %>%
-  filter(trial == 10)
+  filter(trial < 10)
 
 nrow(df_abbrv)
+
+# print(names(df_abbrv))
 
 # min(df_abbrv$misalloc_per_child)
 
@@ -426,7 +429,8 @@ lm_mr = lm(
       true_children_poverty +
       log(true_pop_total) +
       median_income_est +
-      hhi,
+      hhi +
+      prop_hispanic,
       # language_other_than_english_language_spoken_at_home_pct +
       # foreign_born_place_of_birth_pct +
       # not_a_u_s_citizen_u_s_citizenship_status_pct +
@@ -441,7 +445,24 @@ gam_mr = gam(
       s(median_income_est, bs="tp") +
       s(true_children_total, bs="tp") +
       s(true_children_poverty, bs="tp") +
-      s(hhi, bs="tp"),
+      s(hhi, bs="tp") +
+      s(prop_hispanic, bs="tp"),
+  method="REML", # restricted MLE
+  data=df_abbrv
+)
+summary(gam_mr)
+
+gam_mr_interact = gam(
+  misalloc ~ s(prop_white, bs="tp") +
+      s(median_income_est, bs="tp") +
+      s(true_children_total, bs="tp") +
+      s(true_children_poverty, bs="tp") +
+      s(hhi, bs="tp") +
+      s(prop_hispanic, bs="tp") +
+      ti(
+        prop_white,
+        median_income_est
+      ),
       # ti(
       #   language_other_than_english_language_spoken_at_home_pct,
       #   foreign_born_place_of_birth_pct,
@@ -454,9 +475,10 @@ gam_mr = gam(
   method="REML", # restricted MLE
   data=df_abbrv
 )
-summary(gam_mr)
 
 anova(lm_mr, gam_mr)
+
+anova(gam_mr, gam_mr_interact)
 ```
 
 ```{r gam_viz}
@@ -465,30 +487,53 @@ anova(lm_mr, gam_mr)
 #   series=prop_white
 # )
 
+formatting = list(
+  theme_minimal(),
+  ylab("Misallocation (DP - no DP)")
+)
+
 plot_smooths(
   model=gam_mr,
   series=prop_white
-)
+) + formatting +
+  xlab("% white")
+
+plot_smooths(
+  model=gam_mr,
+  series=prop_hispanic
+) + formatting +
+  xlab("% hispanic")
 
 plot_smooths(
   model=gam_mr,
   series=median_income_est
-)
+) + formatting +
+  xlab("Median income")
+  
 
 plot_smooths(
   model=gam_mr,
   series=true_children_poverty
-)
+) + formatting +
+  xlab("# children in poverty")
 
 plot_smooths(
   model=gam_mr,
   series=true_children_total
-)
+) + formatting +
+  xlab("# children")
 
 plot_smooths(
   model=gam_mr,
   series=hhi
-)
+) + formatting +
+  xlab("Racial homogeneity (Herfindahl index over all race categories")
+  # geom_point(
+  #   data=df_abbrv,
+  #   aes(x=hhi, y=misalloc),
+  #   alpha=0.1
+  # ) +
+  # ylim(-200000, 50000)
 ```
 
 ## Traditional discrimination analysis
