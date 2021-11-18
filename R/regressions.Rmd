@@ -445,6 +445,7 @@ gam_mr = gam(
       s(median_income_est, bs="tp") +
       s(true_children_total, bs="tp") +
       s(true_children_poverty, bs="tp") +
+      s(log(true_pop_total), bs="tp") +
       s(hhi, bs="tp") +
       s(prop_hispanic, bs="tp"),
   method="REML", # restricted MLE
@@ -457,6 +458,7 @@ gam_mr_interact = gam(
       s(median_income_est, bs="tp") +
       s(true_children_total, bs="tp") +
       s(true_children_poverty, bs="tp") +
+      s(log(true_pop_total), bs="tp") +
       s(hhi, bs="tp") +
       s(prop_hispanic, bs="tp") +
       ti(
@@ -522,6 +524,12 @@ plot_smooths(
   series=true_children_total
 ) + formatting +
   xlab("# children")
+
+plot_smooths(
+  model=gam_mr,
+  series=log(true_pop_total)
+) + formatting +
+  xlab("log population size")
 
 plot_smooths(
   model=gam_mr,
