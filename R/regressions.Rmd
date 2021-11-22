@@ -511,9 +511,8 @@ for (v in list(
   c(5, "Log population"),
   c(6, "Racial homogeneity (Herfindahl index)"),
   c(7, "% hispanic"),
-  c(8, "% not a U.S. citizen"),
-  c(9, "% renter-occupied housing"),
-  c(10, "% average household size of renter-occupied housing")
+  c(8, "% renter-occupied housing"),
+  c(9, "% average household size of renter-occupied housing")
 )) {
   i = as.integer(v[1])
   label = v[2]
