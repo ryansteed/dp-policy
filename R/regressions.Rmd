@@ -16,7 +16,9 @@ library(ggpubr)
 library(janitor)
 library(mgcv)
 library(lmtest)
+library(mgcViz)
 library(tidymv)
+library(MASS)
 ```
 
 ```{r load}
@@ -330,57 +332,11 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
 ### OLS
 
 ```{r ols}
-filtered = df 
-  # %>% filter(misalloc > mean(misalloc) + 2*sd(misalloc) | misalloc < mean(misalloc) - 2*sd(misalloc))
-
-lm = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct, data=filtered)
-lm_cov = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty, data=filtered)
-lm_cov2 = lm(
-  misalloc ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty +
-      log(true_pop_total) +
-      language_other_than_english_language_spoken_at_home_pct +
-      foreign_born_place_of_birth_pct +
-      not_a_u_s_citizen_u_s_citizenship_status_pct +
-      renter_occupied_housing_tenure_pct +
-      average_household_size_of_renter_occupied_unit_housing_tenure_est +
-      median_income_est,
-  data=filtered
-)
-lm2 = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct, data=filtered)
-lm2_cov = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty, data=filtered)
-lm2_cov2 = lm(
-  sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + asian_race_pct + true_children_total + true_children_poverty +
-      log(true_pop_total) +
-      language_other_than_english_language_spoken_at_home_pct +
-      foreign_born_place_of_birth_pct +
-      not_a_u_s_citizen_u_s_citizenship_status_pct +
-      renter_occupied_housing_tenure_pct +
-      average_household_size_of_renter_occupied_unit_housing_tenure_est +
-      median_income_est, 
-  data=filtered
-)
-
-stargazer(
-  lm, lm_cov, lm_cov2, lm2, lm2_cov, lm2_cov2,
-  type="text",
-  title="Correlation between covariates and DP-induced misallocation. Positive = more received under DP.",
-  covariate.labels=c("Proportion White", "Proportion Black", "Proportion Asian", "Total # children", "Total # children in poverty", "Log population", "% language other than English spoken at home", "% foreign-born", "% not a U.S. citizen", "% Renters", "Avg. household size", "Median income"),
-  label="discrimination",
-  omit=c("trial", "district_id", "state_fips_code")
-  # out="results/discrimination.tex"
-)
-```
-
-```{r gam}
 sq_share = function(x) {
   return((x/100)^2)
 }
 
 df_abbrv = df %>%
-  select(
-    !ends_with("hispanic_or_latino_and_race_pct"),
-    !asian_race_pct
-  ) %>%
   mutate(
     hhi = sq_share(white_race_pct) +
       sq_share(black_or_african_american_race_pct) +
@@ -402,10 +358,55 @@ df_abbrv = df %>%
       sq_share(two_or_more_races_race_pct),
     prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100
   ) %>%
+  dplyr::select(
+    -ends_with("hispanic_or_latino_and_race_pct"),
+    -asian_race_pct
+  ) %>%
   filter(trial < 10)
 
 nrow(df_abbrv)
+  # %>% filter(misalloc > mean(misalloc) + 2*sd(misalloc) | misalloc < mean(misalloc) - 2*sd(misalloc))
 
+lm = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct, data=df_abbrv)
+lm_cov = lm(misalloc ~ white_race_pct + black_or_african_american_race_pct + true_children_total + true_children_poverty, data=filtered)
+lm_cov2 = lm(
+  misalloc ~ white_race_pct + black_or_african_american_race_pct + true_children_total + true_children_poverty +
+      log(true_pop_total) +
+      language_other_than_english_language_spoken_at_home_pct +
+      foreign_born_place_of_birth_pct +
+      not_a_u_s_citizen_u_s_citizenship_status_pct +
+      renter_occupied_housing_tenure_pct +
+      average_household_size_of_renter_occupied_unit_housing_tenure_est +
+      median_income_est,
+  data=df_abbrv
+)
+lm2 = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct, data=df_abbrv)
+lm2_cov = lm(sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + true_children_total + true_children_poverty, data=df_abbrv)
+lm2_cov2 = lm(
+  sqrt(misalloc^2) ~ white_race_pct + black_or_african_american_race_pct + true_children_total + true_children_poverty +
+      log(true_pop_total) +
+      language_other_than_english_language_spoken_at_home_pct +
+      foreign_born_place_of_birth_pct +
+      not_a_u_s_citizen_u_s_citizenship_status_pct +
+      renter_occupied_housing_tenure_pct +
+      average_household_size_of_renter_occupied_unit_housing_tenure_est +
+      median_income_est, 
+  data=df_abbrv
+)
+
+stargazer(
+  lm, lm_cov, lm_cov2, lm2, lm2_cov, lm2_cov2,
+  type="text",
+  title="Correlation between covariates and DP-induced misallocation. Positive = more received under DP.",
+  covariate.labels=c("Proportion White", "Proportion Black", "Proportion Asian", "Total # children", "Total # children in poverty", "Log population", "% language other than English spoken at home", "% foreign-born", "% not a U.S. citizen", "% Renters", "Avg. household size", "Median income"),
+  label="discrimination",
+  omit=c("trial", "district_id", "state_fips_code")
+  # out="results/discrimination.tex"
+)
+```
+
+### GAM
+```{r gam}
 # print(names(df_abbrv))
 
 # min(df_abbrv$misalloc_per_child)
@@ -453,18 +454,21 @@ gam_mr = gam(
 )
 summary(gam_mr)
 
+anova(lm_mr, gam_mr)
+```
+
+```{r gam-interact}
 gam_mr_interact = gam(
-  misalloc ~ s(prop_white, bs="tp") +
-      s(median_income_est, bs="tp") +
+  misalloc ~
+      te(
+        prop_white,
+        hhi,
+        median_income_est
+      ) +
       s(true_children_total, bs="tp") +
       s(true_children_poverty, bs="tp") +
       s(log(true_pop_total), bs="tp") +
-      s(hhi, bs="tp") +
-      s(prop_hispanic, bs="tp") +
-      ti(
-        prop_white,
-        median_income_est
-      ),
+      s(prop_hispanic, bs="tp"),
       # ti(
       #   language_other_than_english_language_spoken_at_home_pct,
       #   foreign_born_place_of_birth_pct,
@@ -477,9 +481,7 @@ gam_mr_interact = gam(
   method="REML", # restricted MLE
   data=df_abbrv
 )
-
-anova(lm_mr, gam_mr)
-
+summary(gam_mr_interact)
 anova(gam_mr, gam_mr_interact)
 ```
 
@@ -489,60 +491,66 @@ anova(gam_mr, gam_mr_interact)
 #   series=prop_white
 # )
 
+# vis.gam(gam_mr, view=c("prop_white", "median_income_est"))
+
+m = gam_mr
+viz = getViz(m)
+```
+```{r gam_plots}
 formatting = list(
   theme_minimal(),
-  ylab("Misallocation (DP - no DP)")
+  ylab("Smoothed effect (in terms of $$ misallocated)")
 )
 
-plot_smooths(
-  model=gam_mr,
-  series=prop_white
-) + formatting +
-  xlab("% white")
+for (v in list(
+  c(1, "% white-only"),
+  c(2, "Median income"),
+  c(3, "# children"),
+  c(4, "# children in poverty"),
+  c(5, "Log population"),
+  c(6, "Racial homogeneity (Herfindahl index)"),
+  c(7, "% hispanic")
+)) {
+  i = as.integer(v[1])
+  label = v[2]
+  plt = plot(viz, select=i) + formatting +
+    l_ciPoly() +
+    l_fitLine() +
+    geom_hline(yintercept = 0, linetype = 2) +
+    xlab(label) 
+  print(plt)
+  ggsave(sprintf("plots/%d.png", i), dpi=600)
+}
 
-plot_smooths(
-  model=gam_mr,
-  series=prop_hispanic
-) + formatting +
-  xlab("% hispanic")
+check(viz)
 
-plot_smooths(
-  model=gam_mr,
-  series=median_income_est
-) + formatting +
-  xlab("Median income")
-  
-
-plot_smooths(
-  model=gam_mr,
-  series=true_children_poverty
-) + formatting +
-  xlab("# children in poverty")
-
-plot_smooths(
-  model=gam_mr,
-  series=true_children_total
-) + formatting +
-  xlab("# children")
-
-plot_smooths(
-  model=gam_mr,
-  series=log(true_pop_total)
-) + formatting +
-  xlab("log population size")
-
-plot_smooths(
-  model=gam_mr,
-  series=hhi
-) + formatting +
-  xlab("Racial homogeneity (Herfindahl index over all race categories")
-  # geom_point(
-  #   data=df_abbrv,
-  #   aes(x=hhi, y=misalloc),
-  #   alpha=0.1
-  # ) +
-  # ylim(-200000, 50000)
+# plot_smooths(
+#   model=m,
+#   series=prop_white
+# ) + formatting +
+#   xlab("% white")
 ```
+
+### Inverse welfare
+```{r welfare-weights}
+# ordinal_logit = polr(
+#   misalloc ~ prop_white +
+#       true_children_total + 
+#       true_children_poverty +
+#       log(true_pop_total) +
+#       median_income_est +
+#       hhi +
+#       prop_hispanic,
+#       # language_other_than_english_language_spoken_at_home_pct +
+#       # foreign_born_place_of_birth_pct +
+#       # not_a_u_s_citizen_u_s_citizenship_status_pct +
+#       # renter_occupied_housing_tenure_pct +
+#       # average_household_size_of_renter_occupied_unit_housing_tenure_est +
+#   data=df_abbrv,
+#   Hess=TRUE
+# )
+```
+
 
 ## Traditional discrimination analysis
 ```{r diff}
