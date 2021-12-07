@@ -9,7 +9,7 @@ from tqdm.notebook import tqdm
 
 COLS_INDEX = ['State FIPS Code', 'District ID']
 COLS_GROUPBY = ['State FIPS Code', 'District ID', 'State Postal Code', 'Name']
-COLS_GRANT = ['basic', 'concentration', 'targeted']
+COLS_GRANT = ['basic', 'concentration', 'targeted', 'total']
 
 
 class DummyMechanism():
@@ -70,19 +70,20 @@ def collect_results(
 ):
     cols_keep = ["true_grant_{}".format(col) for col in COLS_GRANT] + \
                 ["est_grant_{}".format(col) for col in COLS_GRANT] + \
-                ["true_eligible_{}".format(col) for col in COLS_GRANT] + \
-                ["est_eligible_{}".format(col) for col in COLS_GRANT]
+                ["true_eligible_{}".format(col) for col in COLS_GRANT if col != 'total'] + \
+                ["est_eligible_{}".format(col) for col in COLS_GRANT if col != 'total']
     results = []
     for i in tqdm(range(num_runs)):
         allocations = funding(
-            SonnenbergAuthorizer, saipe, mech, sppe, verbose=False
+            SonnenbergAuthorizer, saipe, mech, sppe,
+            verbose=False, uncertainty=False, normalize=True
         )
         allocations = allocations.reset_index().set_index(COLS_GROUPBY)
         allocations = allocations[cols_keep]
         allocations['run'] = i
         results.append(allocations)
     results = pd.concat(results)
-    for col in COLS_GRANT:
+    for col in [c for c in COLS_GRANT if c != 'total']:
         results["diff_grant_{}".format(col)] = (
             results["est_grant_{}".format(col)].astype(float) -
             results["true_grant_{}".format(col)].astype(float)
