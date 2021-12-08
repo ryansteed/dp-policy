@@ -1,0 +1,23 @@
+---
+title: "Bootstrapping"
+author: "Ryan Steed"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r data}
+df = read.csv("results/bootstrap/results_gaussian_eps=0.01.csv")
+df
+```
+
+```{r clean}
+
+```
+

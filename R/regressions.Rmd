@@ -19,6 +19,9 @@ library(lmtest)
 library(mgcViz)
 library(tidymv)
 library(MASS)
+library(cowplot)
+library(grid)
+library(gridExtra)
 ```
 
 ```{r load}
@@ -217,16 +220,17 @@ ggplot(hist, aes(x=reorder(race, race_benefit_per_child), y=cuberoot(misalloc_pe
 ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child), y=race_benefit_per_child)) +
   geom_col() +
   coord_flip() +
-  ggtitle("Average Misallocation by Race") +
+  # ggtitle("Race-weighted misallocation") +
   xlab("Census Race Category") +
   ylab("Race-weighted misallocation (DP minus no DP) per child")
 
 ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child_eligible), y=race_benefit_per_child_eligible)) +
   geom_col() +
   coord_flip() +
-  ggtitle("Average Misallocation by Race - Eligible Children") +
+  # ggtitle("Average Misallocation by Race - Eligible Children") +
   xlab("Census Race Category") +
-  ylab("Race-weighted misallocation (DP minus no DP) per child (eligible)")
+  ylab("Race-weighted misallocation (DP minus no DP)\n per eligible child")
+ggsave("plots/misalloc_race.png", dpi=300, width=5, height=8)
 
 mean(comparison$misalloc / comparison$true_children_total)
 
@@ -498,32 +502,51 @@ m = gam_mr
 viz = getViz(m)
 ```
 ```{r gam_plots}
-formatting = list(
-  theme_minimal(),
-  ylab("Smoothed effect (in terms of $$ misallocated)")
-)
 
-for (v in list(
-  c(1, "% white-only"),
-  c(2, "Median income"),
-  c(3, "# children"),
-  c(4, "# children in poverty"),
-  c(5, "Log population"),
-  c(6, "Racial homogeneity (Herfindahl index)"),
-  c(7, "% hispanic"),
-  c(8, "% renter-occupied housing"),
-  c(9, "% average household size of renter-occupied housing")
-)) {
-  i = as.integer(v[1])
-  label = v[2]
-  plt = plot(viz, select=i) + formatting +
+plt = plot(viz, select=1:9, ask=FALSE)
+
+
+# print(summary(plt$plots[[1]]$ggObj))
+# ggsave("plots/test.png", plt$plots[[1]]$ggObj)
+
+# return()
+
+
+
+labels = c(
+  "% white-only",
+  "Median income",
+  "# children",
+  "# children in poverty",
+  "Log population",
+  "Racial homogeneity (HHI)",
+  "% hispanic",
+  "% renter-occupied housing",
+  "Average size of renter household"
+)
+plt = function(i) {
+  p = plot(sm(viz, i)) +
+    theme_minimal() +
+    # ylab("Smoothed effect (in terms of $$ misallocated)") +
     l_ciPoly() +
     l_fitLine() +
     geom_hline(yintercept = 0, linetype = 2) +
-    xlab(label) 
-  print(plt)
-  ggsave(sprintf("plots/%d.png", i), dpi=600)
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+    ) +
+    ggtitle(labels[i])
+  p$ggObj
 }
+
+cplt = cowplot::plot_grid(plotlist=map(1:9, plt), nrow=3)
+y.grob = textGrob(
+  "Smoothed effect (in terms of $$ misallocated)",
+  gp=gpar(fontface="bold"),
+  rot=90
+)
+plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+ggsave("plots/smooths.png", plot, width=12, height=6, dpi=300)
 
 check(viz)
 
