@@ -86,13 +86,13 @@ def titlei_funding(
 
 def titlei_grid(
     saipe, mech,
-    eps=list(np.logspace(-3, 1)) + [2.5], delta=[0.0],
+    eps=list(np.logspace(-3, 10, num=10)) + [2.52], delta=[0.0],
     trials=1,
     mech_kwargs={},
     auth=False,
     allocator_kwargs={},
     verbose=False,
-    print_results=True,
+    print_results=[2.52, 0.1],
     plot_results=True
 ):
     allocations = []
@@ -106,7 +106,7 @@ def titlei_grid(
                     saipe,
                     mech(e, d, **mech_kwargs),
                     get_sppe("../data/sppe18.xlsx"),
-                    verbose=verbose,
+                    verbose=False,  # too noisy for a grid search
                     uncertainty=False,
                     allocator_kwargs=allocator_kwargs,
                     normalize=(not auth)
@@ -121,58 +121,88 @@ def titlei_grid(
         eps, allocations = list(zip(*results.groupby("epsilon")))
         print(eps)
 
-        mse = []
-        for e, alloc in results.groupby("epsilon"):
-            for grant_type in ("basic", "concentration", "targeted", "total"):
-                error = alloc[f"true_grant_{grant_type}"] - alloc[f"est_grant_{grant_type}"]
-                error_prop = alloc[f"true_grant_{grant_type}"]/sum(alloc[f"true_grant_{grant_type}"])\
-                    - alloc[f"est_grant_{grant_type}"]/sum(alloc[f"est_grant_{grant_type}"])
-                if (e == 2.52) or (e == 0.1):
-                    print(f"## {grant_type} grants ##")
-                    print(f"RMSE at eps={e}:", np.sqrt(np.mean(error**2)))
-                    print(f"RMSE prop eps={e}:", sum(abs(error_prop)))
-                    print(f"Total misalloc at eps={e}:", sum(abs(error)))
-                    print("Total true alloc:", sum(alloc[f"true_grant_{grant_type}"]))
+        for prefix in ("dp", "dpest"):
+            mse = []
+            print("##", prefix)
+            for e, alloc in results.groupby("epsilon"):
+                for grant_type in ("basic", "concentration", "targeted", "total"):
+                    error = alloc[f"true_grant_{grant_type}"] - \
+                        alloc[f"{prefix}_grant_{grant_type}"]
+                    error_prop = \
+                        alloc[f"true_grant_{grant_type}"] / \
+                        sum(alloc[f"true_grant_{grant_type}"]) -\
+                        alloc[f"{prefix}_grant_{grant_type}"] / \
+                        sum(alloc[f"{prefix}_grant_{grant_type}"])
+                    if e in print_results:
+                        print(f"## {grant_type} grants ##")
+                        print(f"RMSE at eps={e}:", np.sqrt(np.mean(error**2)))
+                        print(f"RMSE prop eps={e}:", sum(abs(error_prop)))
+                        print(f"Total misalloc at eps={e}:", sum(abs(error)))
+                        print(
+                            "Total true alloc:",
+                            sum(alloc[f"true_grant_{grant_type}"])
+                        )
 
-                if grant_type == "total":
-                    mse.append(np.sqrt(sum(error**2)/alloc.shape[0]))
+                    if grant_type == "total":
+                        mse.append(np.sqrt(sum(error**2)/alloc.shape[0]))
 
-        if plot_results:
-            grant_type = "total"
-            plt.plot(eps, mse)
-            ax = plt.gca()
-            ax.set_xscale('log')
-            plt.xlabel("Epsilon")
-            plt.ylabel(f"{grant_type} grant RMSE, nationally")
-            plt.show()
+            if plot_results:
+                grant_type = "total"
+                plt.plot(eps, mse)
+                ax = plt.gca()
+                ax.set_xscale('log')
+                plt.xlabel("Epsilon")
+                plt.ylabel(f"{grant_type} grant RMSE, nationally")
+                plt.show()
 
-            for i in range(len(eps)):
-                e = eps[i]
-                alloc = allocations[i][allocations[i]["State Postal Code"] == "MI"]
-                alloc = alloc.sort_values(f"true_grant_{grant_type}")
-                plt.scatter(range(len(alloc)), alloc[f"est_grant_{grant_type}"]/sum(alloc[f"est_grant_{grant_type}"]), s=2, alpha=0.3, label=f"eps={e}")
-            plt.scatter(range(len(alloc)), alloc[f"true_grant_{grant_type}"]/sum(alloc[f"true_grant_{grant_type}"]), s=2, alpha=0.3, label="true")
-            ax = plt.gca()
-            ax.legend()
-            ax.axes.xaxis.set_ticks([])
-            ax.set_yscale('log')
-            plt.xlabel("District (sorted by true alloc)")
-            plt.ylabel("Allocation as % of total")
-            plt.title(f"{grant_type} grants for Michigan")
-            plt.show()
+                for i in range(len(eps)):
+                    e = eps[i]
+                    alloc = \
+                        allocations[i][allocations[i]["State Postal Code"] == "MI"]
+                    alloc = alloc.sort_values(f"true_grant_{grant_type}")
+                    plt.scatter(
+                        range(len(alloc)),
+                        alloc[f"{prefix}_grant_{grant_type}"] /
+                        alloc[f"{prefix}_grant_{grant_type}"].sum(),
+                        s=2, alpha=0.3, label=f"eps={e}"
+                    )
+                plt.scatter(
+                    range(len(alloc)),
+                    alloc[f"true_grant_{grant_type}"] /
+                    sum(alloc[f"true_grant_{grant_type}"]),
+                    s=2, alpha=0.3, label="true"
+                )
+                ax = plt.gca()
+                ax.legend()
+                ax.axes.xaxis.set_ticks([])
+                ax.set_yscale('log')
+                plt.xlabel("District (sorted by true alloc)")
+                plt.ylabel("Allocation as % of total")
+                plt.title(f"{grant_type} grants for Michigan")
+                plt.show()
 
-            for i in range(len(eps)):
-                e = eps[i]
-                alloc = allocations[i][allocations[i]["State Postal Code"] == "MI"]
-                alloc['err_prop'] = (alloc[f"est_grant_{grant_type}"]/sum(alloc[f"est_grant_{grant_type}"]) - alloc[f"true_grant_{grant_type}"]/sum(alloc[f"true_grant_{grant_type}"])) * 1e6
-                plt.scatter(alloc[f"true_grant_{grant_type}"]/sum(alloc[f"true_grant_{grant_type}"]), alloc.err_prop, s=3, alpha=0.4, label=f"eps={e}")
-            ax = plt.gca()
-            ax.legend()
-            ax.set_xscale('log')
-            ax.set_yscale('log')
-            plt.xlabel("True allocation as % of total")
-            plt.ylabel("Misallocation per million as % of total")
-            plt.title(f"{grant_type} grants for Michigan")
-            plt.show()
+                for i in range(len(eps)):
+                    e = eps[i]
+                    alloc = \
+                        allocations[i][allocations[i]["State Postal Code"] == "MI"]
+                    alloc['err_prop'] = (
+                        alloc[f"{prefix}_grant_{grant_type}"] /
+                        sum(alloc[f"{prefix}_grant_{grant_type}"]) -
+                        alloc[f"true_grant_{grant_type}"] /
+                        sum(alloc[f"true_grant_{grant_type}"])
+                    ) * 1e6
+                    plt.scatter(
+                        alloc[f"true_grant_{grant_type}"] /
+                        sum(alloc[f"true_grant_{grant_type}"]),
+                        alloc.err_prop, s=3, alpha=0.4, label=f"eps={e}"
+                    )
+                ax = plt.gca()
+                ax.legend()
+                ax.set_xscale('log')
+                ax.set_yscale('log')
+                plt.xlabel("True allocation as % of total")
+                plt.ylabel("Misallocation per million as % of total")
+                plt.title(f"{grant_type} grants for Michigan")
+                plt.show()
 
-        return results
+    return results

@@ -137,7 +137,7 @@ class AbowdAllocator(Allocator):
         self.estimates["adj_sppe"] = adj_sppe
         for prefix in self.prefixes:
             self.estimates[f"{prefix}_grant_total"] = \
-                adj_sppe * self.estimates["{prefix}_children_eligible"]
+                adj_sppe * self.estimates[f"{prefix}_children_eligible"]
 
         return self.estimates
 
