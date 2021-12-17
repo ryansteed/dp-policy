@@ -75,26 +75,35 @@ class Authorizer(Allocator):
             self._normalize(uncertainty=uncertainty)
         return self.estimates
 
-    def _normalize(self, uncertainty=False):
+    def _normalize(self, hold_harmless=None, uncertainty=False):
         # get this year's budget
         true_allocs = get_allocation_data("../data/titlei-allocations_20")
         actual_budget = true_allocs["HistAlloc"].sum()
+        if hold_harmless is None:
+            hold_harmless = np.zeros(len(self.estimates)).astype(bool)
         for prefix in self.prefixes:
+            # available budget is the full budget minus hold harmless districts
+            remaining_budget = actual_budget - self.estimates.loc[
+                hold_harmless, f"{prefix}_grant_total"
+            ].sum()
             current_budget = self.estimates[f"{prefix}_grant_total"].sum()
+            # only rescale total amount - other amounts remain the same
+            # (rescaling happens after amounts are summed)
             authorization_amounts = [
-                f"{prefix}_grant_{kind}"
-                for kind in self.grant_types()
+                f"{prefix}_grant_total"
             ]
             if uncertainty:
                 authorization_amounts += [
-                    f"{prefix}_grant_{kind}_{suffix}"
-                    for kind in (t for t in self.grant_types() if t != "total")
+                    f"{prefix}_grant_total_{suffix}"
                     for suffix in ("ci_upper", "ci_lower")
                 ] + [f"{prefix}_ci_upper", f"{prefix}_ci_lower"]
-            self.estimates.loc[:, authorization_amounts] = \
-                self.estimates[authorization_amounts].apply(
+            # redistribute the remaining budget between non-harmless districts
+            self.estimates.loc[~hold_harmless, authorization_amounts] = \
+                self.estimates.loc[
+                    ~hold_harmless, authorization_amounts
+                ].apply(
                     lambda x: Authorizer.normalize_to_budget(
-                        x, actual_budget
+                        x, remaining_budget
                     )
                 )
             if self.verbose:
@@ -454,7 +463,6 @@ class SonnenbergAuthorizer(Authorizer):
         return results
 
     def _hold_harmless(self):
-        print("Holding harmless")
         # load last year's allocs - watch out for endogeneity
         # get this year's budget
         true_allocs = get_allocation_data(
@@ -467,8 +475,32 @@ class SonnenbergAuthorizer(Authorizer):
             true_allocs["alloc_2019"]
         )
         for prefix in self.prefixes:
-            for grant_type in ["basic", "concentration", "targeted"]:
-                
-        # limit losses to 15%
+            i = 0
+            hist_harmless = np.zeros(len(self.estimates)).astype(bool)
+            while SonnenbergAuthorizer._excessive_loss(
+                self.estimates[f"{prefix}_grant_total"],
+                self.estimates["alloc_2019"]
+            ).any():
+                hold_harmless = SonnenbergAuthorizer._excessive_loss(
+                    self.estimates[f"{prefix}_grant_total"],
+                    self.estimates["alloc_2019"]
+                )
+                hist_harmless = hold_harmless | hist_harmless
+                i += 1
+                if (i > 10):
+                    print(
+                        f"[WARN]: {hold_harmless.sum()} SDs not held harmless."
+                        "Could not converge after 100 iterations."
+                    )
+                # print(i)
+                # print("# hold harmless:", hold_harmless.sum())
+                # print(self.estimates.index[hold_harmless].values[:2])
+                # limit losses to 15%
+                self.estimates.loc[hold_harmless, f"{prefix}_grant_total"] = \
+                    self.estimates["alloc_2019"] * 0.85
+                # renormalize and try again
+                self._normalize(hold_harmless=hist_harmless)
 
-        raise NotImplementedError
+    @staticmethod
+    def _excessive_loss(this_year, last_year):
+        return this_year < 0.85 * last_year
