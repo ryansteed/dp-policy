@@ -107,7 +107,7 @@ def median_cv(total_pop):
     return 0.15
 
 
-def get_allocation_data(dir: str):
+def get_allocation_data(dir: str, header=1):
     """Fetch true Title I allocations.
 
     Args:
@@ -117,7 +117,7 @@ def get_allocation_data(dir: str):
     for f in os.listdir(dir):
         state = pd.read_excel(
             os.path.join(dir, f),
-            header=1,
+            header=header,
             names=["LEAID", "District", "HistAlloc"],
             usecols=[0, 1, 2],
             skipfooter=7,
@@ -126,6 +126,7 @@ def get_allocation_data(dir: str):
         state["state"] = f
         data.append(state)
     df = pd.concat(data)
+    print(df.LEAID[df.LEAID.astype(str).str.contains("EA ID")])
     df["District ID"], df["State FIPS Code"] = \
         split_leaids(df.LEAID)
     return df.set_index(["State FIPS Code", "District ID"])

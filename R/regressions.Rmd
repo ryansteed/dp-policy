@@ -25,7 +25,8 @@ library(gridExtra)
 ```
 
 ```{r load}
-raw = read.csv("results/discrimination.csv")
+# raw = read.csv("results/discrimination.csv")
+raw = read.csv("results/discrimination_laplace_eps=2.52.csv")
 ```
 ```{r income}
 # mask = raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est == '250,000+'
@@ -51,8 +52,7 @@ df = df %>%
     not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
     average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
     median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
-    misalloc_per_child = misalloc / true_children_total,
-    hhi = 
+    misalloc_per_child = misalloc / true_children_total
   )
 ```
 
@@ -63,7 +63,7 @@ grouped = df %>%
   summarise(misalloc = mean(misalloc)) %>%
   ungroup() %>%
   left_join(
-    df %>% select(
+    df %>% dplyr::select(
       state_fips_code, 
       district_id, 
       nonwhite_children,
@@ -100,8 +100,8 @@ grouped
 
 ```{r race}
 # kind = "hispanic"
-# kind = "race_aggregate"
-kind = "race"
+kind = "race_aggregate"
+# kind = "race"
 # kind = "intersectional"
 
 # misalloc per non-white student
@@ -119,7 +119,7 @@ comparison = grouped
 
 if (kind == "hispanic") {
   comparison = comparison %>%
-    select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
+    dplyr::select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
 } else if (kind == "race_aggregate") {
   comparison = comparison %>%
     mutate(
@@ -135,17 +135,17 @@ if (kind == "hispanic") {
       some_other_race_agg_race_pct = some_other_race_race_pct,
       two_or_more_races_agg_race_pct = two_or_more_races_race_pct
     ) %>%
-    select(ends_with("agg_race_pct") | !ends_with("race_pct"))
+    dplyr::select(ends_with("agg_race_pct") | !ends_with("race_pct"))
 } else {
   comparison = comparison %>%
-    select(!ends_with("hispanic_or_latino_and_race_pct")) %>%
-    select(
+    dplyr::select(!ends_with("hispanic_or_latino_and_race_pct")) %>%
+    dplyr::select(
       !asian_race_pct
     )
 }
 
 remainder = comparison %>%
-  select(ends_with("race_pct")) %>%
+  dplyr::select(ends_with("race_pct")) %>%
   mutate(sum = rowSums(across(everything())))
 
 # per the census, should add to 100 - https://www.census.gov/quickfacts/fact/note/US/RHI625219
@@ -194,7 +194,7 @@ comparison_mean = comparison_all %>%
   )
 
 hist = comparison_all %>%
-  select(children_of_race, race, misalloc_per_child, race_benefit_per_child) %>%
+  dplyr::select(children_of_race, race, misalloc_per_child, race_benefit_per_child) %>%
   uncount(children_of_race)
 
 grid = ggplot(

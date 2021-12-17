@@ -11,16 +11,15 @@ class Mechanism:
     a class for the different privacy mechanisms we might employ to compute
     poverty estimates
     """
-    def __init__(self, epsilon, delta, sensitivity=2.0):
-        self.epsilon = epsilon
-        self.delta = delta
+    def __init__(
+        self, sensitivity=2.0, round=False, clip=True
+    ):
         self.sensitivity = sensitivity
-        # for advanced composition
-        self.accountant = BudgetAccountant(delta=self.delta)
-        self.accountant.set_default()
+        self.round = round
+        self.clip = clip
 
     def poverty_estimates(
-        self
+        self, pop_total, children_total, children_poverty
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Returns dataframe for children in poverty, children total, and total
@@ -28,46 +27,51 @@ class Mechanism:
         """
         raise NotImplementedError
 
+    def post_processing(self, count):
+        if self.round:
+            count = np.round(count)
+        if self.clip:
+            count = np.clip(count, 0, None)
+        return count
+
 
 class GroundTruth(Mechanism):
-    """
-    example mech that just returns the ground truth SAIPE estimates
-    """
-    def __init__(self, saipe):
-        self.saipe = saipe
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def poverty_estimates(self):
-        return (self.saipe[key] for key in [
-            "Estimated Total Population",
-            "Estimated Population 5-17",
-            "Estimated number of relevant children 5 to 17 years old"
-            " in poverty who are related to the householder"
-        ])
+    def poverty_estimates(
+        self, pop_total, children_total, children_poverty
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        return pop_total, children_total, children_poverty
+
+
+class DummyMechanism():
+    def randomise(self, x):
+        return x
 
 
 class DiffPriv(Mechanism):
-    def __init__(self, saipe, epsilon, delta, round=False, clip=True, **kwargs):
-        super().__init__(epsilon, delta, **kwargs)
-        self.saipe = saipe
+    def __init__(
+        self, epsilon, delta, *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.epsilon = epsilon
+        self.delta = delta
         self.mechanism = None
-        self.round = round
-        self.clip = clip
+        # for advanced composition
+        self.accountant = BudgetAccountant(delta=self.delta)
+        self.accountant.set_default()
 
     def poverty_estimates(
-        self
+        self, pop_total, children_total, children_poverty
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
         if self.mechanism is None:
             raise NotImplementedError
 
-        pop_total = self.saipe["Estimated Total Population"]\
-            .apply(self.mechanism.randomise)
-        children_total = self.saipe["Estimated Population 5-17"]\
-            .apply(self.mechanism.randomise)
-        children_poverty = self.saipe[
-            "Estimated number of relevant children 5 to 17 years old"
-            " in poverty who are related to the householder"
-        ].apply(self.mechanism.randomise)
+        pop_total = pop_total.apply(self.mechanism.randomise)
+        children_total = children_total.apply(self.mechanism.randomise)
+        children_poverty = children_poverty.apply(self.mechanism.randomise)
 
         # print("After estimation, privacy acc:", self.accountant.total())
         # no negative values, please
@@ -75,13 +79,6 @@ class DiffPriv(Mechanism):
         return self.post_processing(pop_total),\
             self.post_processing(children_total),\
             self.post_processing(children_poverty)
-
-    def post_processing(self, count):
-        if self.round:
-            count = np.round(count)
-        if self.clip:
-            count = np.clip(count, 0, None)
-        return count
 
 
 class Laplace(DiffPriv):
@@ -106,3 +103,20 @@ class Gaussian(DiffPriv):
             delta=self.delta,
             sensitivity=self.sensitivity
         )
+
+
+class Sampled(Mechanism):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def poverty_estimates(
+        self, pop_total, children_total, children_poverty, cv
+    ):
+        children_poverty = np.clip(
+            np.random.normal(children_poverty, children_poverty * cv),
+            0,
+            None
+        )
+        return self.post_processing(pop_total), \
+            self.post_processing(children_total), \
+            self.post_processing(children_poverty)

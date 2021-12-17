@@ -5,28 +5,50 @@ import itertools
 
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
 from dp_policy.titlei.utils import get_sppe
+from dp_policy.titlei.mechanisms import Sampled
 
 
 def titlei_data(
-    saipe, mechanism, sppe, *mech_args,
-    verbose=True, **mech_kwargs
+    saipe, mechanism, sppe, verbose=True
 ):
+    # ground truth - assume SAIPE 2019 is ground truth
     grants = saipe.rename(columns={
         "Estimated Total Population": "true_pop_total",
         "Estimated Population 5-17": "true_children_total",
         "Estimated number of relevant children 5 to 17 years old in poverty"
         " who are related to the householder": "true_children_poverty"
     })
-    pop_total, children_total, children_poverty = mechanism.poverty_estimates(
-        *mech_args, **mech_kwargs
+    # sample from the sampling distribution
+    mechanism_sampling = Sampled()
+    grants["est_pop_total"], \
+        grants["est_children_total"], \
+        grants["est_children_poverty"] = mechanism_sampling.poverty_estimates(
+            grants["true_pop_total"].values,
+            grants["true_children_total"].values,
+            grants["true_children_poverty"].values,
+            grants["cv"].values
+        )
+    # get the noise-infused estimates - after sampling
+    grants["dpest_pop_total"], \
+        grants["dpest_children_total"], \
+        grants["dpest_children_poverty"] = mechanism.poverty_estimates(
+        grants["est_pop_total"].values,
+        grants["est_children_total"].values,
+        grants["est_children_poverty"].values
     )
-    grants["est_pop_total"] = pop_total
-    grants["est_children_total"] = children_total
-    grants["est_children_poverty"] = children_poverty
+    # back out the noise-infused estimates - before sampling
+    # doing it this way because we want to see the same noise draws added to
+    # both bases - not a separate draw here
+    for var in ("pop_total", "children_total", "children_poverty"):
+        grants[f"dp_{var}"] = \
+            grants[f"dpest_{var}"] - grants[f"est_{var}"] \
+            + grants[f"true_{var}"]
 
     # BIG ASSUMPTION, TODO: revisit later
-    grants["true_children_eligible"] = grants.true_children_poverty
-    grants["est_children_eligible"] = grants.est_children_poverty
+    for prefix in ("true", "est", "dp", "dpest"):
+        grants[f"{prefix}_children_eligible"] = grants[
+            f"{prefix}_children_poverty"
+        ]
 
     # join in SPPE
     grants = grants.reset_index()\
@@ -47,7 +69,7 @@ def titlei_data(
 
 def titlei_funding(
     allocator, saipe, mechanism, sppe,
-    uncertainty=True, normalize=True, allocator_kwargs={},
+    uncertainty=False, normalize=True, allocator_kwargs={},
     **grants_kwargs
 ):
     """
@@ -76,7 +98,7 @@ def titlei_grid(
                 allocations.append(titlei_funding(
                     SonnenbergAuthorizer,
                     saipe,
-                    mech(saipe, e, d, **mech_kwargs),
+                    mech(e, d, **mech_kwargs),
                     get_sppe("../data/sppe18.xlsx"),
                     verbose=False,
                     uncertainty=False,

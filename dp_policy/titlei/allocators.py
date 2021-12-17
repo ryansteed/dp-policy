@@ -9,19 +9,21 @@ class Allocator:
     def __init__(
         self,
         estimates,
+        prefixes=("true", "est", "dp", "dpest"),
         congress_cap=0.4,
         adj_sppe_bounds=[0.32, 0.48],
         adj_sppe_bounds_efig=[0.34, 0.46],
         verbose=False
     ):
         self.estimates = estimates
+        self.prefixes = prefixes
         self.congress_cap = congress_cap
         self.adj_sppe_bounds = adj_sppe_bounds
         self.adj_sppe_bounds_efig = adj_sppe_bounds_efig
         self.verbose = verbose
 
     def allocations(
-        self, uncertainty=True, **uncertainty_params
+        self, uncertainty=False, **uncertainty_params
     ) -> pd.DataFrame:
         self.calc_auth()
         if uncertainty:
@@ -66,18 +68,18 @@ class Authorizer(Allocator):
         raise NotImplementedError
 
     def allocations(
-        self, uncertainty=True, normalize=True, **uncertainty_params
+        self, uncertainty=False, normalize=True, **uncertainty_params
     ) -> pd.DataFrame:
         super().allocations(uncertainty=uncertainty, **uncertainty_params)
         if normalize:
             self._normalize(uncertainty=uncertainty)
         return self.estimates
 
-    def _normalize(self, uncertainty=True):
+    def _normalize(self, uncertainty=False):
         # get this year's budget
         true_allocs = get_allocation_data("../data/titlei-allocations_20")
         actual_budget = true_allocs["HistAlloc"].sum()
-        for prefix in ("true", "est"):
+        for prefix in self.prefixes:
             current_budget = self.estimates[f"{prefix}_grant_total"].sum()
             authorization_amounts = [
                 f"{prefix}_grant_{kind}"
@@ -124,12 +126,13 @@ class AbowdAllocator(Allocator):
         adj_sppe, _ = self.adj_sppe()
 
         self.estimates["adj_sppe"] = adj_sppe
-        self.estimates["true_grant_total"] = \
-            adj_sppe * self.estimates.true_children_eligible
-        self.estimates["est_grant_total"] = \
-            adj_sppe * self.estimates.est_children_eligible
+        for prefix in self.prefixes:
+            self.estimates[f"{prefix}_grant_total"] = \
+                adj_sppe * self.estimates["{prefix}_children_eligible"]
+
         return self.estimates
 
+    # DEPRECATED
     def calc_uncertainty(self, alpha=0.05):
         z = stats.norm.ppf(1-alpha/2)
         self.estimates["true_se"] = \
@@ -147,7 +150,7 @@ class SonnenbergAuthorizer(Authorizer):
         self.hold_harmless = hold_harmless
 
     def allocations(
-        self, uncertainty=True, **uncertainty_params
+        self, uncertainty=False, **uncertainty_params
     ) -> pd.DataFrame:
         super().allocations(uncertainty=uncertainty, **uncertainty_params)
         if self.hold_harmless:
@@ -166,9 +169,8 @@ class SonnenbergAuthorizer(Authorizer):
         # calc adj. SPPE
         adj_sppe, adj_sppe_efig = self.adj_sppe()
 
-        prefixes = ("true", "est")
         # calculate grant amounts for true/randomized values
-        for prefix in prefixes:
+        for prefix in self.prefixes:
             # BASIC GRANTS
             # authorization calculation
             self.estimates[f"{prefix}_grant_basic"] = \
@@ -242,8 +244,11 @@ class SonnenbergAuthorizer(Authorizer):
                     f"{prefix}_grant_{grant_type}"
                 ] = 0.0
 
-        self.estimates = SonnenbergAuthorizer.calc_total(self.estimates)
+        self.estimates = SonnenbergAuthorizer.calc_total(
+            self.estimates, self.prefixes
+        )
 
+    # DEPRECATED
     def calc_uncertainty(self, alpha=0.05, e_nu=0.0):
         """Calculate uncertainty in Sonnenberg authorizations.
 
@@ -262,6 +267,7 @@ class SonnenbergAuthorizer(Authorizer):
 
         return self.estimates.true_ci_lower, self.estimates.true_ci_upper
 
+    # DEPRECATED
     def calc_bounds(self, prefix, cv_z, e_nu):
         mu_hat, _, nu_hat, k = self.get_vars(prefix)
 
@@ -379,6 +385,7 @@ class SonnenbergAuthorizer(Authorizer):
             #     import pdb
             #     pdb.set_trace()
 
+    # DEPRECATED
     def calc_prob_eligibility(self):
         mu_hat, sigma_mu, nu_hat, _ = self.get_vars("true")
 
@@ -398,6 +405,7 @@ class SonnenbergAuthorizer(Authorizer):
                 nu_hat, mu_hat, sigma_mu, 10, 0.05
             )
 
+    # DEPRECATED
     @staticmethod
     def _calc_prob(
         nu_hat, mu_hat, sigma_mu,
@@ -437,31 +445,30 @@ class SonnenbergAuthorizer(Authorizer):
         return mu_hat, sigma_mu, nu_hat, k
 
     @staticmethod
-    def calc_total(results):
-        results["true_grant_total"] = \
-            results["true_grant_basic"] + \
-            results["true_grant_concentration"] + \
-            results["true_grant_targeted"]
-        results["est_grant_total"] = \
-            results["est_grant_basic"] + \
-            results["est_grant_concentration"] + \
-            results["est_grant_targeted"]
+    def calc_total(results, prefixes):
+        for prefix in prefixes:
+            results[f"{prefix}_grant_total"] = \
+                results[f"{prefix}_grant_basic"] + \
+                results[f"{prefix}_grant_concentration"] + \
+                results[f"{prefix}_grant_targeted"]
         return results
 
     def _hold_harmless(self):
         print("Holding harmless")
         # load last year's allocs - watch out for endogeneity
         # get this year's budget
-        true_allocs = get_allocation_data("../data/titlei-allocations_19")\
-            .rename(columns={
-                'HistAlloc': 'alloc_2019'
-            })
+        true_allocs = get_allocation_data(
+            "../data/titlei-allocations_19",
+            header=2
+        ).rename(columns={
+            'HistAlloc': 'alloc_2019'
+        })
         self.estimates = self.estimates.join(
             true_allocs["alloc_2019"]
         )
-        for prefix in ("true", "est"):
+        for prefix in self.prefixes:
             for grant_type in ["basic", "concentration", "targeted"]:
-                pass
+                
         # limit losses to 15%
 
         raise NotImplementedError
