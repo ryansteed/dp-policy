@@ -1,4 +1,10 @@
 import pandas as pd
+from tqdm import tqdm
+import numpy as np
+import itertools
+
+from dp_policy.titlei.allocators import SonnenbergAuthorizer
+from dp_policy.titlei.utils import get_sppe
 
 
 def titlei_data(
@@ -53,3 +59,31 @@ def titlei_funding(
         **allocator_kwargs
     )
     return alloc.allocations(uncertainty=uncertainty, normalize=normalize)
+
+
+def titlei_grid(
+    saipe, mech,
+    eps=list(np.logspace(-3, 1)) + [2.5], delta=[0.0],
+    trials=1,
+    mech_kwargs={},
+    auth=False
+):
+    allocations = []
+    print(f"{len(eps)*len(delta)*trials} iters:")
+    for trial in tqdm(range(trials), desc='trial'):
+        for d in tqdm(delta, desc='delta', leave=False):
+            for e in tqdm(eps, desc='eps', leave=False):
+                allocations.append(titlei_funding(
+                    SonnenbergAuthorizer,
+                    saipe,
+                    mech(saipe, e, d, **mech_kwargs),
+                    get_sppe("../data/sppe18.xlsx"),
+                    verbose=False,
+                    uncertainty=False,
+                    normalize=(not auth)
+                ))
+    return pd.concat(
+        allocations, axis=0,
+        keys=itertools.product(range(trials), delta, eps),
+        names=["trial", "delta", "epsilon"] + list(allocations[-1].index.names)
+    )

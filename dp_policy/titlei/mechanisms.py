@@ -88,8 +88,6 @@ class Laplace(DiffPriv):
     """
     Following Abowd & Schmutte (2019), return $\\hat{E}_l = E_l + e_l$,
     where $e_l \\sim Laplace(1/\\epsilon)$.
-
-    Recall that the sensitivity of the counts here is simply 1.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
