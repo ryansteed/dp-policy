@@ -125,7 +125,9 @@ def titlei_grid(
             mse = []
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
-                for grant_type in ("basic", "concentration", "targeted", "total"):
+                for grant_type in (
+                    "basic", "concentration", "targeted", "total"
+                ):
                     error = alloc[f"true_grant_{grant_type}"] - \
                         alloc[f"{prefix}_grant_{grant_type}"]
                     error_prop = \
@@ -157,8 +159,9 @@ def titlei_grid(
 
                 for i in range(len(eps)):
                     e = eps[i]
-                    alloc = \
-                        allocations[i][allocations[i]["State Postal Code"] == "MI"]
+                    alloc = allocations[i][allocations[i][
+                        "State Postal Code"] == "MI"
+                    ]
                     alloc = alloc.sort_values(f"true_grant_{grant_type}")
                     plt.scatter(
                         range(len(alloc)),
@@ -183,8 +186,9 @@ def titlei_grid(
 
                 for i in range(len(eps)):
                     e = eps[i]
-                    alloc = \
-                        allocations[i][allocations[i]["State Postal Code"] == "MI"]
+                    alloc = allocations[i][allocations[i][
+                        "State Postal Code"] == "MI"
+                    ]
                     alloc['err_prop'] = (
                         alloc[f"{prefix}_grant_{grant_type}"] /
                         sum(alloc[f"{prefix}_grant_{grant_type}"]) -

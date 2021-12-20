@@ -26,7 +26,7 @@ library(gridExtra)
 
 ```{r load}
 # raw = read.csv("results/discrimination.csv")
-raw = read.csv("results/discrimination_laplace_eps=2.52.csv")
+raw = read.csv("results/discrimination_laplace_eps=0.1.csv")
 ```
 ```{r income}
 # mask = raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est == '250,000+'
@@ -48,11 +48,12 @@ df = df %>%
     prop_white = white_race_pct / 100,
     nonwhite_children = true_children_total * prop_white,
     # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
-    misalloc = est_grant_total - true_grant_total,
+    misalloc_dp = dp_grant_total - true_grant_total,
+    misalloc_sampling = est_grant_total - true_grant_total,
+    misalloc_dp_sampling = dpest_grant_total - true_grant_total,
     not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
     average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
-    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
-    misalloc_per_child = misalloc / true_children_total
+    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est)))
   )
 ```
 
@@ -60,7 +61,11 @@ df = df %>%
 ```{r average_across_trials}
 grouped = df %>% 
   group_by(state_fips_code, district_id) %>%
-  summarise(misalloc = mean(misalloc)) %>%
+  summarise(
+    misalloc_dp = mean(misalloc_dp),
+    misalloc_sampling = mean(misalloc_sampling),
+    misalloc_dp_sampling = mean(misalloc_dp_sampling)
+  ) %>%
   ungroup() %>%
   left_join(
     df %>% dplyr::select(
@@ -87,7 +92,9 @@ grouped = df %>%
     by=c("state_fips_code", "district_id")
   ) %>%
   mutate(
-    misalloc_per_child = misalloc / true_children_total
+    misalloc_dp_per_child = misalloc_dp / true_children_total,
+    misalloc_sampling_per_child = misalloc_sampling / true_children_total,
+    misalloc_dp_sampling_per_child = misalloc_dp_sampling / true_children_total
   )
 grouped
 
@@ -98,22 +105,26 @@ grouped
 #   )
 ```
 
+```{r results}
+# misalloc per non-white student
+ggplot(grouped, aes(x=prop_white)) +
+  geom_point(aes(y=misalloc_sampling_per_child, color="Sampling"), alpha=0.5) +
+  geom_point(aes(y=misalloc_dp_sampling_per_child, color="DP + Sampling"), alpha=0.5)
+# average misalloc per student
+ggplot(grouped) +
+  geom_histogram(aes(x=misalloc_sampling_per_child, fill="Sampling"), bins=100, alpha=0.5) +
+  geom_histogram(aes(x=misalloc_dp_sampling_per_child, fill="DP + Sampling"), bins=100, alpha=0.5)
+# average misalloc per eligible student
+ggplot(grouped) +
+  geom_histogram(aes(x=misalloc_sampling / true_children_eligible, fill="Sampling"), bins=100, alpha=0.5) +
+  geom_histogram(aes(x=misalloc_dp_sampling / true_children_eligible, fill="DP + Sampling"), bins=100, alpha=0.5)
+```
+
 ```{r race}
 # kind = "hispanic"
 kind = "race_aggregate"
 # kind = "race"
 # kind = "intersectional"
-
-# misalloc per non-white student
-ggplot(grouped, aes(x=prop_white, y=misalloc_per_child)) +
-  geom_point()
-
-# average misalloc per student
-ggplot(grouped, aes(x=misalloc / true_children_total)) +
-  geom_histogram(bins=100)
-# average misalloc per eligible student
-ggplot(df, aes(x=misalloc / true_children_total)) +
-  geom_histogram(bins=100)
 
 comparison = grouped
 
@@ -162,78 +173,118 @@ comparison = comparison %>%
   ) %>%
   mutate(
     race=str_replace(race, "_race_pct", "")
-  ) %>%
-  # assuming misallocation is spread evenly across children,
-  mutate(benefit = misalloc_per_child / race_pct * 100)
-
-comparison$race %>% unique()
-
-# return()
+  ) 
 
 cuberoot = function(x) {
   return(sign(x)*abs(x)^(1/3))
 }
+```
+
+```{r race-plots}
+comparison = comparison %>%
+  # assuming misallocation is spread evenly across children,
+  mutate(
+    benefit_dp = misalloc_dp_per_child / race_pct * 100,
+    benefit_sampling = misalloc_sampling_per_child / race_pct * 100,
+    benefit_dp_sampling = misalloc_dp_sampling_per_child / race_pct * 100
+  )
 
 comparison_all = comparison %>%
   group_by(race) %>%
   mutate(
-    race_avg_benefit = mean(benefit),
-    race_med_benefit = median(benefit),
     children_of_race = round(true_children_total * race_pct / 100),
     children_of_race_eligible = round(true_children_eligible * race_pct / 100),
-    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race),
-    race_benefit_per_child_eligible = sum(misalloc * race_pct / 100) / sum(children_of_race_eligible)
+    dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
+    dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100) / sum(children_of_race_eligible),
+    sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race),
+    sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race_eligible),
+    dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race),
+    dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
   )  %>%
   ungroup()
 
 comparison_mean = comparison_all %>%
   group_by(race) %>%
   summarise(
-    race_benefit_per_child = sum(misalloc * race_pct / 100) / sum(children_of_race),
-    race_benefit_per_child_eligible = sum(misalloc * race_pct / 100) / sum(children_of_race_eligible)
+    dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
+    dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100) / sum(children_of_race_eligible),
+    sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race),
+    sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race_eligible),
+    dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race),
+    dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
   )
 
 hist = comparison_all %>%
-  dplyr::select(children_of_race, race, misalloc_per_child, race_benefit_per_child) %>%
+  dplyr::select(
+    children_of_race, 
+    race, 
+    misalloc_dp_per_child, 
+    dp_benefit_per_child,
+    misalloc_sampling_per_child, 
+    sampling_benefit_per_child,
+    misalloc_dp_sampling_per_child, 
+    dp_sampling_benefit_per_child
+  ) %>%
   uncount(children_of_race)
 
-grid = ggplot(
+plot = list(
+  ggtitle("Misallocation by Race"),
+  ylab("# children")
+)
+ggplot(
   hist,
-  aes(x=cuberoot(misalloc_per_child))
-) +
+  aes(x=cuberoot(misalloc_dp_per_child))
+) + geom_vline(mapping=aes(xintercept=cuberoot(dp_benefit_per_child)), data=comparison_mean, color="red") +
   geom_histogram(bins=100) +
   facet_wrap(~race, ncol=3, scales="free_y") +
-  ggtitle("Misallocation by Race") +
-  xlab("Misallocation (DP minus no-DP) per child") +
-  ylab("# children")
-grid +
-  geom_vline(mapping=aes(xintercept=cuberoot(race_benefit_per_child)), data=comparison_mean, color="red")
+  xlab("Misallocation per child (DP minus no DP, no sampling)")
+# ggplot(
+#   hist,
+#   aes(x=cuberoot(misalloc_sampling_per_child))
+# ) + geom_vline(mapping=aes(xintercept=cuberoot(sampling_benefit_per_child)), data=comparison_mean, color="red") +
+#   xlab("Misallocation per child (Sampling minus true)")
+# ggplot(
+#   hist,
+#   aes(x=cuberoot(misalloc_dp_sampling_per_child))
+# ) + geom_vline(mapping=aes(xintercept=cuberoot(dp_sampling_benefit_per_child)), data=comparison_mean, color="red") +
+#   xlab("Misallocation per child (DP + sampling minus true)")
 
-
-ggplot(hist, aes(x=reorder(race, race_benefit_per_child), y=cuberoot(misalloc_per_child))) +
-  geom_boxplot(notch=TRUE) +
-  coord_flip() +
-  ggtitle("Misallocation by Race") +
-  ylab("Misallocation (DP minus no-DP) per child (cube root)") +
+plot = list(
+  geom_boxplot(notch=TRUE),
+  coord_flip(),
+  ggtitle("Misallocation by Race"),
   xlab("Census Race Category")
+)
+ggplot(hist, aes(x=reorder(race, dp_benefit_per_child), y=cuberoot(misalloc_dp_per_child))) +
+  plot +
+  ylab("Misallocation (DP minus true) per child (cube root)")
+ggplot(hist, aes(x=reorder(race, sampling_benefit_per_child), y=cuberoot(misalloc_sampling_per_child))) +
+  plot +
+  ylab("Misallocation (sampling minus true) per child (cube root)")
+ggplot(hist, aes(x=reorder(race, dp_sampling_benefit_per_child), y=cuberoot(misalloc_dp_sampling_per_child))) +
+  plot +
+  ylab("Misallocation (DP + sampling minus true) per child (cube root)")
 
-ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child), y=race_benefit_per_child)) +
-  geom_col() +
-  coord_flip() +
-  # ggtitle("Race-weighted misallocation") +
-  xlab("Census Race Category") +
-  ylab("Race-weighted misallocation (DP minus no DP) per child")
-
-ggplot(comparison_all, aes(x=reorder(race, race_benefit_per_child_eligible), y=race_benefit_per_child_eligible)) +
-  geom_col() +
-  coord_flip() +
-  # ggtitle("Average Misallocation by Race - Eligible Children") +
-  xlab("Census Race Category") +
-  ylab("Race-weighted misallocation (DP minus no DP)\n per eligible child")
-ggsave("plots/misalloc_race.png", dpi=300, width=5, height=8)
+plot = list(
+  geom_col(),
+  coord_flip(),
+  # ggtitle("Race-weighted misallocation"),
+  xlab("Census Race Category")
+)
+ggplot(comparison_all, aes(x=reorder(race, dp_benefit_per_child_eligible), y=dp_benefit_per_child_eligible)) +
+  plot +
+  ylab("Race-weighted misallocation per eligible child (DP minus true)")
+ggsave("plots/misalloc_race_dp.png", dpi=300, width=5, height=8)
+ggplot(comparison_all, aes(x=reorder(race, sampling_benefit_per_child_eligible), y=sampling_benefit_per_child_eligible)) +
+  plot +
+  ylab("Race-weighted misallocation (sampling minus true) per eligible child")
+ggsave("plots/misalloc_race_sampling.png", dpi=300, width=5, height=8)
+ggplot(comparison_all, aes(x=reorder(race, dp_sampling_benefit_per_child_eligible), y=dp_sampling_benefit_per_child_eligible)) +
+  plot +
+  ylab("Race-weighted misallocation (DP + sampling minus no true) per eligible child")
+ggsave("plots/misalloc_race_dp_sampling.png", dpi=300, width=5, height=8)
 
 mean(comparison$misalloc / comparison$true_children_total)
-
 
 # misalloc_nonwhite = df$misalloc * (1-df$prop_white)
 # misalloc_white = df$misalloc * df$prop_white
