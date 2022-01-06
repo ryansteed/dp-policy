@@ -122,8 +122,8 @@ ggplot(grouped) +
 
 ```{r race}
 # kind = "hispanic"
-# kind = "race_aggregate"
-kind = "race"
+kind = "race_aggregate"
+# kind = "race"
 # kind = "intersectional"
 
 comparison = grouped
@@ -333,7 +333,7 @@ ggplot(sorted, aes(x=race, y=sampling_benefit_per_child_eligible)) +
   theme(
     legend.position = "top"
   )
-ggsave("plots/misalloc_race.png", dpi=300, width=5, height=8)
+ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=8)
 
 # ggplot(comparison_all, aes(x=reorder(race, dp_sampling_benefit_per_child_eligible), y=dp_sampling_benefit_per_child_eligible)) +
 #   plot +
@@ -533,6 +533,14 @@ anova(lm_fit, gam_fit)
 ```
 
 ```{r gam-mr}
+sampling_only = TRUE
+
+if (sampling_only) {
+  df_abbrv = df_abbrv %>% mutate(misalloc = misalloc_sampling)
+} else {
+  df_abbrv = df_abbrv %>% mutate(misalloc = misalloc_dp_sampling)
+}
+
 lm_mr = lm(
   misalloc_sampling~ prop_white +
       true_children_total + 
@@ -651,7 +659,11 @@ y.grob = textGrob(
   rot=90
 )
 plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
-ggsave("plots/smooths.png", plot, width=12, height=6, dpi=300)
+if (sampling_only) {
+  ggsave("plots/smooths_sampling.png", plot, width=12, height=6, dpi=300)
+} else {
+  ggsave("plots/smooths_dp_sampling.png", plot, width=12, height=6, dpi=300)
+}
 
 check(viz)
 
