@@ -174,7 +174,6 @@ comparison = comparison %>%
   mutate(
     race=recode_factor(
       str_replace(race, "_race_pct", ""),
-      `sioux_tribal_grouping` = "Sioux Tribal Grouping",
       `sioux_tribal_grouping` = "Sioux tribal grouping",
       `chippewa_tribal_grouping` = "Chippewa tribal grouping",
       `navajo_tribal_grouping` = "Navajo tribal grouping",
@@ -192,7 +191,14 @@ comparison = comparison %>%
       `korean` = "Korean",
       `vietnamese` = "Vietnamese",
       `asian_indian` = "Asian Indian",
-      `chinese` = "Chinese"
+      `chinese` = "Chinese",
+      `tribal_grouping_agg` = "Tribal grouping",
+      `pacific_islander_agg` = "Pacific islander",
+      `white_agg` = "White",
+      `two_or_more_races_agg` = "Two or more races",
+      `black_or_african_american_agg` = "Black or African American",
+      `some_other_race_agg` = "Some other race",
+      `asian_agg` = "Asian"
     )
   )
 
@@ -333,7 +339,7 @@ ggplot(sorted, aes(x=race, y=sampling_benefit_per_child_eligible)) +
   theme(
     legend.position = "top"
   )
-ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=8)
+ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 
 # ggplot(comparison_all, aes(x=reorder(race, dp_sampling_benefit_per_child_eligible), y=dp_sampling_benefit_per_child_eligible)) +
 #   plot +
@@ -533,7 +539,7 @@ anova(lm_fit, gam_fit)
 ```
 
 ```{r gam-mr}
-sampling_only = TRUE
+sampling_only = T
 
 if (sampling_only) {
   df_abbrv = df_abbrv %>% mutate(misalloc = misalloc_sampling)
