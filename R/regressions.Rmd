@@ -122,8 +122,8 @@ ggplot(grouped) +
 
 ```{r race}
 # kind = "hispanic"
-kind = "race_aggregate"
-# kind = "race"
+# kind = "race_aggregate"
+kind = "race"
 # kind = "intersectional"
 
 comparison = grouped
@@ -316,19 +316,19 @@ plot = list(
 # ggsave("plots/misalloc_race_dp.png", dpi=300, width=5, height=8)
 
 sorted = comparison_all %>%
-  mutate(race = fct_reorder(race, sampling_benefit_per_child_eligible)) %>%
-  distinct(race, sampling_benefit_per_child_eligible, dp_sampling_benefit_per_child_eligible)
+  mutate(race = fct_reorder(race, sampling_benefit_per_child)) %>%
+  distinct(race, sampling_benefit_per_child, dp_sampling_benefit_per_child)
 print(sorted)
-ggplot(sorted, aes(x=race, y=sampling_benefit_per_child_eligible)) +
+ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
   plot +
   ylab("Race-weighted misallocation per eligible child") +
   geom_crossbar(
     data=sorted, 
     aes(
       x=race, 
-      y=dp_sampling_benefit_per_child_eligible, 
-      ymin=dp_sampling_benefit_per_child_eligible, 
-      ymax=dp_sampling_benefit_per_child_eligible,
+      y=dp_sampling_benefit_per_child, 
+      ymin=dp_sampling_benefit_per_child, 
+      ymax=dp_sampling_benefit_per_child,
       fill="Sampling + DP"
     ), 
     color="red"
@@ -449,7 +449,7 @@ sq_share = function(x) {
   return((x/100)^2)
 }
 
-df_abbrv = df %>%
+df_reg = df %>%
   mutate(
     hhi = sq_share(white_race_pct) +
       sq_share(black_or_african_american_race_pct) +
@@ -474,10 +474,10 @@ df_abbrv = df %>%
   dplyr::select(
     -ends_with("hispanic_or_latino_and_race_pct"),
     -asian_race_pct
-  ) %>%
-  filter(trial < 10)
+  )
+  # filter(trial < 10)
 
-nrow(df_abbrv)
+nrow(df_reg)
 ```
 ### OLS
 
@@ -539,16 +539,16 @@ anova(lm_fit, gam_fit)
 ```
 
 ```{r gam-mr}
-sampling_only = T
+sampling_only = F
 
 if (sampling_only) {
-  df_abbrv = df_abbrv %>% mutate(misalloc = misalloc_sampling)
+  df_abbrv = df_reg %>% mutate(misalloc = misalloc_sampling)
 } else {
-  df_abbrv = df_abbrv %>% mutate(misalloc = misalloc_dp_sampling)
+  df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
 }
 
 lm_mr = lm(
-  misalloc_sampling~ prop_white +
+  misalloc ~ prop_white +
       true_children_total + 
       true_children_poverty +
       log(true_pop_total) +
@@ -563,7 +563,7 @@ lm_mr = lm(
 summary(lm_mr)
 
 gam_mr = gam(
-  misalloc_sampling ~ s(prop_white, bs="tp") +
+  misalloc ~ s(prop_white, bs="tp") +
       s(median_income_est, bs="tp") +
       s(true_children_total, bs="tp") +
       s(true_children_poverty, bs="tp") +
