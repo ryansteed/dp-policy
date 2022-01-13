@@ -121,24 +121,26 @@ def titlei_grid(
         eps, allocations = list(zip(*results.groupby("epsilon")))
         print(eps)
 
-        for prefix in ("dp", "dpest"):
+        for prefix in ("est", "dpest"):
             mse = []
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
                 for grant_type in (
                     "basic", "concentration", "targeted", "total"
                 ):
-                    error = alloc[f"true_grant_{grant_type}"] - \
-                        alloc[f"{prefix}_grant_{grant_type}"]
-                    error_prop = \
-                        alloc[f"true_grant_{grant_type}"] / \
-                        sum(alloc[f"true_grant_{grant_type}"]) -\
-                        alloc[f"{prefix}_grant_{grant_type}"] / \
-                        sum(alloc[f"{prefix}_grant_{grant_type}"])
+                    error = alloc[f"{prefix}_grant_{grant_type}"] \
+                        - alloc[f"true_grant_{grant_type}"]
                     if e in print_results:
                         print(f"## {grant_type} grants ##")
+                        print(f"# districts: {len(error)}")
+                        print("Average true alloc: {}".format(
+                            alloc[f"true_grant_{grant_type}"].mean()
+                        ))
+                        print("Max true alloc: {}".format(
+                            alloc[f"true_grant_{grant_type}"].max()
+                        ))
+                        print(f"Max error: {np.abs(error).max()}")
                         print(f"RMSE at eps={e}:", np.sqrt(np.mean(error**2)))
-                        print(f"RMSE prop eps={e}:", sum(abs(error_prop)))
                         print(f"Total misalloc at eps={e}:", sum(abs(error)))
                         print(
                             "Total true alloc:",
