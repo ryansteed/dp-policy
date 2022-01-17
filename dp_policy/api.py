@@ -142,6 +142,9 @@ def titlei_grid(
                         print(f"Max error: {np.abs(error).max()}")
                         print(f"RMSE at eps={e}:", np.sqrt(np.mean(error**2)))
                         print(f"Total misalloc at eps={e}:", sum(abs(error)))
+                        print(f"# small districts: {len(alloc[alloc['true_pop_total'] < 20000])}")
+                        print(f"Misalloc to large districts: {np.abs(error[alloc['true_pop_total'] >= 20000]).sum()}")
+                        print(f"Misalloc to small districts: {np.abs(error[alloc['true_pop_total'] < 20000]).sum()}")
                         print(
                             "Total true alloc:",
                             sum(alloc[f"true_grant_{grant_type}"])
