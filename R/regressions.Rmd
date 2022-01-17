@@ -53,7 +53,8 @@ df = df %>%
     misalloc_dp_sampling = dpest_grant_total - true_grant_total,
     not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
     average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
-    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est)))
+    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
+    pop_density = true_pop_total / aland
   )
 ```
 
@@ -87,7 +88,8 @@ grouped = df %>%
       renter_occupied_housing_tenure_pct,
       renter_occupied_housing_tenure_est,
       average_household_size_of_renter_occupied_unit_housing_tenure_est,
-      median_income_est
+      median_income_est,
+      pop_density
     ) %>% unique(),
     by=c("state_fips_code", "district_id")
   ) %>%
@@ -121,9 +123,9 @@ ggplot(grouped) +
 ```
 
 ```{r race}
-# kind = "hispanic"
+kind = "hispanic"
 # kind = "race_aggregate"
-kind = "race"
+# kind = "race"
 # kind = "intersectional"
 
 comparison = grouped
@@ -198,7 +200,12 @@ comparison = comparison %>%
       `two_or_more_races_agg` = "Two or more races",
       `black_or_african_american_agg` = "Black or African American",
       `some_other_race_agg` = "Some other race",
-      `asian_agg` = "Asian"
+      `asian_agg` = "Asian",
+      `not_hispanic_or_latino_hispanic_or_latino_and` = "Not Hispanic or Latino",
+      `mexican_hispanic_or_latino_and` = "Mexican",
+      `puerto_rican_hispanic_or_latino_and` = "Puerto Rican",
+      `other_hispanic_or_latino_hispanic_or_latino_and` = "Other Hispanic or Latino",
+      `cuban_hispanic_or_latino_and` = "Cuban"
     )
   )
 
@@ -451,6 +458,17 @@ sq_share = function(x) {
 
 df_reg = df %>%
   mutate(
+    white_agg_race_pct = white_race_pct,
+    black_or_african_american_agg_race_pct = black_or_african_american_race_pct,
+    tribal_grouping_agg_race_pct = rowSums(across(ends_with("tribal_grouping_race_pct"))),
+    asian_agg_race_pct = asian_race_pct,
+    pacific_islander_agg_race_pct = rowSums(across(c(
+      "native_hawaiian_race_pct",
+      "guamanian_or_chamorro_race_pct",
+      "samoan_race_pct"
+    ))),
+    some_other_race_agg_race_pct = some_other_race_race_pct,
+    two_or_more_races_agg_race_pct = two_or_more_races_race_pct,
     hhi = sq_share(white_race_pct) +
       sq_share(black_or_african_american_race_pct) +
       sq_share(cherokee_tribal_grouping_race_pct) +
@@ -548,35 +566,43 @@ if (sampling_only) {
 }
 
 lm_mr = lm(
-  misalloc ~ prop_white +
-      true_children_total + 
-      true_children_poverty +
-      log(true_pop_total) +
+  misalloc ~ log(pop_density) +
       median_income_est +
       hhi +
+      prop_white +
       prop_hispanic +
+      renter_occupied_housing_tenure_pct,
+      # true_children_total + 
+      # true_children_poverty +
       # not_a_u_s_citizen_u_s_citizenship_status_pct +
-      renter_occupied_housing_tenure_pct +
-      average_household_size_of_renter_occupied_unit_housing_tenure_est,
+      # average_household_size_of_renter_occupied_unit_housing_tenure_est,
   data=df_abbrv
 )
 summary(lm_mr)
 
 gam_mr = gam(
-  misalloc ~ s(prop_white, bs="tp") +
-      s(median_income_est, bs="tp") +
-      s(true_children_total, bs="tp") +
-      s(true_children_poverty, bs="tp") +
-      s(log(true_pop_total), bs="tp") +
+  misalloc ~
+      # s(true_children_total, bs="tp") +
+      # s(true_children_poverty, bs="tp") +
+      s(log(pop_density), bs="tp") +
       s(hhi, bs="tp") +
+      s(prop_white, bs="tp") +
       s(prop_hispanic, bs="tp") +
+      s(median_income_est, bs="tp") +
       # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
-      s(renter_occupied_housing_tenure_pct, bs="tp") +
-      s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
+      s(renter_occupied_housing_tenure_pct, bs="tp"),
+      # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
   method="REML", # restricted MLE
   data=df_abbrv
 )
 summary(gam_mr)
+
+if (sampling_only) {
+  gam_sampling = gam_mr
+} else {
+  gam_dp = gam_mr
+}
+
 
 anova(lm_mr, gam_mr)
 ```
@@ -617,48 +643,69 @@ anova(gam_mr, gam_mr_interact)
 
 # vis.gam(gam_mr, view=c("prop_white", "median_income_est"))
 
-m = gam_mr
+if (sampling_only) {
+  m = gam_sampling
+} else {
+  m = gam_dp
+}
+
 viz = getViz(m)
 ```
 ```{r gam_plots}
-
-plt = plot(viz, select=1:9, ask=FALSE)
-
-
+labels = c(
+  # "# children",
+  # "# children in poverty",
+  "Log population density",
+  "Racial homogeneity (HHI)",
+  "% white-only",
+  "% hispanic",
+  "Median income",
+  "% renter-occupied housing"
+  # "Average size of renter household"
+)
+lower_limits = c(
+  -1500000, # pop density
+  -70000, # HHI
+  -50000, # white-only
+  -30000, # hispanic
+  -50000, # income
+  -200000 # housing
+)
+upper_limits = c(
+  300000, # pop density
+  30000, # HHI
+  60000, # white-only
+  80000, # hispanic
+  100000, # income
+  400000 # housing
+)
+plt = plot(viz, select=1:length(labels), ask=FALSE)
 # print(summary(plt$plots[[1]]$ggObj))
-# ggsave("plots/test.png", plt$plots[[1]]$ggObj)
+# ggsave("plots/test.png", plt$plots[[1]]$ggObj)2
 
 # return()
 
-
-
-labels = c(
-  "% white-only",
-  "Median income",
-  "# children",
-  "# children in poverty",
-  "Log population",
-  "Racial homogeneity (HHI)",
-  "% hispanic",
-  "% renter-occupied housing",
-  "Average size of renter household"
-)
 plt = function(i) {
   p = plot(sm(viz, i)) +
     theme_minimal() +
     # ylab("Smoothed effect (in terms of $$ misallocated)") +
-    l_ciPoly() +
+    l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+    # l_dens("joint") +
+    l_ciPoly(alpha=0.5, size=0.25) +
+    l_ciLine() +
     l_fitLine() +
+    # l_rug(alpha=0.5) +
     geom_hline(yintercept = 0, linetype = 2) +
     theme(
       axis.title.x = element_blank(),
       axis.title.y = element_blank()
     ) +
+    coord_cartesian(ylim=c(lower_limits[i], upper_limits[i])) +
     ggtitle(labels[i])
   p$ggObj
 }
 
-cplt = cowplot::plot_grid(plotlist=map(1:9, plt), nrow=3)
+cplt = cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
 y.grob = textGrob(
   "Smoothed effect (in terms of $$ misallocated)",
   gp=gpar(fontface="bold"),
