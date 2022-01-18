@@ -99,8 +99,8 @@ def titlei_grid(
     if verbose:
         print(f"{len(eps)*len(delta)*trials} iters:")
     for trial in tqdm(range(trials), desc='trial', disable=(not verbose)):
-        for d in tqdm(delta, desc='delta', leave=False, disable=(not verbose)):
-            for e in tqdm(eps, desc='eps', leave=False, disable=(not verbose)):
+        for d in tqdm(delta, desc='delta', leave=False, disable=True):
+            for e in tqdm(eps, desc='eps', leave=False, disable=True):
                 allocations.append(titlei_funding(
                     SonnenbergAuthorizer,
                     saipe,
