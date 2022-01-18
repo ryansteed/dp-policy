@@ -1,5 +1,5 @@
 import pandas as pd
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -91,9 +91,9 @@ def titlei_grid(
     mech_kwargs={},
     auth=False,
     allocator_kwargs={},
-    verbose=False,
+    verbose=True,
     print_results=[2.52, 0.1],
-    plot_results=True
+    plot_results=False
 ):
     allocations = []
     if verbose:
@@ -142,9 +142,22 @@ def titlei_grid(
                         print(f"Max error: {np.abs(error).max()}")
                         print(f"RMSE at eps={e}:", np.sqrt(np.mean(error**2)))
                         print(f"Total misalloc at eps={e}:", sum(abs(error)))
-                        print(f"# small districts: {len(alloc[alloc['true_pop_total'] < 20000])}")
-                        print(f"Misalloc to large districts: {np.abs(error[alloc['true_pop_total'] >= 20000]).sum()}")
-                        print(f"Misalloc to small districts: {np.abs(error[alloc['true_pop_total'] < 20000]).sum()}")
+                        print(
+                            "# small districts:",
+                            len(alloc[alloc['true_pop_total'] < 20000])
+                        )
+                        print(
+                            "Misalloc to large districts:",
+                            np.abs(
+                                error[alloc['true_pop_total'] >= 20000]
+                            ).sum()
+                        )
+                        print(
+                            "Misalloc to small districts:",
+                            np.abs(
+                                error[alloc['true_pop_total'] < 20000]
+                            ).sum()
+                        )
                         print(
                             "Total true alloc:",
                             sum(alloc[f"true_grant_{grant_type}"])

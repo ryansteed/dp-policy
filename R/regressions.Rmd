@@ -666,7 +666,7 @@ labels = c(
 lower_limits = c(
   -1500000, # pop density
   -70000, # HHI
-  -50000, # white-only
+  -120000, # white-only
   -30000, # hispanic
   -50000, # income
   -200000 # housing
@@ -674,7 +674,7 @@ lower_limits = c(
 upper_limits = c(
   300000, # pop density
   30000, # HHI
-  60000, # white-only
+  70000, # white-only
   80000, # hispanic
   100000, # income
   400000 # housing
