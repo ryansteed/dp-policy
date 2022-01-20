@@ -108,6 +108,11 @@ class Gaussian(DiffPriv):
 class Sampled(Mechanism):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # these are fixed, because sampling error
+        # is theoretically immutable by algo means.
+        # reported estimates are non-negative integers.
+        self.clip = True
+        self.round = True
 
     def poverty_estimates(
         self, pop_total, children_total, children_poverty, cv

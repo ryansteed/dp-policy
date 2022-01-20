@@ -10,7 +10,7 @@ from dp_policy.titlei.mechanisms import Sampled
 
 
 def titlei_data(
-    saipe, mechanism, sppe, verbose=True
+    saipe, mechanism, sppe, sampling_kwargs={}, verbose=True
 ):
     # ground truth - assume SAIPE 2019 is ground truth
     grants = saipe.rename(columns={
@@ -20,7 +20,7 @@ def titlei_data(
         " who are related to the householder": "true_children_poverty"
     })
     # sample from the sampling distribution
-    mechanism_sampling = Sampled()
+    mechanism_sampling = Sampled(**sampling_kwargs)
     grants["est_pop_total"], \
         grants["est_children_total"], \
         grants["est_children_poverty"] = mechanism_sampling.poverty_estimates(
@@ -70,7 +70,8 @@ def titlei_data(
 
 def titlei_funding(
     allocator, saipe, mechanism, sppe,
-    uncertainty=False, normalize=True, allocator_kwargs={},
+    uncertainty=False, normalize=True,
+    allocator_kwargs={}, sampling_kwargs={},
     **grants_kwargs
 ):
     """
@@ -78,7 +79,11 @@ def titlei_funding(
     true/randomized grant amounts.
     """
     alloc = allocator(
-        titlei_data(saipe, mechanism, sppe, **grants_kwargs),
+        titlei_data(
+            saipe, mechanism, sppe,
+            sampling_kwargs=sampling_kwargs,
+            **grants_kwargs
+        ),
         **allocator_kwargs
     )
     return alloc.allocations(uncertainty=uncertainty, normalize=normalize)
