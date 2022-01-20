@@ -120,18 +120,30 @@ def geo_join(results):
             )
         )
     results["became_eligible"] = \
-        (results.est_eligible_targeted & ~results.true_eligible_targeted) \
-        | (results.est_eligible_basic & ~results.true_eligible_basic) \
+        (
+            results.est_eligible_targeted.astype(bool)
+            & ~results.true_eligible_targeted.astype(bool)
+        ) \
         | (
-            results.est_eligible_concentration
-            & ~results.true_eligible_concentration
+            results.est_eligible_basic.astype(bool)
+            & ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.est_eligible_concentration.astype(bool)
+            & ~results.true_eligible_concentration.astype(bool)
         )
     results["became_ineligible"] = \
-        (~results.est_eligible_targeted & results.true_eligible_targeted) \
-        | (~results.est_eligible_basic & results.true_eligible_basic) \
+        (
+            ~results.est_eligible_targeted.astype(bool)
+            & results.true_eligible_targeted.astype(bool)
+        ) \
         | (
-            ~results.est_eligible_concentration
-            & results.true_eligible_concentration
+            ~results.est_eligible_basic.astype(bool)
+            & results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.est_eligible_concentration.astype(bool)
+            & results.true_eligible_concentration.astype(bool)
         )
     results["switched_eligibility_dp"] = \
         ~(
@@ -143,18 +155,30 @@ def geo_join(results):
             )
         )
     results["became_eligible_dp"] = \
-        (results.dpest_eligible_targeted & ~results.true_eligible_targeted)\
-        | (results.dpest_eligible_basic & ~results.true_eligible_basic)\
+        (
+            results.dpest_eligible_targeted.astype(bool)
+            & ~results.true_eligible_targeted.astype(bool)
+        ) \
         | (
-            results.dpest_eligible_concentration
-            & ~results.true_eligible_concentration
+            results.dpest_eligible_basic.astype(bool)
+            & ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.dpest_eligible_concentration.astype(bool)
+            & ~results.true_eligible_concentration.astype(bool)
         )
     results["became_ineligible_dp"] = \
-        (~results.dpest_eligible_targeted & results.true_eligible_targeted)\
-        | (~results.dpest_eligible_basic & results.true_eligible_basic)\
+        (
+            ~results.dpest_eligible_targeted.astype(bool)
+            & results.true_eligible_targeted.astype(bool)
+        ) \
         | (
-            ~results.dpest_eligible_concentration
-            & results.true_eligible_concentration
+            ~results.dpest_eligible_basic.astype(bool)
+            & results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.dpest_eligible_concentration.astype(bool)
+            & results.true_eligible_concentration.astype(bool)
         )
     results["dp_marginal"] = \
         results["error_dp_per_child"] - results["error_per_child"]
@@ -219,23 +243,27 @@ def plot_treatments(
             df[f"dpest_grant_{grant}"] - df[f"true_grant_{grant}"]
         df.loc[:, "misalloc_sq"] = np.power(df["misalloc"], 2)
         if grant == "total":
+            # try:
+            #     print(~df.true_eligible_basic.astype(bool))
+            # except:
+            #     print("Failed", df.true_eligible_basic)
             df["lost_eligibility"] = \
                 (
-                    df["dpest_eligible_basic"] &
-                    ~df["true_eligible_basic"]
+                    df["dpest_eligible_basic"].astype(bool) &
+                    ~df["true_eligible_basic"].astype(bool)
                 ) |\
                 (
-                    df["dpest_eligible_concentration"] &
-                    ~df["true_eligible_concentration"]
+                    df["dpest_eligible_concentration"].astype(bool) &
+                    ~df["true_eligible_concentration"].astype(bool)
                 ) |\
                 (
-                    df["dpest_eligible_targeted"] &
-                    ~df["true_eligible_targeted"]
+                    df["dpest_eligible_targeted"].astype(bool) &
+                    ~df["true_eligible_targeted"].astype(bool)
                 )
         else:
             df["lost_eligibility"] = \
-                ~df["dpest_eligible_{}".format(grant)] \
-                & df["true_eligible_{}".format(grant)]
+                ~df["dpest_eligible_{}".format(grant)].astype(bool) \
+                & df["true_eligible_{}".format(grant)].astype(bool)
         plot_kwargs.update({
             'label': treatment,
             'color': palette[i]
@@ -336,6 +364,19 @@ def compare_treatments(
             "Avg prop. districts erroneously ineligible:",
             df.became_ineligible.mean()
         )
+
+    # compare bias
+    plot_treatments(
+        treatments,
+        lambda df: np.sqrt(df.groupby('trial')["misalloc"].mean()),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        # filename=f"rmse_{grant}",
+        epsilon=epsilon,
+        delta=delta,
+        xlab=f"Mean misalloc (per trial)",
+        mean_line=True
+    )
 
     # compare RMSE - mean and hist
     plot_treatments(

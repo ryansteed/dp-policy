@@ -1,4 +1,7 @@
+from tkinter import E
 import pandas as pd
+import numpy as np
+import scipy.stats as stats
 import re
 import os
 from math import floor, ceil
@@ -222,3 +225,96 @@ def get_acs_unified(verbose=False):
         .join(social, lsuffix="_demo", rsuffix="_social", how="inner")\
         .join(economic, rsuffix="_econ", how="inner")\
         .join(housing, rsuffix="_housing", how="inner")
+
+
+class Thresholder:
+    def process(self, estimates, thresholds):
+        raise NotImplementedError
+
+    def set_cv(self, cv):
+        self.cv = cv
+
+
+class HardThresholder(Thresholder):
+    def process(
+        self,
+        y,
+        in_poverty, total, thresholds,
+        comb_func=np.logical_and.reduce
+    ):
+        masks = [t.get_mask(in_poverty, total) for t in thresholds]
+        eligible = comb_func(masks)
+        y.loc[~eligible, :] = 0.0
+        return y, eligible
+
+
+class MOEThresholder(HardThresholder):
+    def __init__(self, alpha=0.1) -> None:
+        super().__init__()
+        self.alpha = 0.1
+
+    def process(
+        self,
+        y, in_poverty, total, thresholds,
+        **kwargs
+    ):
+        if self.cv is None:
+            raise ValueError(
+                "Missing coefficients of varation - call set_cv first."
+            )
+        thresholds_moe = [
+            MOEThreshold._from_base(
+                threshold,
+                self.cv,
+                self.alpha
+            )
+            for threshold in thresholds
+        ]
+        return super().process(
+            y, in_poverty, total,
+            thresholds_moe,
+            **kwargs
+        )
+
+
+class Threshold:
+    def __init__(self, t, prop=False) -> None:
+        self.t = t
+        self.prop_threshold = prop
+
+    def get_mask(self, eligible, total):
+        return Threshold._mask(
+            self.t,
+            eligible, total,
+            self.prop_threshold
+        )
+
+    @staticmethod
+    def _mask(t, eligible, total, prop):
+        if prop:
+            return eligible / total > t
+        else:
+            return eligible > t
+
+
+class MOEThreshold(Threshold):
+    def __init__(self, cv, alpha, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.cv = cv
+        self.alpha = alpha
+
+    def get_mask(self, eligible, total):
+        t = self.t * (1 - self.cv * stats.norm.ppf(1 - self.alpha / 2))
+        return Threshold._mask(
+            t,
+            eligible, total,
+            self.prop_threshold
+        )
+
+    @staticmethod
+    def _from_base(base, *init_args):
+        return MOEThreshold(
+            *init_args,
+            base.t,
+            prop=base.prop_threshold,
+        )
