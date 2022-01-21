@@ -5,67 +5,8 @@ import itertools
 import matplotlib.pyplot as plt
 
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
-from dp_policy.titlei.utils import get_sppe
-from dp_policy.titlei.mechanisms import Sampled
-
-
-def titlei_data(
-    saipe, mechanism, sppe, sampling_kwargs={}, verbose=True
-):
-    # ground truth - assume SAIPE 2019 is ground truth
-    grants = saipe.rename(columns={
-        "Estimated Total Population": "true_pop_total",
-        "Estimated Population 5-17": "true_children_total",
-        "Estimated number of relevant children 5 to 17 years old in poverty"
-        " who are related to the householder": "true_children_poverty"
-    })
-    # sample from the sampling distribution
-    mechanism_sampling = Sampled(**sampling_kwargs)
-    grants["est_pop_total"], \
-        grants["est_children_total"], \
-        grants["est_children_poverty"] = mechanism_sampling.poverty_estimates(
-            grants["true_pop_total"],
-            grants["true_children_total"],
-            grants["true_children_poverty"],
-            grants["cv"]
-        )
-    # get the noise-infused estimates - after sampling
-    grants["dpest_pop_total"], \
-        grants["dpest_children_total"], \
-        grants["dpest_children_poverty"] = mechanism.poverty_estimates(
-        grants["est_pop_total"],
-        grants["est_children_total"],
-        grants["est_children_poverty"]
-    )
-    # back out the noise-infused estimates - before sampling
-    # doing it this way because we want to see the same noise draws added to
-    # both bases - not a separate draw here
-    for var in ("pop_total", "children_total", "children_poverty"):
-        grants[f"dp_{var}"] = \
-            grants[f"dpest_{var}"] - grants[f"est_{var}"] \
-            + grants[f"true_{var}"]
-
-    # BIG ASSUMPTION, TODO: revisit later
-    for prefix in ("true", "est", "dp", "dpest"):
-        grants[f"{prefix}_children_eligible"] = grants[
-            f"{prefix}_children_poverty"
-        ]
-
-    # join in SPPE
-    grants = grants.reset_index()\
-        .merge(sppe, left_on="State Postal Code", right_on="abbrv")\
-        .drop(columns=['abbrv', 'state']).rename(columns={'ppe': 'sppe'})\
-        .set_index(["State FIPS Code", "District ID"])
-
-    if verbose:
-        print(
-            "[WARN] Dropping districts with missing SPPE data:",
-            grants[grants.sppe.isna()]['Name'].values
-        )
-    grants = grants.dropna(subset=["sppe"])
-    grants.sppe = grants.sppe.astype(float)
-
-    return grants
+from dp_policy.titlei.thresholders import PastThresholder
+from dp_policy.titlei.utils import get_sppe, data
 
 
 def titlei_funding(
@@ -79,7 +20,7 @@ def titlei_funding(
     true/randomized grant amounts.
     """
     alloc = allocator(
-        titlei_data(
+        data(
             saipe, mechanism, sppe,
             sampling_kwargs=sampling_kwargs,
             **grants_kwargs
@@ -101,19 +42,31 @@ def titlei_grid(
     plot_results=False
 ):
     allocations = []
+
+    thresholder = allocator_kwargs.get('thresholder')
     if verbose:
         print(f"{len(eps)*len(delta)*trials} iters:")
     for trial in tqdm(range(trials), desc='trial', disable=(not verbose)):
         for d in tqdm(delta, desc='delta', leave=False, disable=True):
             for e in tqdm(eps, desc='eps', leave=False, disable=True):
+                mechanism = mech(e, d, **mech_kwargs)
+                sppe = get_sppe("../data/sppe18.xlsx")
+                if thresholder is not None and isinstance(
+                        thresholder, PastThresholder
+                ):
+                    thresholder.set_prior_estimates(
+                        mechanism,
+                        sppe,
+                        verbose=False
+                    )
                 allocations.append(titlei_funding(
                     SonnenbergAuthorizer,
                     saipe,
-                    mech(e, d, **mech_kwargs),
-                    get_sppe("../data/sppe18.xlsx"),
+                    mechanism,
+                    sppe,
+                    allocator_kwargs=allocator_kwargs,
                     verbose=False,  # too noisy for a grid search
                     uncertainty=False,
-                    allocator_kwargs=allocator_kwargs,
                     normalize=(not auth)
                 ))
     results = pd.concat(

@@ -354,11 +354,17 @@ def compare_treatments(
             np.sqrt(((df.dpest_grant_total - df.true_grant_total) ** 2).mean())
         )
         df["became_ineligible"] = \
-            (~df.dpest_eligible_targeted & df.true_eligible_targeted)\
-            | (~df.dpest_eligible_basic & df.true_eligible_basic)\
+            (
+                ~df.dpest_eligible_targeted.astype(bool)
+                & df.true_eligible_targeted.astype(bool)
+            )\
             | (
-                ~df.dpest_eligible_concentration
-                & df.true_eligible_concentration
+                ~df.dpest_eligible_basic.astype(bool)
+                & df.true_eligible_basic.astype(bool)
+            )\
+            | (
+                ~df.dpest_eligible_concentration.astype(bool)
+                & df.true_eligible_concentration.astype(bool)
             )
         print(
             "Avg prop. districts erroneously ineligible:",

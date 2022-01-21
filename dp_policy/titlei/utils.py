@@ -1,10 +1,9 @@
-from tkinter import E
 import pandas as pd
-import numpy as np
-import scipy.stats as stats
 import re
 import os
 from math import floor, ceil
+
+from dp_policy.titlei.mechanisms import Sampled
 
 
 def get_saipe(path):
@@ -17,10 +16,19 @@ def get_saipe(path):
     return saipe
 
 
-def average_saipe(paths):
-    print(paths)
-    saipes = [get_saipe(path) for path in paths]
-    combined = pd.concat(saipes)
+def past_saipes(year_lag):
+    paths = [
+        "../data/saipe19.xls",
+        "../data/saipe18.xls",
+        "../data/saipe17.xls",
+        "../data/saipe16.xls",
+        "../data/saipe15.xls"
+    ]
+    return [get_saipe(path) for path in paths[:year_lag+1]]
+
+
+def average_saipe(year_lag):
+    combined = pd.concat(past_saipes(year_lag))
     combined = combined \
         .groupby(["State FIPS Code", "District ID"]) \
         .agg({
@@ -227,94 +235,60 @@ def get_acs_unified(verbose=False):
         .join(housing, rsuffix="_housing", how="inner")
 
 
-class Thresholder:
-    def process(self, estimates, thresholds):
-        raise NotImplementedError
+def data(
+    saipe, mechanism, sppe, sampling_kwargs={}, verbose=True
+):
+    # ground truth - assume SAIPE 2019 is ground truth
+    grants = saipe.rename(columns={
+        "Estimated Total Population": "true_pop_total",
+        "Estimated Population 5-17": "true_children_total",
+        "Estimated number of relevant children 5 to 17 years old in poverty"
+        " who are related to the householder": "true_children_poverty"
+    })
+    # sample from the sampling distribution
+    mechanism_sampling = Sampled(**sampling_kwargs)
+    grants["est_pop_total"], \
+        grants["est_children_total"], \
+        grants["est_children_poverty"] = mechanism_sampling.poverty_estimates(
+            grants["true_pop_total"],
+            grants["true_children_total"],
+            grants["true_children_poverty"],
+            grants["cv"]
+        )
+    # get the noise-infused estimates - after sampling
+    grants["dpest_pop_total"], \
+        grants["dpest_children_total"], \
+        grants["dpest_children_poverty"] = mechanism.poverty_estimates(
+        grants["est_pop_total"],
+        grants["est_children_total"],
+        grants["est_children_poverty"]
+    )
+    # back out the noise-infused estimates - before sampling
+    # doing it this way because we want to see the same noise draws added to
+    # both bases - not a separate draw here
+    for var in ("pop_total", "children_total", "children_poverty"):
+        grants[f"dp_{var}"] = \
+            grants[f"dpest_{var}"] - grants[f"est_{var}"] \
+            + grants[f"true_{var}"]
 
-    def set_cv(self, cv):
-        self.cv = cv
-
-
-class HardThresholder(Thresholder):
-    def process(
-        self,
-        y,
-        in_poverty, total, thresholds,
-        comb_func=np.logical_and.reduce
-    ):
-        masks = [t.get_mask(in_poverty, total) for t in thresholds]
-        eligible = comb_func(masks)
-        y.loc[~eligible, :] = 0.0
-        return y, eligible
-
-
-class MOEThresholder(HardThresholder):
-    def __init__(self, alpha=0.1) -> None:
-        super().__init__()
-        self.alpha = 0.1
-
-    def process(
-        self,
-        y, in_poverty, total, thresholds,
-        **kwargs
-    ):
-        if self.cv is None:
-            raise ValueError(
-                "Missing coefficients of varation - call set_cv first."
-            )
-        thresholds_moe = [
-            MOEThreshold._from_base(
-                threshold,
-                self.cv,
-                self.alpha
-            )
-            for threshold in thresholds
+    # BIG ASSUMPTION, TODO: revisit later
+    for prefix in ("true", "est", "dp", "dpest"):
+        grants[f"{prefix}_children_eligible"] = grants[
+            f"{prefix}_children_poverty"
         ]
-        return super().process(
-            y, in_poverty, total,
-            thresholds_moe,
-            **kwargs
+
+    # join in SPPE
+    grants = grants.reset_index()\
+        .merge(sppe, left_on="State Postal Code", right_on="abbrv")\
+        .drop(columns=['abbrv', 'state']).rename(columns={'ppe': 'sppe'})\
+        .set_index(["State FIPS Code", "District ID"])
+
+    if verbose:
+        print(
+            "[WARN] Dropping districts with missing SPPE data:",
+            grants[grants.sppe.isna()]['Name'].values
         )
+    grants = grants.dropna(subset=["sppe"])
+    grants.sppe = grants.sppe.astype(float)
 
-
-class Threshold:
-    def __init__(self, t, prop=False) -> None:
-        self.t = t
-        self.prop_threshold = prop
-
-    def get_mask(self, eligible, total):
-        return Threshold._mask(
-            self.t,
-            eligible, total,
-            self.prop_threshold
-        )
-
-    @staticmethod
-    def _mask(t, eligible, total, prop):
-        if prop:
-            return eligible / total > t
-        else:
-            return eligible > t
-
-
-class MOEThreshold(Threshold):
-    def __init__(self, cv, alpha, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.cv = cv
-        self.alpha = alpha
-
-    def get_mask(self, eligible, total):
-        t = self.t * (1 - self.cv * stats.norm.ppf(1 - self.alpha / 2))
-        return Threshold._mask(
-            t,
-            eligible, total,
-            self.prop_threshold
-        )
-
-    @staticmethod
-    def _from_base(base, *init_args):
-        return MOEThreshold(
-            *init_args,
-            base.t,
-            prop=base.prop_threshold,
-        )
+    return grants

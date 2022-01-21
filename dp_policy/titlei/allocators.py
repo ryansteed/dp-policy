@@ -1,6 +1,6 @@
 from dp_policy.titlei.utils import \
-    weighting, get_allocation_data, \
-    Threshold, HardThresholder
+    weighting, get_allocation_data
+from dp_policy.titlei.thresholders import Threshold, HardThresholder
 
 import numpy as np
 import pandas as pd
