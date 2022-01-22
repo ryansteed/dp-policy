@@ -234,7 +234,7 @@ def plot_treatments(
     delta=0.0,
     mean_line=False
 ):
-    palette = sns.color_palette()
+    palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
         df = df_raw.loc[(
                 slice(None), delta, epsilon, slice(None), slice(None)
@@ -271,7 +271,10 @@ def plot_treatments(
         x = x_func(df)
         plot_method(x, **plot_kwargs)
         if mean_line:
-            plt.axvline(x.mean(), color=palette[i], linestyle='dashed')
+            plt.axvline(
+                x.mean(), color=palette[i],
+                linestyle='dashed'
+            )
 
     plt.xlabel(xlab)
     plt.ylabel(ylab)
