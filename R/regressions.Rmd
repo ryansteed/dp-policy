@@ -10,101 +10,28 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r deps}
-library(stargazer)
-library(tidyverse)
-library(ggpubr)
-library(janitor)
-library(mgcv)
-library(lmtest)
-library(mgcViz)
-library(tidymv)
-library(MASS)
-library(cowplot)
-library(grid)
-library(gridExtra)
+source("R/utils.R")
 ```
 
-```{r load}
+
+
+```{r load-baseline}
 # raw = read.csv("results/discrimination.csv")
-raw = read.csv("results/discrimination_laplace_eps=0.1.csv")
-```
-```{r income}
-# mask = raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est == '250,000+'
-# sum(mask)
-# gsub('[\\+]|[,]', '', as.character(raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est))[mask]
-# as.numeric(gsub('[\\+]|[,]', '', as.character(raw$Median.household.income..dollars...INCOME.AND.BENEFITS..IN.2019.INFLATION.ADJUSTED.DOLLARS.....est)))[mask]
+raw = fread("results/discrimination_laplace_eps=0.1.csv")
 ```
 
 ```{r clean}
 # use short df
 # df = raw %>% filter(trial < 10)
-df = raw %>%
-  clean_names() %>%
-  mutate_at(
-    vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
-  )
-df = df %>%
-  mutate(
-    prop_white = white_race_pct / 100,
-    nonwhite_children = true_children_total * prop_white,
-    # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
-    misalloc_dp = dp_grant_total - true_grant_total,
-    misalloc_sampling = est_grant_total - true_grant_total,
-    misalloc_dp_sampling = dpest_grant_total - true_grant_total,
-    not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
-    average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
-    median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
-    pop_density = true_pop_total / aland
-  )
+
+df = clean(df)
 ```
 
 ## Costs & benefits across groups
 ```{r average_across_trials}
-grouped = df %>% 
-  group_by(state_fips_code, district_id) %>%
-  summarise(
-    misalloc_dp = mean(misalloc_dp),
-    misalloc_sampling = mean(misalloc_sampling),
-    misalloc_dp_sampling = mean(misalloc_dp_sampling)
-  ) %>%
-  ungroup() %>%
-  left_join(
-    df %>% dplyr::select(
-      state_fips_code, 
-      district_id, 
-      nonwhite_children,
-      true_grant_total,
-      true_pop_total,
-      true_children_eligible,
-      true_children_total, 
-      prop_white,
-      ends_with("race_pct"),
-      language_other_than_english_language_spoken_at_home_pct,
-      language_other_than_english_language_spoken_at_home_est,
-      foreign_born_place_of_birth_est,
-      foreign_born_place_of_birth_pct,
-      not_a_u_s_citizen_u_s_citizenship_status_est,
-      not_a_u_s_citizen_u_s_citizenship_status_pct,
-      renter_occupied_housing_tenure_pct,
-      renter_occupied_housing_tenure_est,
-      average_household_size_of_renter_occupied_unit_housing_tenure_est,
-      median_income_est,
-      pop_density
-    ) %>% unique(),
-    by=c("state_fips_code", "district_id")
-  ) %>%
-  mutate(
-    misalloc_dp_per_child = misalloc_dp / true_children_total,
-    misalloc_sampling_per_child = misalloc_sampling / true_children_total,
-    misalloc_dp_sampling_per_child = misalloc_dp_sampling / true_children_total
-  )
-grouped
-
-# optional - filter to only look at edge cases
-# grouped = grouped  %>%
-#   filter(
-#     misalloc > mean(misalloc_per_child) + 2*sd(misalloc_per_child) | misalloc_per_child < mean(misalloc_per_child) - 2*sd(misalloc_per_child)
-#   )
+grouped = df %>%
+  mutate(treatment = "baseline") %>%
+  summarise_trials
 ```
 
 ```{r results}
@@ -123,128 +50,12 @@ ggplot(grouped) +
 ```
 
 ```{r race}
-kind = "hispanic"
-# kind = "race_aggregate"
+# kind = "hispanic"
+kind = "race_aggregate"
 # kind = "race"
 # kind = "intersectional"
 
-comparison = grouped
-
-if (kind == "hispanic") {
-  comparison = comparison %>%
-    dplyr::select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
-} else if (kind == "race_aggregate") {
-  comparison = comparison %>%
-    mutate(
-      white_agg_race_pct = white_race_pct,
-      black_or_african_american_agg_race_pct = black_or_african_american_race_pct,
-      tribal_grouping_agg_race_pct = rowSums(across(ends_with("tribal_grouping_race_pct"))),
-      asian_agg_race_pct = asian_race_pct,
-      pacific_islander_agg_race_pct = rowSums(across(c(
-        "native_hawaiian_race_pct",
-        "guamanian_or_chamorro_race_pct",
-        "samoan_race_pct"
-      ))),
-      some_other_race_agg_race_pct = some_other_race_race_pct,
-      two_or_more_races_agg_race_pct = two_or_more_races_race_pct
-    ) %>%
-    dplyr::select(ends_with("agg_race_pct") | !ends_with("race_pct"))
-} else {
-  comparison = comparison %>%
-    dplyr::select(!ends_with("hispanic_or_latino_and_race_pct")) %>%
-    dplyr::select(
-      !asian_race_pct
-    )
-}
-
-remainder = comparison %>%
-  dplyr::select(ends_with("race_pct")) %>%
-  mutate(sum = rowSums(across(everything())))
-
-# per the census, should add to 100 - https://www.census.gov/quickfacts/fact/note/US/RHI625219
-print(remainder %>% filter(sum > 105.0))
-
-# total misalloc per student ("burden")
-comparison = comparison %>%
-  # mutate(other_race_pct = 100-rowSums(across(ends_with("race_pct")))) %>%
-  # mutate(other_race_pct = if_else(other_race_pct < 0, 0, other_race_pct)) %>%
-  pivot_longer(
-    ends_with("race_pct"),
-    values_to="race_pct",
-    names_to="race"
-  ) %>%
-  mutate(
-    race=recode_factor(
-      str_replace(race, "_race_pct", ""),
-      `sioux_tribal_grouping` = "Sioux tribal grouping",
-      `chippewa_tribal_grouping` = "Chippewa tribal grouping",
-      `navajo_tribal_grouping` = "Navajo tribal grouping",
-      `cherokee_tribal_grouping` = "Cherokee tribal grouping",
-      `guamanian_or_chamorro` = "Guamanian or Chamorro",
-      `native_hawaiian` = "Native Hawaiian",
-      `white` = "White",
-      `samoan` = "Samoan",
-      `two_or_more_races` = "Two or more races",
-      `filipino` = "Filipino",
-      `japanese` = "Japanese",
-      `black_or_african_american` = "Black or African American",
-      `other_asian` = "Other Asian",
-      `some_other_race` = "Some other race",
-      `korean` = "Korean",
-      `vietnamese` = "Vietnamese",
-      `asian_indian` = "Asian Indian",
-      `chinese` = "Chinese",
-      `tribal_grouping_agg` = "Tribal grouping",
-      `pacific_islander_agg` = "Pacific islander",
-      `white_agg` = "White",
-      `two_or_more_races_agg` = "Two or more races",
-      `black_or_african_american_agg` = "Black or African American",
-      `some_other_race_agg` = "Some other race",
-      `asian_agg` = "Asian",
-      `not_hispanic_or_latino_hispanic_or_latino_and` = "Not Hispanic or Latino",
-      `mexican_hispanic_or_latino_and` = "Mexican",
-      `puerto_rican_hispanic_or_latino_and` = "Puerto Rican",
-      `other_hispanic_or_latino_hispanic_or_latino_and` = "Other Hispanic or Latino",
-      `cuban_hispanic_or_latino_and` = "Cuban"
-    )
-  )
-
-cuberoot = function(x) {
-  return(sign(x)*abs(x)^(1/3))
-}
-
-comparison = comparison %>%
-  # assuming misallocation is spread evenly across children,
-  mutate(
-    benefit_dp = misalloc_dp_per_child / race_pct * 100,
-    benefit_sampling = misalloc_sampling_per_child / race_pct * 100,
-    benefit_dp_sampling = misalloc_dp_sampling_per_child / race_pct * 100
-  )
-
-comparison_all = comparison %>%
-  group_by(race) %>%
-  mutate(
-    children_of_race = round(true_children_total * race_pct / 100),
-    children_of_race_eligible = round(true_children_eligible * race_pct / 100),
-    dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
-    dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100) / sum(children_of_race_eligible),
-    sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race),
-    sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race_eligible),
-    dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race),
-    dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
-  )  %>%
-  ungroup()
-
-# comparison_mean = comparison_all %>%
-#   group_by(race) %>%
-#   summarise(
-#     dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
-#     dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100) / sum(children_of_race_eligible),
-#     sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race),
-#     sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race_eligible),
-#     dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race),
-#     dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
-#   )
+sorted = race_comparison(grouped, kind)
 ```
 
 ```{r race-plots}
@@ -322,10 +133,6 @@ plot = list(
 #   ylab("Race-weighted misallocation per eligible child (DP minus true)")
 # ggsave("plots/misalloc_race_dp.png", dpi=300, width=5, height=8)
 
-sorted = comparison_all %>%
-  mutate(race = fct_reorder(race, sampling_benefit_per_child)) %>%
-  distinct(race, sampling_benefit_per_child, dp_sampling_benefit_per_child)
-print(sorted)
 ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
   plot +
   ylab("Race-weighted misallocation per eligible child") +
@@ -336,15 +143,18 @@ ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
       y=dp_sampling_benefit_per_child, 
       ymin=dp_sampling_benefit_per_child, 
       ymax=dp_sampling_benefit_per_child,
-      fill="Sampling + DP"
+      color="Sampling + DP"
     ), 
-    color="red"
   ) +
   labs(
-    fill = "Noise added"
+    fill = "",
+    color = ""
   ) +
   theme(
     legend.position = "top"
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(color="transparent"))
   )
 ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 
@@ -357,6 +167,9 @@ ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 # misalloc_white = df$misalloc * df$prop_white
 # t.test(misalloc_white, misalloc_nonwhite)
 ```
+
+
+## Individual variable plots
 
 ```{r population}
 income = ggplot(grouped, aes(x=log(true_pop_total), y=misalloc_per_child)) 
@@ -450,7 +263,8 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
 ```
   
 
-## Effect of race on misallocations
+
+## Regression analysis
 ```{r regressions}
 sq_share = function(x) {
   return((x/100)^2)
@@ -748,17 +562,66 @@ check(viz)
 ```
 
 
-## Traditional discrimination analysis
-```{r diff}
-lm = lm(est_grant_total ~ true_grant_total + prop_white + trial + district_id + state_fips_code, data=df)
 
-stargazer(
-  lm,
-  type="text",
-  title="Correlation between race and estimated grant amount.",
-  covariate.labels=c("True grant total", "Proportion white-only individuals"),
-  label="discrimination"
-  # out="results/discrimination.tex"
-)
+
+## Treatment comparison
+```{r treatments}
+load_experiment = function(name) {
+  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace_eps=0.1.csv", name))
+  df = clean(raw)
+  grouped = summarise_trials(df)
+  comparison = race_comparison(grouped, "race_aggregate")
+  return(comparison)
+}
+test_experiment = "thresholds"
+experiment = load_experiment(test_experiment)
 ```
+
+```{r treatment-race}
+plot_experiment = function(experiment, name) {
+  plt = ggplot(experiment, aes(x=race, y=sampling_benefit_per_child)) +
+    ylab("Race-weighted misallocation per eligible child") +
+    geom_col(position="dodge", aes(fill=treatment)) +
+    geom_crossbar(
+      aes(
+        x=race, 
+        y=dp_sampling_benefit_per_child, 
+        ymin=dp_sampling_benefit_per_child, 
+        ymax=dp_sampling_benefit_per_child,
+        fill=treatment,
+        color=treatment
+      ),
+      position="dodge",
+    ) +
+    coord_flip() +
+    xlab("Census Race Category") +
+    labs(
+      fill = "Data error",
+      color = "+ DP error"
+    ) +
+    guides(
+      fill = guide_legend(override.aes = list(color="transparent")),
+      color = FALSE
+    ) +
+    theme(
+      legend.position = "top"
+    )
+  print(plt)
+  ggsave(sprintf("plots/misalloc_%s.png", name), dpi=300, width=5, height=6)
+}
+plot_experiment(experiment, test_experiment)
+```
+
+```{r plot-all}
+for (experiment_name in c(
+  "hold_harmless",
+  "post_processing",
+  # "moving_average",
+  "thresholds"
+)) {
+  experiment = load_experiment(experiment_name)
+  plot_experiment(experiment, experiment_name)
+}
+```
+
 

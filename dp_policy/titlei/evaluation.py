@@ -1,3 +1,4 @@
+import pandas as pd
 from dp_policy.titlei.utils import get_acs_unified
 
 import geopandas as gpd
@@ -93,6 +94,28 @@ def discrimination_join(results, save_path=None, verbose=False):
     if save_path:
         grants.to_csv(save_path)
     return grants
+
+
+def discrimination_treatments_join(treatments_name, epsilon=0.1, delta=0.0):
+    # output a concatenated DF with a new index column indicating which
+    # treatment was applied
+    joined = pd.concat(
+        load_treatments(treatments_name),
+        names=['treatment']
+    ).loc[(
+        slice(None),
+        slice(None),
+        delta,
+        epsilon,
+        slice(None),
+        slice(None)
+    ), :].copy()
+    discrimination_joined = discrimination_join(
+        joined.reset_index(level="treatment"),
+        save_path="../results/policy_experiments/"
+        f"{treatments_name}_discrimination_laplace_eps={epsilon}.csv"
+    )
+    return discrimination_joined
 
 
 def geo_join(results):
