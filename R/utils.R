@@ -38,19 +38,18 @@ summarise_trials = function(df) {
     group_by(treatment, state_fips_code, district_id) %>%
     summarise_at(
       c("misalloc_dp", "misalloc_sampling", "misalloc_dp_sampling"),
-      mean,
-      na.rm=TRUE
+      mean
     ) %>%
-    ungroup() %>%
+    ungroup()  %>%
     left_join(
       df %>% dplyr::select(
-        state_fips_code, 
-        district_id, 
+        state_fips_code,
+        district_id,
         nonwhite_children,
         true_grant_total,
         true_pop_total,
         true_children_eligible,
-        true_children_total, 
+        true_children_total,
         prop_white,
         ends_with("race_pct"),
         language_other_than_english_language_spoken_at_home_pct,
@@ -165,9 +164,9 @@ race_comparison = function(comparison, kind) {
     ) %>%
     # assuming misallocation is spread evenly across children,
     mutate(
-      benefit_dp = misalloc_dp_per_child / race_pct * 100,
-      benefit_sampling = misalloc_sampling_per_child / race_pct * 100,
-      benefit_dp_sampling = misalloc_dp_sampling_per_child / race_pct * 100
+      benefit_dp = ifelse(race_pct > 0.0, misalloc_dp_per_child / race_pct * 100, NA),
+      benefit_sampling = ifelse(race_pct > 0.0, misalloc_sampling_per_child / race_pct * 100, NA),
+      benefit_dp_sampling = ifelse(race_pct > 0.0, misalloc_dp_sampling_per_child / race_pct * 100, NA)
     )
   
   comparison_all = comparison %>%
@@ -175,12 +174,12 @@ race_comparison = function(comparison, kind) {
     mutate(
       children_of_race = round(true_children_total * race_pct / 100),
       children_of_race_eligible = round(true_children_eligible * race_pct / 100),
-      dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
-      dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100) / sum(children_of_race_eligible),
-      sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race),
-      sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100) / sum(children_of_race_eligible),
-      dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race),
-      dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
+      dp_benefit_per_child = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
+      dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE),
+      sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
+      sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE),
+      dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
+      dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE)
     )  %>%
     ungroup()
   
@@ -205,7 +204,213 @@ race_comparison = function(comparison, kind) {
 load_experiment = function(name) {
   raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace_eps=0.1.csv", name))
   df = clean(raw)
-  grouped = summarise_trials(df)
+  return(df)
+}
+
+plot_race = function(experiment, name) {
+  grouped = summarise_trials(experiment)
   comparison = race_comparison(grouped, "race_aggregate")
-  return(comparison)
+  
+  plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child)) +
+    ylab("Race-weighted misallocation per eligible child") +
+    geom_col(position="dodge", aes(fill=treatment)) +
+    geom_crossbar(
+      aes(
+        x=race, 
+        y=dp_sampling_benefit_per_child, 
+        ymin=dp_sampling_benefit_per_child, 
+        ymax=dp_sampling_benefit_per_child,
+        fill=treatment,
+        color=treatment
+      ),
+      position="dodge",
+    ) +
+    coord_flip() +
+    xlab("Census Race Category") +
+    labs(
+      fill = "Treatment"
+    ) +
+    guides(
+      fill = guide_legend(override.aes = list(color="transparent")),
+      color = FALSE
+    ) +
+    theme(
+      legend.position = "top"
+    )
+  print(plt)
+  ggsave(sprintf("plots/race/misalloc_%s.png", name), dpi=300, width=5, height=6)
+}
+
+sq_share = function(x) {
+  return((x/100)^2)
+}
+
+clean_for_reg = function(df) {
+  df = df %>%
+    mutate(
+      white_agg_race_pct = white_race_pct,
+      black_or_african_american_agg_race_pct = black_or_african_american_race_pct,
+      tribal_grouping_agg_race_pct = rowSums(across(ends_with("tribal_grouping_race_pct"))),
+      asian_agg_race_pct = asian_race_pct,
+      pacific_islander_agg_race_pct = rowSums(across(c(
+        "native_hawaiian_race_pct",
+        "guamanian_or_chamorro_race_pct",
+        "samoan_race_pct"
+      ))),
+      some_other_race_agg_race_pct = some_other_race_race_pct,
+      two_or_more_races_agg_race_pct = two_or_more_races_race_pct,
+      hhi = sq_share(white_race_pct) +
+        sq_share(black_or_african_american_race_pct) +
+        sq_share(cherokee_tribal_grouping_race_pct) +
+        sq_share(chippewa_tribal_grouping_race_pct) +
+        sq_share(navajo_tribal_grouping_race_pct) +
+        sq_share(sioux_tribal_grouping_race_pct) +
+        sq_share(asian_indian_race_pct) +
+        sq_share(chinese_race_pct) +
+        sq_share(filipino_race_pct) +
+        sq_share(japanese_race_pct) +
+        sq_share(korean_race_pct) +
+        sq_share(vietnamese_race_pct) +
+        sq_share(other_asian_race_pct) +
+        sq_share(native_hawaiian_race_pct) +
+        sq_share(guamanian_or_chamorro_race_pct) +
+        sq_share(samoan_race_pct) +
+        sq_share(some_other_race_race_pct) +
+        sq_share(two_or_more_races_race_pct),
+      prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100
+    ) %>%
+    dplyr::select(
+      -ends_with("hispanic_or_latino_and_race_pct"),
+      -asian_race_pct
+    )
+  # filter(trial < 10)
+  return(df)
+}
+
+run_regs = function(df, sampling_only, savepath) {
+  df_reg = clean_for_reg(df)
+  
+  if (sampling_only) {
+    df_abbrv = df_reg %>% mutate(misalloc = misalloc_sampling)
+  } else {
+    df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
+  }
+  
+  lm_mr = lm(
+    misalloc ~ log(pop_density) +
+      median_income_est +
+      hhi +
+      prop_white +
+      prop_hispanic +
+      renter_occupied_housing_tenure_pct,
+    # true_children_total + 
+    # true_children_poverty +
+    # not_a_u_s_citizen_u_s_citizenship_status_pct +
+    # average_household_size_of_renter_occupied_unit_housing_tenure_est,
+    data=df_abbrv
+  )
+  print(summary(lm_mr))
+  
+  gam_mr = gam(
+    misalloc ~
+      # s(true_children_total, bs="tp") +
+      # s(true_children_poverty, bs="tp") +
+      s(log(pop_density), bs="tp") +
+      s(hhi, bs="tp") +
+      s(prop_white, bs="tp") +
+      s(prop_hispanic, bs="tp") +
+      s(median_income_est, bs="tp") +
+      # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
+      s(renter_occupied_housing_tenure_pct, bs="tp"),
+    # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
+    method="REML", # restricted MLE
+    data=df_abbrv
+  )
+  print(summary(gam_mr))
+  print(anova(lm_mr, gam_mr))
+  
+  if (!missing(savepath)) {
+    saveRDS(gam_mr, savepath)
+  }
+  
+  return(gam_mr)
+}
+
+get_gam = function(name, sampling_only, from_cache, df) {
+  savepath = sprintf("results/regressions/%s_sampling=%s.rds", name, toString(sampling_only))
+  if (file.exists(savepath) & from_cache) {
+    return(readRDS(savepath))
+  }
+  else if (!missing(df)) {
+    return(run_regs(df, sampling_only, savepath))
+  }
+  else {
+    print("Missing df, could not run regressions.")
+  }
+}
+
+plot_gam = function(gam, plotname) {
+  viz = getViz(gam)
+  
+  labels = c(
+    # "# children",
+    # "# children in poverty",
+    "Log population density",
+    "Racial homogeneity (HHI)",
+    "% white-only",
+    "% hispanic",
+    "Median income",
+    "% renter-occupied housing"
+    # "Average size of renter household"
+  )
+  lower_limits = c(
+    -1500000, # pop density
+    -70000, # HHI
+    -120000, # white-only
+    -30000, # hispanic
+    -50000, # income
+    -200000 # housing
+  )
+  upper_limits = c(
+    300000, # pop density
+    30000, # HHI
+    70000, # white-only
+    80000, # hispanic
+    100000, # income
+    400000 # housing
+  )
+  plt = function(i) {
+    p = plot(sm(viz, i)) +
+      theme_minimal() +
+      # ylab("Smoothed effect (in terms of $$ misallocated)") +
+      l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+      # l_dens("joint") +
+      l_ciPoly(alpha=0.5, size=0.25) +
+      l_ciLine() +
+      l_fitLine() +
+      # l_rug(alpha=0.5) +
+      geom_hline(yintercept = 0, linetype = 2) +
+      theme(
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()
+      ) +
+      coord_cartesian(ylim=c(lower_limits[i], upper_limits[i])) +
+      ggtitle(labels[i])
+    p$ggObj
+  }
+  
+  cplt = cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
+  y.grob = textGrob(
+    "Smoothed effect (in terms of $$ misallocated)",
+    gp=gpar(fontface="bold"),
+    rot=90
+  )
+  plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+  # print(plot)
+  
+  if (!missing(plotname)) {
+    ggsave(sprintf("plots/smooths/%s.png", plotname), plot, width=12, height=6, dpi=300) 
+  }
+  
+  check(viz)
 }

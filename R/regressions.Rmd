@@ -13,8 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 source("R/utils.R")
 ```
 
-
-
 ```{r load-baseline}
 # raw = read.csv("results/discrimination.csv")
 raw = fread("results/discrimination_laplace_eps=0.1.csv")
@@ -24,7 +22,7 @@ raw = fread("results/discrimination_laplace_eps=0.1.csv")
 # use short df
 # df = raw %>% filter(trial < 10)
 
-df = clean(df)
+df = clean(raw)
 ```
 
 ## Costs & benefits across groups
@@ -169,6 +167,7 @@ ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 ```
 
 
+
 ## Individual variable plots
 
 ```{r population}
@@ -264,53 +263,13 @@ ggplot(grouped_extreme, aes(x=language_other_than_english_language_spoken_at_hom
   
 
 
+
 ## Regression analysis
 ```{r regressions}
-sq_share = function(x) {
-  return((x/100)^2)
-}
-
-df_reg = df %>%
-  mutate(
-    white_agg_race_pct = white_race_pct,
-    black_or_african_american_agg_race_pct = black_or_african_american_race_pct,
-    tribal_grouping_agg_race_pct = rowSums(across(ends_with("tribal_grouping_race_pct"))),
-    asian_agg_race_pct = asian_race_pct,
-    pacific_islander_agg_race_pct = rowSums(across(c(
-      "native_hawaiian_race_pct",
-      "guamanian_or_chamorro_race_pct",
-      "samoan_race_pct"
-    ))),
-    some_other_race_agg_race_pct = some_other_race_race_pct,
-    two_or_more_races_agg_race_pct = two_or_more_races_race_pct,
-    hhi = sq_share(white_race_pct) +
-      sq_share(black_or_african_american_race_pct) +
-      sq_share(cherokee_tribal_grouping_race_pct) +
-      sq_share(chippewa_tribal_grouping_race_pct) +
-      sq_share(navajo_tribal_grouping_race_pct) +
-      sq_share(sioux_tribal_grouping_race_pct) +
-      sq_share(asian_indian_race_pct) +
-      sq_share(chinese_race_pct) +
-      sq_share(filipino_race_pct) +
-      sq_share(japanese_race_pct) +
-      sq_share(korean_race_pct) +
-      sq_share(vietnamese_race_pct) +
-      sq_share(other_asian_race_pct) +
-      sq_share(native_hawaiian_race_pct) +
-      sq_share(guamanian_or_chamorro_race_pct) +
-      sq_share(samoan_race_pct) +
-      sq_share(some_other_race_race_pct) +
-      sq_share(two_or_more_races_race_pct),
-    prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100
-  ) %>%
-  dplyr::select(
-    -ends_with("hispanic_or_latino_and_race_pct"),
-    -asian_race_pct
-  )
-  # filter(trial < 10)
-
+df_reg = clean_for_reg(df)
 nrow(df_reg)
 ```
+
 ### OLS
 
 ```{r ols}
@@ -352,74 +311,25 @@ stargazer(
 )
 ```
 
+
 ### GAM
-```{r gam}
-# print(names(df_abbrv))
-
-# min(df_abbrv$misalloc_per_child)
-
-# ggplot(df_abbrv, aes(x=prop_white, y=misalloc_per_child)) +
-#   geom_point(alpha=0.1) +
-#   geom_smooth()
-
-lm_fit = lm(misalloc ~ prop_white, data=df_abbrv)
-lm_fit
-gam_fit = gam(misalloc ~ s(prop_white, bs="cr"), data=df_abbrv)
-gam_fit
-
-anova(lm_fit, gam_fit)
-```
-
 ```{r gam-mr}
 sampling_only = F
-
-if (sampling_only) {
-  df_abbrv = df_reg %>% mutate(misalloc = misalloc_sampling)
-} else {
-  df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
-}
-
-lm_mr = lm(
-  misalloc ~ log(pop_density) +
-      median_income_est +
-      hhi +
-      prop_white +
-      prop_hispanic +
-      renter_occupied_housing_tenure_pct,
-      # true_children_total + 
-      # true_children_poverty +
-      # not_a_u_s_citizen_u_s_citizenship_status_pct +
-      # average_household_size_of_renter_occupied_unit_housing_tenure_est,
-  data=df_abbrv
-)
-summary(lm_mr)
-
-gam_mr = gam(
-  misalloc ~
-      # s(true_children_total, bs="tp") +
-      # s(true_children_poverty, bs="tp") +
-      s(log(pop_density), bs="tp") +
-      s(hhi, bs="tp") +
-      s(prop_white, bs="tp") +
-      s(prop_hispanic, bs="tp") +
-      s(median_income_est, bs="tp") +
-      # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
-      s(renter_occupied_housing_tenure_pct, bs="tp"),
-      # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
-  method="REML", # restricted MLE
-  data=df_abbrv
-)
-summary(gam_mr)
+gam_mr = run_regs(df %>% filter(trial < 2), sampling_only)
 
 if (sampling_only) {
   gam_sampling = gam_mr
 } else {
   gam_dp = gam_mr
 }
-
-
-anova(lm_mr, gam_mr)
 ```
+
+```{r test}
+# saveRDS(gam_dp, sprintf("results/regressions/%s_sampling=%s.rds", "baseline", F))
+# gam_dp = readRDS(sprintf("results/regressions/%s_sampling=%s.rds", "baseline", F))
+gam_mr = get_gam("baseline", sampling_only, F)
+```
+
 
 ```{r gam-interact}
 gam_mr_interact = gam(
@@ -457,88 +367,7 @@ anova(gam_mr, gam_mr_interact)
 
 # vis.gam(gam_mr, view=c("prop_white", "median_income_est"))
 
-if (sampling_only) {
-  m = gam_sampling
-} else {
-  m = gam_dp
-}
-
-viz = getViz(m)
-```
-```{r gam_plots}
-labels = c(
-  # "# children",
-  # "# children in poverty",
-  "Log population density",
-  "Racial homogeneity (HHI)",
-  "% white-only",
-  "% hispanic",
-  "Median income",
-  "% renter-occupied housing"
-  # "Average size of renter household"
-)
-lower_limits = c(
-  -1500000, # pop density
-  -70000, # HHI
-  -120000, # white-only
-  -30000, # hispanic
-  -50000, # income
-  -200000 # housing
-)
-upper_limits = c(
-  300000, # pop density
-  30000, # HHI
-  70000, # white-only
-  80000, # hispanic
-  100000, # income
-  400000 # housing
-)
-plt = plot(viz, select=1:length(labels), ask=FALSE)
-# print(summary(plt$plots[[1]]$ggObj))
-# ggsave("plots/test.png", plt$plots[[1]]$ggObj)2
-
-# return()
-
-plt = function(i) {
-  p = plot(sm(viz, i)) +
-    theme_minimal() +
-    # ylab("Smoothed effect (in terms of $$ misallocated)") +
-    l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
-    # l_dens("joint") +
-    l_ciPoly(alpha=0.5, size=0.25) +
-    l_ciLine() +
-    l_fitLine() +
-    # l_rug(alpha=0.5) +
-    geom_hline(yintercept = 0, linetype = 2) +
-    theme(
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank()
-    ) +
-    coord_cartesian(ylim=c(lower_limits[i], upper_limits[i])) +
-    ggtitle(labels[i])
-  p$ggObj
-}
-
-cplt = cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
-y.grob = textGrob(
-  "Smoothed effect (in terms of $$ misallocated)",
-  gp=gpar(fontface="bold"),
-  rot=90
-)
-plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
-if (sampling_only) {
-  ggsave("plots/smooths_sampling.png", plot, width=12, height=6, dpi=300)
-} else {
-  ggsave("plots/smooths_dp_sampling.png", plot, width=12, height=6, dpi=300)
-}
-
-check(viz)
-
-# plot_smooths(
-#   model=m,
-#   series=prop_white
-# ) + formatting +
-#   xlab("% white")
+plot_gam(gam_mr)
 ```
 
 ### Inverse welfare
@@ -564,45 +393,16 @@ check(viz)
 
 
 
+
+
+
 ## Treatment comparison
 ```{r treatments}
-test_experiment = "thresholds"
+test_experiment = "moving_average"
 experiment = load_experiment(test_experiment)
+plot_experiment(experiment, test_experiment)
 ```
 
-```{r treatment-race}
-plot_experiment = function(experiment, name) {
-  plt = ggplot(experiment, aes(x=race, y=sampling_benefit_per_child)) +
-    ylab("Race-weighted misallocation per eligible child") +
-    geom_col(position="dodge", aes(fill=treatment)) +
-    geom_crossbar(
-      aes(
-        x=race, 
-        y=dp_sampling_benefit_per_child, 
-        ymin=dp_sampling_benefit_per_child, 
-        ymax=dp_sampling_benefit_per_child,
-        fill=treatment,
-        color=treatment
-      ),
-      position="dodge",
-    ) +
-    coord_flip() +
-    xlab("Census Race Category") +
-    labs(
-      fill = "Treatment"
-    ) +
-    guides(
-      fill = guide_legend(override.aes = list(color="transparent")),
-      color = FALSE
-    ) +
-    theme(
-      legend.position = "top"
-    )
-  print(plt)
-  ggsave(sprintf("plots/misalloc_%s.png", name), dpi=300, width=5, height=6)
-}
-# plot_experiment(experiment, test_experiment)
-```
 
 ```{r plot-all}
 for (experiment_name in c(
@@ -612,8 +412,17 @@ for (experiment_name in c(
   "thresholds"
 )) {
   experiment = load_experiment(experiment_name)
-  plot_experiment(experiment, experiment_name)
+  plot_race(experiment, experiment_name)
+  
+  for (t in unique(experiment$treatment)) {
+    gam_mr = get_gam(
+      sprintf("%s_%s", experiment_name, t),
+      F,
+      F,
+      experiment %>% filter(treatment == t, trial < 10)
+    )
+    plot_gam(gam_mr, sprintf("%s_%s", experiment_name, t))
+  }
 }
 ```
-
 

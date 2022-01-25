@@ -109,9 +109,9 @@ def discrimination_treatments_join(treatments_name, epsilon=0.1, delta=0.0):
         epsilon,
         slice(None),
         slice(None)
-    ), :].copy()
+    ), :]
     discrimination_joined = discrimination_join(
-        joined.reset_index(level="treatment"),
+        joined,
         save_path="../results/policy_experiments/"
         f"{treatments_name}_discrimination_laplace_eps={epsilon}.csv"
     )
