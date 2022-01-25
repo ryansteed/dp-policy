@@ -201,3 +201,11 @@ race_comparison = function(comparison, kind) {
   
   return(sorted)
 }
+
+load_experiment = function(name) {
+  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace_eps=0.1.csv", name))
+  df = clean(raw)
+  grouped = summarise_trials(df)
+  comparison = race_comparison(grouped, "race_aggregate")
+  return(comparison)
+}

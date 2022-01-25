@@ -566,13 +566,6 @@ check(viz)
 
 ## Treatment comparison
 ```{r treatments}
-load_experiment = function(name) {
-  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace_eps=0.1.csv", name))
-  df = clean(raw)
-  grouped = summarise_trials(df)
-  comparison = race_comparison(grouped, "race_aggregate")
-  return(comparison)
-}
 test_experiment = "thresholds"
 experiment = load_experiment(test_experiment)
 ```
@@ -596,8 +589,7 @@ plot_experiment = function(experiment, name) {
     coord_flip() +
     xlab("Census Race Category") +
     labs(
-      fill = "Data error",
-      color = "+ DP error"
+      fill = "Treatment"
     ) +
     guides(
       fill = guide_legend(override.aes = list(color="transparent")),
@@ -609,14 +601,14 @@ plot_experiment = function(experiment, name) {
   print(plt)
   ggsave(sprintf("plots/misalloc_%s.png", name), dpi=300, width=5, height=6)
 }
-plot_experiment(experiment, test_experiment)
+# plot_experiment(experiment, test_experiment)
 ```
 
 ```{r plot-all}
 for (experiment_name in c(
   "hold_harmless",
   "post_processing",
-  # "moving_average",
+  "moving_average",
   "thresholds"
 )) {
   experiment = load_experiment(experiment_name)
