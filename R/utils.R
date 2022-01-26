@@ -214,28 +214,29 @@ plot_race = function(experiment, name) {
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child)) +
     ylab("Race-weighted misallocation per eligible child") +
     geom_col(position="dodge", aes(fill=treatment)) +
-    geom_crossbar(
+    geom_errorbar(
       aes(
         x=race, 
-        y=dp_sampling_benefit_per_child, 
-        ymin=dp_sampling_benefit_per_child, 
+        # y=dp_sampling_benefit_per_child,
+        ymin=sampling_benefit_per_child, 
         ymax=dp_sampling_benefit_per_child,
-        fill=treatment,
-        color=treatment
+        # linetype="",
+        color=(dp_sampling_benefit_per_child < sampling_benefit_per_child),
+        fill=treatment
       ),
       position="dodge",
+      size=0.5
     ) +
+    scale_colour_manual(values=c("black", "red"), labels=c("Increase", "Decrease")) +
     coord_flip() +
     xlab("Census Race Category") +
     labs(
-      fill = "Treatment"
-    ) +
-    guides(
-      fill = guide_legend(override.aes = list(color="transparent")),
-      color = FALSE
+      fill = "Data error",
+      color = "+ DP error"
     ) +
     theme(
-      legend.position = "top"
+      legend.position = "top",
+      legend.box="vertical"
     )
   print(plt)
   ggsave(sprintf("plots/race/misalloc_%s.png", name), dpi=300, width=5, height=6)
@@ -350,9 +351,22 @@ get_gam = function(name, sampling_only, from_cache, df) {
   }
 }
 
-plot_gam = function(gam, plotname) {
-  viz = getViz(gam)
-  
+get_gam_viz = function(plotname, from_cache, gam) {
+  savepath = sprintf("results/regressions/viz_%s.rds", plotname)
+  if (file.exists(savepath) & from_cache) {
+    return(readRDS(savepath))
+  }
+  else if (!missing(gam)) {
+    viz = getViz(gam)
+    saveRDS(viz, savepath)
+    return(viz)
+  }
+  else {
+    print("Missing gam, could not get viz.")
+  }
+}
+
+plot_gam = function(viz, plotname) {
   labels = c(
     # "# children",
     # "# children in poverty",
@@ -380,14 +394,20 @@ plot_gam = function(gam, plotname) {
     100000, # income
     400000 # housing
   )
+  
+  level = 0.95
+  mul = qnorm((level+1)/2)
   plt = function(i) {
-    p = plot(sm(viz, i)) +
+    plot_obj = plot(sm(viz, i))
+    upper = max(plot_obj$data$fit$y + mul*plot_obj$data$fit$se)
+    lower = min(plot_obj$data$fit$y - mul*plot_obj$data$fit$se)
+    p = plot_obj +
       theme_minimal() +
       # ylab("Smoothed effect (in terms of $$ misallocated)") +
       l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
       # l_dens("joint") +
-      l_ciPoly(alpha=0.5, size=0.25) +
-      l_ciLine() +
+      l_ciPoly(level=level, alpha=0.5, size=0.25) +
+      l_ciLine(level=level) +
       l_fitLine() +
       # l_rug(alpha=0.5) +
       geom_hline(yintercept = 0, linetype = 2) +
@@ -395,7 +415,8 @@ plot_gam = function(gam, plotname) {
         axis.title.x = element_blank(),
         axis.title.y = element_blank()
       ) +
-      coord_cartesian(ylim=c(lower_limits[i], upper_limits[i])) +
+      coord_cartesian(ylim=c(lower, upper)) +
+      # coord_cartesian(ylim=c(lower_limits[i], upper_limits[i])) +
       ggtitle(labels[i])
     p$ggObj
   }
