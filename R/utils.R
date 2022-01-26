@@ -116,7 +116,7 @@ race_comparison = function(comparison, kind) {
     mutate(sum = rowSums(across(everything())))
   
   # per the census, should add to 100 - https://www.census.gov/quickfacts/fact/note/US/RHI625219
-  print(remainder %>% filter(sum > 105.0))
+  print(sprintf("%d rows with overfull race percent", remainder %>% filter(sum > 105.0) %>% nrow()))
   
   # total misalloc per student ("burden")
   comparison = comparison %>%
@@ -338,6 +338,7 @@ run_regs = function(df, sampling_only, savepath) {
 
 get_gam = function(name, sampling_only, from_cache, df) {
   savepath = sprintf("results/regressions/%s_sampling=%s.rds", name, toString(sampling_only))
+  # print(savepath)
   if (file.exists(savepath) & from_cache) {
     return(readRDS(savepath))
   }

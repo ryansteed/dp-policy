@@ -404,7 +404,7 @@ plot_experiment(experiment, test_experiment)
 ```
 
 
-```{r plot-all}
+```{r plot-all, warning=FALSE}
 for (experiment_name in c(
   "hold_harmless",
   "post_processing",
@@ -415,11 +415,12 @@ for (experiment_name in c(
   plot_race(experiment, experiment_name)
   
   for (t in unique(experiment$treatment)) {
+    print(sprintf("%s: %s", experiment_name, t))
     gam_mr = get_gam(
       sprintf("%s_%s", experiment_name, t),
       F,
-      F,
-      experiment %>% filter(treatment == t, trial < 10)
+      T,  # load from cache?
+      experiment %>% filter(treatment == t)
     )
     plot_gam(gam_mr, sprintf("%s_%s", experiment_name, t))
   }
