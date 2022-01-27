@@ -49,8 +49,8 @@ ggplot(grouped) +
 
 ```{r race}
 # kind = "hispanic"
-kind = "race_aggregate"
-# kind = "race"
+# kind = "race_aggregate"
+kind = "race"
 # kind = "intersectional"
 
 sorted = race_comparison(grouped, kind)
@@ -120,7 +120,7 @@ sorted = race_comparison(grouped, kind)
 
 
 plot = list(
-  geom_col(aes(fill="Sampling error")),
+  geom_col(aes(fill="")),
   coord_flip(),
   # ggtitle("Race-weighted misallocation"),
   xlab("Census Race Category")
@@ -134,19 +134,21 @@ plot = list(
 ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
   plot +
   ylab("Race-weighted misallocation per eligible child") +
-  geom_crossbar(
+  geom_errorbar(
     data=sorted, 
     aes(
       x=race, 
-      y=dp_sampling_benefit_per_child, 
-      ymin=dp_sampling_benefit_per_child, 
+      # y=dp_sampling_benefit_per_child,
+      ymin=sampling_benefit_per_child, 
       ymax=dp_sampling_benefit_per_child,
-      color="Sampling + DP"
+      color=(dp_sampling_benefit_per_child >= sampling_benefit_per_child)
     ), 
   ) +
+  scale_fill_manual(values=c("#00BFC4")) +
+  scale_colour_manual(values=c("#F8766D", "black"), labels=c("Decrease", "Increase")) +
   labs(
-    fill = "",
-    color = ""
+    fill = "Data error",
+    color = "+ DP error"
   ) +
   theme(
     legend.position = "top"

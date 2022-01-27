@@ -221,13 +221,13 @@ plot_race = function(experiment, name) {
         ymin=sampling_benefit_per_child, 
         ymax=dp_sampling_benefit_per_child,
         # linetype="",
-        color=(dp_sampling_benefit_per_child < sampling_benefit_per_child),
+        color=(dp_sampling_benefit_per_child >= sampling_benefit_per_child),
         fill=treatment
       ),
       position="dodge",
       size=0.5
     ) +
-    scale_colour_manual(values=c("black", "red"), labels=c("Increase", "Decrease")) +
+    scale_colour_manual(values=c("#F8766D", "black"), labels=c("Decrease", "Increase")) +
     coord_flip() +
     xlab("Census Race Category") +
     labs(
