@@ -49,8 +49,8 @@ ggplot(grouped) +
 
 ```{r race}
 # kind = "hispanic"
-# kind = "race_aggregate"
-kind = "race"
+kind = "race_aggregate"
+# kind = "race"
 # kind = "intersectional"
 
 sorted = race_comparison(grouped, kind)
@@ -120,7 +120,7 @@ sorted = race_comparison(grouped, kind)
 
 
 plot = list(
-  geom_col(aes(fill="")),
+  geom_col(aes(fill=""), color="black"),
   coord_flip(),
   # ggtitle("Race-weighted misallocation"),
   xlab("Census Race Category")
@@ -133,7 +133,6 @@ plot = list(
 
 ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
   plot +
-  ylab("Race-weighted misallocation per eligible child") +
   geom_errorbar(
     data=sorted, 
     aes(
@@ -141,11 +140,14 @@ ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
       # y=dp_sampling_benefit_per_child,
       ymin=sampling_benefit_per_child, 
       ymax=dp_sampling_benefit_per_child,
-      color=(dp_sampling_benefit_per_child >= sampling_benefit_per_child)
-    ), 
+      color=""
+    ),
+    size=0.5,
+    width=0.5
   ) +
+  ylab("Race-weighted misallocation per eligible child") +
   scale_fill_manual(values=c("#00BFC4")) +
-  scale_colour_manual(values=c("#F8766D", "black"), labels=c("Decrease", "Increase")) +
+  scale_colour_manual(values=c("black")) +
   labs(
     fill = "Data error",
     color = "+ DP error"
@@ -156,7 +158,7 @@ ggplot(sorted, aes(x=race, y=sampling_benefit_per_child)) +
   guides(
     fill = guide_legend(override.aes = list(color="transparent"))
   )
-ggsave(sprintf("plots/misalloc_%s.png", kind), dpi=300, width=5, height=6)
+ggsave(sprintf("plots/race/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 
 # ggplot(comparison_all, aes(x=reorder(race, dp_sampling_benefit_per_child_eligible), y=dp_sampling_benefit_per_child_eligible)) +
 #   plot +
@@ -317,19 +319,7 @@ stargazer(
 ### GAM
 ```{r gam-mr}
 sampling_only = F
-gam_mr = run_regs(df %>% filter(trial < 2), sampling_only)
-
-if (sampling_only) {
-  gam_sampling = gam_mr
-} else {
-  gam_dp = gam_mr
-}
-```
-
-```{r test}
-# saveRDS(gam_dp, sprintf("results/regressions/%s_sampling=%s.rds", "baseline", F))
-# gam_dp = readRDS(sprintf("results/regressions/%s_sampling=%s.rds", "baseline", F))
-gam_mr = get_gam("baseline", sampling_only, F)
+gam_mr = get_gam("baseline", sampling_only, F, df)
 ```
 
 
@@ -369,7 +359,7 @@ anova(gam_mr, gam_mr_interact)
 
 # vis.gam(gam_mr, view=c("prop_white", "median_income_est"))
 
-plot_gam(gam_mr)
+plot_gam(getViz(gam_mr), "baseline")
 ```
 
 ### Inverse welfare
@@ -400,7 +390,7 @@ plot_gam(gam_mr)
 
 ## Treatment comparison
 ```{r treatments}
-test_experiment = "hold_harmless"
+test_experiment = "post_processing"
 experiment = load_experiment(test_experiment)
 ```
 ```{r treatment-plot}
@@ -436,6 +426,8 @@ for (experiment_name in c(
 )) {
   experiment = load_experiment(experiment_name)
   plot_race(experiment, experiment_name)
+  
+  next
   
   from_cache = T
   

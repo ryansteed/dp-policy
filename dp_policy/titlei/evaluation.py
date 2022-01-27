@@ -368,7 +368,8 @@ def load_treatments(experiment_name):
 
 def compare_treatments(
   treatments,
-  epsilon=0.1, delta=0.0, mapvar="error_per_child"
+  epsilon=0.1, delta=0.0, mapvar="error_per_child",
+  experiment_name=None
 ):
     print("Comparing at eps=", epsilon)
     for treatment, df in treatments.items():
@@ -403,7 +404,6 @@ def compare_treatments(
         lambda df: np.sqrt(df.groupby('trial')["misalloc"].mean()),
         sns.kdeplot,
         dict(bw_method=0.5, fill=True),
-        # filename=f"rmse_{grant}",
         epsilon=epsilon,
         delta=delta,
         xlab=f"Mean misalloc (per trial)",
@@ -416,7 +416,7 @@ def compare_treatments(
         lambda df: np.sqrt(df.groupby('trial')["misalloc_sq"].mean()),
         sns.kdeplot,
         dict(bw_method=0.5, fill=True),
-        # filename=f"rmse_{grant}",
+        filename=f"{experiment_name}_rmse",
         epsilon=epsilon,
         delta=delta,
         xlab=f"RMSE (per trial)",

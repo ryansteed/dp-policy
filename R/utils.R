@@ -212,24 +212,28 @@ plot_race = function(experiment, name) {
   comparison = race_comparison(grouped, "race_aggregate")
   
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child)) +
-    ylab("Race-weighted misallocation per eligible child") +
-    geom_col(position="dodge", aes(fill=treatment)) +
+    geom_col(position="dodge", aes(fill=treatment), color="black") +
     geom_errorbar(
       aes(
-        x=race, 
+        # x=race,
         # y=dp_sampling_benefit_per_child,
         ymin=sampling_benefit_per_child, 
         ymax=dp_sampling_benefit_per_child,
         # linetype="",
-        color=(dp_sampling_benefit_per_child >= sampling_benefit_per_child),
+        color="",
         fill=treatment
       ),
-      position="dodge",
-      size=0.5
+      position=position_dodge(width=0.9),
+      size=0.5,
+      width=0.5
     ) +
-    scale_colour_manual(values=c("#F8766D", "black"), labels=c("Decrease", "Increase")) +
+    ylab("Race-weighted misallocation per eligible child") +
+    scale_colour_manual(values=c("black")) +
     coord_flip() +
     xlab("Census Race Category") +
+    guides(
+      fill = guide_legend(ncol=3)
+    ) +
     labs(
       fill = "Data error",
       color = "+ DP error"
