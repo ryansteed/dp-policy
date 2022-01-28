@@ -315,9 +315,9 @@ def cube(x):
 def heatmap(
     data, label=None, title=None, transform='cube', theme="RdBu",
     y="error_dp_per_child", vcenter=0, file=None,
-    figsize=(10, 5), bar_location='bottom', min=None, max=None
+    figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300
 ):
-    fig, ax = plt.subplots(1, figsize=figsize, dpi=300)
+    fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
 
     if transform == 'cube':
         data.loc[:, y] = cube(data[y])
@@ -347,7 +347,7 @@ def heatmap(
     plt.axis('off')
     plt.tight_layout()
     if file is not None:
-        plt.savefig(f"../plots/geo/{file}", dpi=300)
+        plt.savefig(f"../plots/geo/{file}", dpi=dpi)
         plt.close()
     else:
         plt.show()
@@ -472,7 +472,8 @@ def compare_treatments(
             figsize=(15, 10),
             bar_location='right',
             min=ymin,
-            max=ymax
+            max=ymax,
+            dpi=50
         )
 
 
