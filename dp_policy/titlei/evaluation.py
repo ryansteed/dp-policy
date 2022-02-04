@@ -76,13 +76,23 @@ def discrimination_join(results, save_path=None, verbose=False):
     ]
     if verbose:
         print(variables)
-
-    # adding geographic area
-    geo = get_geography()
+        print(acs[variables].shape)
+        print(results.shape)
 
     grants = results.join(acs[variables], how="inner")
     if verbose:
+        print(
+            "missing some districts in ACS:",
+            len(results.groupby([
+                "State FIPS Code", "District ID"
+            ])) - len(grants.groupby([
+                "State FIPS Code", "District ID"
+            ]))
+        )
         print(grants.shape)
+
+    # adding geographic area
+    geo = get_geography()
     grants = grants.join(geo["ALAND"])
     if verbose:
         print(grants.shape)

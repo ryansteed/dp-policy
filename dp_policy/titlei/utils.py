@@ -1,4 +1,6 @@
+from asyncio import start_unix_server
 import pandas as pd
+import numpy as np
 import re
 import os
 from math import floor, ceil
@@ -54,7 +56,7 @@ def get_acs_data(path, name):
     Args:
         path (str): path to txt file downloaded form the link above
     """
-    data = pd.read_csv(path, sep="|")
+    data = pd.read_csv(path, sep="|", low_memory=False)
     # strip out NA district ID's
     # data = data[data["LEAID"] != 'N']
     # separate LEAID into FIPS code and district ID
@@ -62,27 +64,105 @@ def get_acs_data(path, name):
         split_leaids(data.LEAID)
     data = data.set_index(["State FIPS Code", "District ID"])
     data = data.drop(
-        columns=["GeoId", "Geography", "Year", "Iteration"]
+        columns=["GeoId", "Year", "Iteration"]
     )
+    # drop 99999 - remainders
+    data = data.query("`District ID` != 99999")
 
     varnames = pd.read_excel(
         "../data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx",
-        sheet_name="CDP_ChildPop",
+        sheet_name=name,
         index_col=0
     )
+
     drop = []
     new = {}
     for c in data.columns:
         try:
-            new[c] = "{} ({}) - {}".format(
+            newname = "{} ({}) - {}".format(
                 varnames.loc[c].vlabel.split(";")[-1].lstrip(),
                 varnames.loc[c].vlabel.split(";")[2].lstrip(),
                 re.sub(r'\d+', '', c.split("_")[-1])
             )
+            new[c] = newname if newname not in new.values() else c
         except KeyError:
-            drop.append(c)
+            if c == "Geography":
+                new[c] = c
+            else:
+                drop.append(c)
+
     data = data.drop(columns=drop).rename(columns=new)
     return data
+
+
+def impute_missing(original, update):
+    for c in [c for c in original.columns if c not in update.columns]:
+        update.loc[:, c] = np.nan
+    # print(update.loc[update.index.difference(original.index), original.columns])
+    update_reduced = update.loc[update.index.difference(original.index), original.columns]
+    imputed = pd.concat([
+        original,
+        update_reduced
+    ])
+    return imputed
+
+
+def get_acs_unified(verbose=False):
+    # get public school children data
+    demographics_students = get_acs_data(
+        "../data/discrimination/CDP05.txt",
+        "CDP_ChildPop"
+    )
+    # update any missing with general pop data
+    demographics = impute_missing(
+        demographics_students,
+        get_acs_data(
+            "../data/discrimination/DP05.txt",
+            "DP_TotalPop"
+        )
+    )
+    social_students = get_acs_data(
+        "../data/discrimination/CDP02.txt",
+        "CDP_ChildPop"
+    )
+    social = impute_missing(
+        social_students,
+        get_acs_data(
+            "../data/discrimination/DP02.txt",
+            "DP_TotalPop"
+        )
+    )
+    economic_students = get_acs_data(
+        "../data/discrimination/CDP03.txt",
+        "CDP_ChildPop"
+    )
+    economic = impute_missing(
+        economic_students,
+        get_acs_data(
+            "../data/discrimination/DP03.txt",
+            "DP_TotalPop"
+        )
+    )
+    housing_students = get_acs_data(
+        "../data/discrimination/CDP04.txt",
+        "CDP_ChildPop"
+    )
+    housing = impute_missing(
+        housing_students,
+        get_acs_data(
+            "../data/discrimination/DP04.txt",
+            "DP_TotalPop"
+        )
+    )
+    if verbose:
+        print(demographics.shape)
+        print(social.shape)
+        print(economic.shape)
+        print(housing.shape)
+    return demographics\
+        .join(social, lsuffix="_demo", rsuffix="_social", how="inner")\
+        .join(economic, rsuffix="_econ", how="inner")\
+        .join(housing, rsuffix="_housing", how="inner")
 
 
 def split_leaids(leaids: pd.Series):
@@ -205,34 +285,6 @@ def weighting(eligible, pop):
 
     # take the higher weighted eligibility count
     return max(wec_counts, wec_props)
-
-
-def get_acs_unified(verbose=False):
-    demographics = get_acs_data(
-        "../data/discrimination/CDP05.txt",
-        "demo"
-    )
-    social = get_acs_data(
-        "../data/discrimination/CDP02.txt",
-        "social"
-    )
-    economic = get_acs_data(
-        "../data/discrimination/CDP03.txt",
-        "social"
-    )
-    housing = get_acs_data(
-        "../data/discrimination/CDP04.txt",
-        "housing"
-    )
-    if verbose:
-        print(demographics.shape)
-        print(social.shape)
-        print(economic.shape)
-        print(housing.shape)
-    return demographics\
-        .join(social, lsuffix="_demo", rsuffix="_social", how="inner")\
-        .join(economic, rsuffix="_econ", how="inner")\
-        .join(housing, rsuffix="_housing", how="inner")
 
 
 def data(
