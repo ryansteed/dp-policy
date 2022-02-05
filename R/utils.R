@@ -13,12 +13,20 @@ library(gridExtra)
 library(data.table)
 
 clean = function(df) {
+  # print(sprintf(
+  #   "Dropping %d rows with NA ACS data",
+  #   nrow(df %>% clean_names() %>% filter(total_population_race_est == 0) %>% distinct(state_fips_code, district_id))
+  # ))
   df_clean = df %>%
     clean_names() %>%
+    filter(total_population_race_est != 0) %>%
+    mutate_at(
+      vars(matches("race_pct$")), as.numeric
+    ) %>%
     mutate_at(
       vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
     ) %>% mutate(
-      prop_white = white_race_pct / 100,
+      prop_white = as.numeric(white_race_pct) / 100,
       nonwhite_children = true_children_total * prop_white,
       not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
       average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
@@ -196,7 +204,7 @@ race_comparison = function(comparison, kind) {
   
   sorted = comparison_all %>%
     mutate(race = fct_reorder(race, sampling_benefit_per_child)) %>%
-    distinct(treatment, race, sampling_benefit_per_child, dp_sampling_benefit_per_child)
+    distinct(treatment, race, sampling_benefit_per_child_eligible, dp_sampling_benefit_per_child_eligible)
   
   return(sorted)
 }
@@ -211,14 +219,14 @@ plot_race = function(experiment, name) {
   grouped = summarise_trials(experiment)
   comparison = race_comparison(grouped, "race_aggregate")
   
-  plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child)) +
+  plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible)) +
     geom_col(position="dodge", aes(fill=treatment), color="black") +
     geom_errorbar(
       aes(
         # x=race,
         # y=dp_sampling_benefit_per_child,
-        ymin=sampling_benefit_per_child, 
-        ymax=dp_sampling_benefit_per_child,
+        ymin=sampling_benefit_per_child_eligible, 
+        ymax=dp_sampling_benefit_per_child_eligible,
         # linetype="",
         color="",
         fill=treatment
