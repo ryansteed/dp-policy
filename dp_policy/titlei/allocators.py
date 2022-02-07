@@ -54,13 +54,25 @@ class Allocator:
         """
 
     def adj_sppe(self):
-        avg_sppe = np.mean(self.estimates.sppe)
-        adj_sppe = self.estimates.sppe * self.congress_cap
-        adj_sppe_trunc = adj_sppe.clip(
-            *np.array(self.adj_sppe_bounds)*avg_sppe
+        """Calculate adjusted SPPE using Sonnenberg, 2016 pg. 18 algorithm.
+        """
+        # Get baseline average across all 50 states and territories
+        average = np.round(
+            self.estimates.sppe.groupby("State FIPS Code").first().mean(),
+            decimals=2
         )
-        adj_sppe_efig = adj_sppe.clip(
-            *np.array(self.adj_sppe_bounds_efig)*avg_sppe
+        # Each state’s and each territory’s SPPE is multiplied by the
+        # congressional cap and rounded to the second decimal place
+        # (for dollars and cents).
+        scaled = np.round(self.estimates.sppe * self.congress_cap, decimals=2)
+        # No state recieves above/below the bounds set by law
+        adj_sppe_trunc = scaled.clip(
+            # bound by some % of the average, given in the law - round to cents
+            *np.round(np.array(self.adj_sppe_bounds)*average, decimals=2)
+        )
+        adj_sppe_efig = scaled.clip(
+            # bound %s are different for EFIG
+            *np.round(np.array(self.adj_sppe_bounds_efig)*average, decimals=2)
         )
         return adj_sppe_trunc, adj_sppe_efig
 
