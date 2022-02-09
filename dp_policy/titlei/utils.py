@@ -170,7 +170,7 @@ def get_inputs(year):
         lambda x: median_cv(x["Estimated Total Population"]),
         axis=1
     )
-    print(inputs.official_total_alloc.sum())
+
     return inputs
 
 

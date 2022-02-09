@@ -73,16 +73,41 @@ class Authorizer(Allocator):
     def grant_types(self):
         raise NotImplementedError
 
+    def calc_total(self):
+        for prefix in self.prefixes:
+            self.estimates[f"{prefix}_grant_total"] = self.estimates[[
+                f"{prefix}_grant_{grant_type}"
+                for grant_type in self.grant_types()
+            ]].sum(axis=1)
+        return self.estimates
+
     def allocations(
         self, normalize=True, **kwargs
     ) -> pd.DataFrame:
         super().allocations(**kwargs)
         if normalize:
-            for prefix in self.prefixes:
-                self._normalize("total", prefix)
+            for grant_type in self.grant_types():
+                for prefix in self.prefixes:
+                    appropriation = \
+                        self.estimates[f"official_{grant_type}_alloc"].sum()
+                    self._normalize(grant_type, prefix, appropriation)
+            self.calc_total()
+            if self.verbose:
+                total_approp = self.estimates[[
+                    f"official_{grant_type}_alloc"
+                    for grant_type in self.grant_types()
+                ]].sum().sum()
+                print(
+                    "After normalization, appropriation is",
+                    total_approp,
+                    "and true allocation is",
+                    self.estimates.true_grant_total.sum()
+                )
         return self.estimates
 
-    def _normalize(self, grant_type, prefix, hold_harmless=None):
+    def _normalize(
+        self, grant_type, prefix, appropriation, hold_harmless=None
+    ):
         # -- DEPRECATED by new official file --
         # get this year's budget
         # true_allocs = get_allocation_data("../data/titlei-allocations_20")
@@ -90,8 +115,6 @@ class Authorizer(Allocator):
 
         # print(actual_budget)
         # print(len(true_allocs))
-
-        appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
 
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
@@ -102,24 +125,18 @@ class Authorizer(Allocator):
         ].sum()
         current_budget = \
             self.estimates[f"{prefix}_grant_{grant_type}"].sum()
-        # only rescale total amount - other amounts remain the same
-        # (rescaling happens after amounts are summed)
-        authorization_amounts = [
-            f"{prefix}_grant_{grant_type}"
-        ]
-
         # redistribute the remaining budget between non-harmless districts
-        self.estimates.loc[~hold_harmless, authorization_amounts] = \
-            self.estimates.loc[
-                ~hold_harmless, authorization_amounts
-            ].apply(
-                lambda x: Authorizer.normalize_to_budget(
-                    x, remaining_budget
-                )
+        self.estimates.loc[
+            ~hold_harmless, f"{prefix}_grant_{grant_type}"
+        ] = \
+            Authorizer.normalize_to_budget(
+                self.estimates.loc[
+                    ~hold_harmless, f"{prefix}_grant_{grant_type}"
+                ], remaining_budget
             )
         if self.verbose:
             print(
-                f"{current_budget} authorized reduced "
+                f"{current_budget} authorized for {grant_type} reduced "
                 f"to {appropriation} allocated."
             )
 
@@ -175,13 +192,12 @@ class SonnenbergAuthorizer(Authorizer):
         return (
             "basic",
             "concentration",
-            "targeted",
-            "total"
+            "targeted"
         )
 
     def calc_auth(self):
         # calc adj. SPPE
-        adj_sppe, adj_sppe_efig = self.adj_sppe()
+        adj_sppe, _ = self.adj_sppe()
         self.thresholder.set_cv(self.estimates.cv)
 
         # calculate grant amounts for true/randomized values
@@ -309,20 +325,12 @@ class SonnenbergAuthorizer(Authorizer):
                     f"{prefix}_grant_{grant_type}"
                 ] = 0.0
 
-        self.estimates = SonnenbergAuthorizer.calc_total(
-            self.estimates, self.prefixes
-        )
-
-    @staticmethod
-    def calc_total(results, prefixes):
-        for prefix in prefixes:
-            results[f"{prefix}_grant_total"] = \
-                results[f"{prefix}_grant_basic"] + \
-                results[f"{prefix}_grant_concentration"] + \
-                results[f"{prefix}_grant_targeted"]
-        return results
+        self.calc_total()
 
     def _hold_harmless(self):
+        if self.verbose:
+            print("Applying hold harmless")
+
         # load last year's allocs - watch out for endogeneity
         # get this year's budget
         true_allocs = get_allocation_data(
@@ -334,33 +342,101 @@ class SonnenbergAuthorizer(Authorizer):
         self.estimates = self.estimates.join(
             true_allocs["alloc_2019"]
         )
-        for prefix in self.prefixes:
-            i = 0
-            hist_harmless = np.zeros(len(self.estimates)).astype(bool)
-            while SonnenbergAuthorizer._excessive_loss(
-                self.estimates[f"{prefix}_grant_total"],
-                self.estimates["alloc_2019"]
-            ).any():
-                hold_harmless = SonnenbergAuthorizer._excessive_loss(
-                    self.estimates[f"{prefix}_grant_total"],
-                    self.estimates["alloc_2019"]
+        for grant_type in self.grant_types():
+            alloc_previous = \
+                self.estimates[f"official_{grant_type}_hold_harmless"]
+            appropriation = \
+                self.estimates[f"official_{grant_type}_alloc"].sum()
+            for prefix in self.prefixes:
+                harmless_rate = SonnenbergAuthorizer._hold_harmless_rate(
+                    self.estimates[f"{prefix}_children_eligible"] /
+                    self.estimates[f"{prefix}_children_total"]
                 )
-                hist_harmless = hold_harmless | hist_harmless
-                i += 1
-                if (i > 10):
-                    print(
-                        f"[WARN]: {hold_harmless.sum()} SDs not held harmless."
-                        "Could not converge after 100 iterations."
-                    )
-                # print(i)
-                # print("# hold harmless:", hold_harmless.sum())
-                # print(self.estimates.index[hold_harmless].values[:2])
-                # limit losses to 15%
-                self.estimates.loc[hold_harmless, f"{prefix}_grant_total"] = \
-                    self.estimates["alloc_2019"] * 0.85
-                # renormalize and try again
-                self._normalize(hold_harmless=hist_harmless)
+                self._hold_harmless_recursive(
+                    0,
+                    np.zeros(len(self.estimates)).astype(bool),
+                    prefix,
+                    grant_type,
+                    appropriation,
+                    harmless_rate,
+                    alloc_previous
+                )
+
+        self.calc_total()
+        if self.verbose:
+            total_approp = self.estimates[[
+                f"official_{grant_type}_alloc"
+                for grant_type in self.grant_types()
+            ]].sum().sum()
+            print(
+                "After hold harmless, appropriation is",
+                total_approp,
+                "and true allocation is",
+                self.estimates.true_grant_total.sum()
+            )
+
+    def _hold_harmless_recursive(
+        self,
+        depth,
+        hist_harmless,
+        prefix,
+        grant_type,
+        appropriation,
+        harmless_rate,
+        alloc_previous,
+        max_depth=10
+    ):
+        hold_harmless = self._excessive_loss(
+            prefix, grant_type, alloc_previous, harmless_rate
+        )
+        if not hold_harmless.any():
+            return
+        if self.verbose and depth > 0:
+            print(
+                "Hold harmless iter", depth,
+                f"- {hold_harmless.sum()} hold harmless districts remaining"
+            )
+        if depth > max_depth:
+            print(
+                f"[WARN]: {hold_harmless.sum()} not held harmless."
+                f"Could not converge after {max_depth} iterations."
+            )
+            return
+        # limit losses to harmless rate
+        hist_harmless = hold_harmless | hist_harmless
+        self.estimates.loc[hold_harmless, f"{prefix}_grant_{grant_type}"] = \
+            alloc_previous * harmless_rate
+        self._normalize(
+            grant_type, prefix, appropriation,
+            hold_harmless=hist_harmless
+        )
+        return self._hold_harmless_recursive(
+            depth+1,
+            hist_harmless,
+            prefix,
+            grant_type,
+            appropriation,
+            harmless_rate,
+            alloc_previous,
+            max_depth=max_depth
+        )
+
+    def _excessive_loss(
+        self, prefix, grant_type, alloc_previous, harmless_rate
+    ):
+        return (
+            self.estimates[f"{prefix}_grant_{grant_type}"] <
+            harmless_rate * alloc_previous
+        )
 
     @staticmethod
-    def _excessive_loss(this_year, last_year):
-        return this_year < 0.85 * last_year
+    def _hold_harmless_rate(prop_eligible):
+        return np.where(
+            prop_eligible < 0.15,
+            0.85,
+            np.where(
+                prop_eligible < 0.3,
+                0.9,
+                0.95
+            )
+        )
