@@ -333,15 +333,6 @@ class SonnenbergAuthorizer(Authorizer):
 
         # load last year's allocs - watch out for endogeneity
         # get this year's budget
-        true_allocs = get_allocation_data(
-            "../data/titlei-allocations_19",
-            header=2
-        ).rename(columns={
-            'HistAlloc': 'alloc_2019'
-        })
-        self.estimates = self.estimates.join(
-            true_allocs["alloc_2019"]
-        )
         for grant_type in self.grant_types():
             alloc_previous = \
                 self.estimates[f"official_{grant_type}_hold_harmless"]
