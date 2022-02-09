@@ -25,11 +25,9 @@ class Allocator:
         self.verbose = verbose
 
     def allocations(
-        self, uncertainty=False, **uncertainty_params
+        self
     ) -> pd.DataFrame:
         self.calc_auth()
-        if uncertainty:
-            self.calc_uncertainty(**uncertainty_params)
         return self.estimates
 
     def calc_auth(self):
@@ -40,12 +38,6 @@ class Allocator:
 
         returns:
             pd.DataFrame: current estimates
-        """
-        raise NotImplementedError
-
-    def calc_uncertainty(self):
-        """Calculate upper and lower confidence bounds.
-        NOTE: doesn't account for hold harmless provision.
         """
         raise NotImplementedError
 
@@ -82,23 +74,15 @@ class Authorizer(Allocator):
         raise NotImplementedError
 
     def allocations(
-        self, uncertainty=False, normalize=True, **uncertainty_params
+        self, normalize=True, **kwargs
     ) -> pd.DataFrame:
-        super().allocations(uncertainty=uncertainty, **uncertainty_params)
+        super().allocations(**kwargs)
         if normalize:
-            self._normalize(uncertainty=uncertainty)
+            for prefix in self.prefixes:
+                self._normalize("total", prefix)
         return self.estimates
 
-    def _normalize(self, hold_harmless=None, uncertainty=False):
-
-        print(len(self.estimates))
-
-        s = 0
-        for grant_type in [t for t in self.grant_types() if t != "total"] + ["efig"]:
-            appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
-            print(grant_type, appropriation)
-        print(self.estimates.official_total_alloc.sum())
-
+    def _normalize(self, grant_type, prefix, hold_harmless=None):
         # -- DEPRECATED by new official file --
         # get this year's budget
         # true_allocs = get_allocation_data("../data/titlei-allocations_20")
@@ -107,38 +91,37 @@ class Authorizer(Allocator):
         # print(actual_budget)
         # print(len(true_allocs))
 
+        appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
+
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
-        for prefix in self.prefixes:
-            # available budget is the full budget minus hold harmless districts
-            remaining_budget = actual_budget - self.estimates.loc[
-                hold_harmless, f"{prefix}_grant_total"
-            ].sum()
-            current_budget = self.estimates[f"{prefix}_grant_total"].sum()
-            # only rescale total amount - other amounts remain the same
-            # (rescaling happens after amounts are summed)
-            authorization_amounts = [
-                f"{prefix}_grant_total"
-            ]
-            if uncertainty:
-                authorization_amounts += [
-                    f"{prefix}_grant_total_{suffix}"
-                    for suffix in ("ci_upper", "ci_lower")
-                ] + [f"{prefix}_ci_upper", f"{prefix}_ci_lower"]
-            # redistribute the remaining budget between non-harmless districts
-            self.estimates.loc[~hold_harmless, authorization_amounts] = \
-                self.estimates.loc[
-                    ~hold_harmless, authorization_amounts
-                ].apply(
-                    lambda x: Authorizer.normalize_to_budget(
-                        x, remaining_budget
-                    )
+
+        # available budget is the full budget minus hold harmless districts
+        remaining_budget = appropriation - self.estimates.loc[
+            hold_harmless, f"{prefix}_grant_{grant_type}"
+        ].sum()
+        current_budget = \
+            self.estimates[f"{prefix}_grant_{grant_type}"].sum()
+        # only rescale total amount - other amounts remain the same
+        # (rescaling happens after amounts are summed)
+        authorization_amounts = [
+            f"{prefix}_grant_{grant_type}"
+        ]
+
+        # redistribute the remaining budget between non-harmless districts
+        self.estimates.loc[~hold_harmless, authorization_amounts] = \
+            self.estimates.loc[
+                ~hold_harmless, authorization_amounts
+            ].apply(
+                lambda x: Authorizer.normalize_to_budget(
+                    x, remaining_budget
                 )
-            if self.verbose:
-                print(
-                    f"{current_budget} authorized reduced "
-                    f"to {actual_budget} allocated."
-                )
+            )
+        if self.verbose:
+            print(
+                f"{current_budget} authorized reduced "
+                f"to {appropriation} allocated."
+            )
 
     @staticmethod
     def normalize_to_budget(authorizations, total_budget):
@@ -169,17 +152,6 @@ class AbowdAllocator(Allocator):
 
         return self.estimates
 
-    # DEPRECATED
-    def calc_uncertainty(self, alpha=0.05):
-        z = stats.norm.ppf(1-alpha/2)
-        self.estimates["true_se"] = \
-            self.estimates.true_grant_total * self.estimates.cv
-        self.estimates["true_ci_lower"] = \
-            self.estimates.true_grant_total - self.estimates.true_se * z
-        self.estimates["true_ci_upper"] = \
-            self.estimates.true_grant_total + self.estimates.true_se * z
-        return self.estimates.true_ci_lower, self.estimates.true_ci_upper
-
 
 class SonnenbergAuthorizer(Authorizer):
     def __init__(
@@ -192,9 +164,9 @@ class SonnenbergAuthorizer(Authorizer):
         super().__init__(*args, **kwargs)
 
     def allocations(
-        self, uncertainty=False, **uncertainty_params
+        self, **kwargs
     ) -> pd.DataFrame:
-        super().allocations(uncertainty=uncertainty, **uncertainty_params)
+        super().allocations(**kwargs)
         if self.hold_harmless:
             self._hold_harmless()
         return self.estimates
@@ -340,202 +312,6 @@ class SonnenbergAuthorizer(Authorizer):
         self.estimates = SonnenbergAuthorizer.calc_total(
             self.estimates, self.prefixes
         )
-
-    # DEPRECATED
-    def calc_uncertainty(self, alpha=0.05, e_nu=0.0):
-        """Calculate uncertainty in Sonnenberg authorizations.
-
-        Args:
-            alpha (float, optional): confidence level. Defaults to 0.05.
-            e_nu (float, optional): assumed error in the total child estimate.
-                Defaults to 0.0.
-        """
-        z = stats.norm.ppf(1-alpha/2)
-        cv_z = self.estimates.cv * z
-
-        for prefix in ["true", "est"]:
-            self.calc_bounds(prefix, cv_z, e_nu)
-
-        self.calc_expected_loss()
-
-        return self.estimates.true_ci_lower, self.estimates.true_ci_upper
-
-    # DEPRECATED
-    def calc_bounds(self, prefix, cv_z, e_nu):
-        mu_hat, _, nu_hat, k = self.get_vars(prefix)
-
-        # see Notion for notes on how to calculate these
-        # basic grants
-        self.estimates[f"{prefix}_grant_basic_ci_upper"] = \
-            k * mu_hat * (1 + cv_z)
-        self.estimates.loc[
-            mu_hat < np.maximum(10, 0.02*nu_hat*(1-e_nu)) / (1+cv_z),
-            f"{prefix}_grant_basic_ci_upper"
-        ] = 0.0
-        self.estimates[f"{prefix}_grant_basic_ci_lower"] = \
-            k * mu_hat * (1 - cv_z)
-        self.estimates.loc[
-            mu_hat < np.maximum(10, 0.02*nu_hat*(1+e_nu)) / (1-cv_z),
-            f"{prefix}_grant_basic_ci_lower"
-        ] = 0.0
-
-        # concentration grants
-        self.estimates[f"{prefix}_grant_concentration_ci_upper"] = \
-            k * mu_hat * (1 + cv_z)
-        self.estimates.loc[
-            mu_hat < np.minimum(
-                6500 / 1 + cv_z,
-                0.15*nu_hat*(1-e_nu)/(1+cv_z)
-            ),
-            f"{prefix}_grant_concentration_ci_upper"
-        ] = 0.0
-        self.estimates[f"{prefix}_grant_concentration_ci_lower"] = \
-            k * mu_hat * (1 - cv_z)
-        self.estimates.loc[
-            mu_hat < np.minimum(
-                6500 / 1 - cv_z,
-                0.15*nu_hat*(1+e_nu)/(1-cv_z)
-            ),
-            f"{prefix}_grant_concentration_ci_lower"
-        ] = 0.0
-
-        # targeted grants
-        self.estimates[f"{prefix}_grant_targeted_ci_upper"] = \
-            k * np.apply_along_axis(
-                lambda x: weighting(x[0], x[1]), 1,
-                np.column_stack((mu_hat*(1+cv_z), nu_hat*(1-e_nu)))
-            )
-        self.estimates.loc[
-            mu_hat < np.maximum(10, 0.05*nu_hat) / (1 + cv_z),
-            f"{prefix}_grant_targeted_ci_upper"
-        ] = 0.0
-        self.estimates[f"{prefix}_grant_targeted_ci_lower"] = \
-            k * np.apply_along_axis(
-                lambda x: weighting(x[0], x[1]), 1,
-                np.column_stack((mu_hat*(1-cv_z), nu_hat*(1+e_nu)))
-            )
-        self.estimates.loc[
-            mu_hat < np.maximum(10, 0.05*nu_hat) / (1 - cv_z),
-            f"{prefix}_grant_targeted_ci_lower"
-        ] = 0.0
-
-        # totals
-        for bound in ("upper", "lower"):
-            # clip lower bound to zero
-            for grant_type in ["basic", "concentration", "targeted"]:
-                self.estimates.loc[
-                    self.estimates[
-                        f"{prefix}_grant_{grant_type}_ci_{bound}"
-                    ] < 0.0,
-                    f"{prefix}_grant_{grant_type}_ci_{bound}"
-                ] = 0.0
-
-            self.estimates[f"{prefix}_ci_{bound}"] = \
-                self.estimates[f"{prefix}_grant_basic_ci_{bound}"] + \
-                self.estimates[
-                    f"{prefix}_grant_concentration_ci_{bound}"
-                ] + \
-                self.estimates[f"{prefix}_grant_targeted_ci_{bound}"]
-
-        # sanity check the bounds are on the right sides
-        for grant_type in ["basic", "concentration", "targeted"]:
-            overlapping = (
-                (
-                    self.estimates[
-                        f"{prefix}_grant_{grant_type}_ci_upper"
-                    ] - self.estimates[
-                        f"{prefix}_grant_{grant_type}_ci_lower"
-                    ]
-                ) < 0.0
-            ).sum()
-            # assert overlapping == 0,\
-            #     f"{overlapping} overlapping bounds for {grant_type}"
-            # assert (self.estimates[
-            #     f"{prefix}_grant_{grant_type}_ci_upper"
-            # ] < self.estimates[
-            #     f"{prefix}_grant_{grant_type}"
-            # ]).sum() == 0
-            # assert (self.estimates[
-            #     f"{prefix}_grant_{grant_type}_ci_lower"
-            # ] > self.estimates[
-            #     f"{prefix}_grant_{grant_type}"
-            # ]).sum() == 0
-
-            # try:
-            #     assert overlapping == 0, \
-            #         f"{overlapping} overlapping bounds for {grant_type}"
-            #     assert (self.estimates[
-            #                 f"{prefix}_grant_{grant_type}_ci_upper"
-            #             ] < self.estimates[
-            #                 f"{prefix}_grant_{grant_type}"
-            #             ]).sum() == 0
-            #     assert (self.estimates[
-            #                 f"{prefix}_grant_{grant_type}_ci_lower"
-            #             ] > self.estimates[
-            #                 f"{prefix}_grant_{grant_type}"
-            #             ]).sum() == 0
-            # except:
-            #     import pdb
-            #     pdb.set_trace()
-
-    # DEPRECATED
-    def calc_prob_eligibility(self):
-        mu_hat, sigma_mu, nu_hat, _ = self.get_vars("true")
-
-        # basic
-        self.estimates["prob_el_basic"] = \
-            SonnenbergAuthorizer._calc_prob(
-                nu_hat, mu_hat, sigma_mu, 10, 0.02
-            )
-        # concentration
-        self.estimates["prob_el_concentration"] = \
-            SonnenbergAuthorizer._calc_prob(
-                nu_hat, mu_hat, sigma_mu, 6500, 0.15, union=True
-            )
-        # targeted
-        self.estimates["prob_el_targeted"] = \
-            SonnenbergAuthorizer._calc_prob(
-                nu_hat, mu_hat, sigma_mu, 10, 0.05
-            )
-
-    # DEPRECATED
-    @staticmethod
-    def _calc_prob(
-        nu_hat, mu_hat, sigma_mu,
-        raw: float, prop: float, union: bool = False
-    ):
-        """Calculate the likelihood of eligibility when there are two required
-        conditions.
-
-        Args:
-            raw_ub (float): lower bound on poverty count
-            prop_ub (float): lower bound on poverty share
-            union (bool): if the eligibility requirement is a union
-        """
-        # assumes e_nu = 0
-        return np.where(
-            (nu_hat > raw / prop) if union else (nu_hat <= raw / prop),
-            1 - stats.norm.cdf((raw-mu_hat)/sigma_mu),
-            1 - stats.norm.cdf((prop*nu_hat - mu_hat)/sigma_mu)
-        )  # nu is point mass
-
-    def calc_expected_loss(self):
-        # assumes e_nu = 0
-        self.calc_prob_eligibility()
-
-        # basic
-        mu_hat, _, _, k = self.get_vars("true")
-        expected_y = k*mu_hat*self.estimates["prob_el_basic"]
-        y_hat = self.estimates.true_grant_basic
-        self.estimates["expected_loss_basic"] = expected_y - y_hat
-        return self.estimates.expected_loss_basic
-
-    def get_vars(self, prefix):
-        mu_hat = self.estimates[f"{prefix}_children_eligible"]
-        sigma_mu = self.estimates.cv * mu_hat
-        nu_hat = self.estimates[f"{prefix}_children_total"]
-        k, _ = self.adj_sppe()
-        return mu_hat, sigma_mu, nu_hat, k
 
     @staticmethod
     def calc_total(results, prefixes):

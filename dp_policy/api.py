@@ -11,7 +11,7 @@ from dp_policy.titlei.utils import get_sppe, data
 
 def titlei_funding(
     allocator, inputs, mechanism, sppe,
-    uncertainty=False, normalize=True,
+    normalize=True,
     allocator_kwargs={}, sampling_kwargs={},
     **grants_kwargs
 ):
@@ -27,7 +27,7 @@ def titlei_funding(
         ),
         **allocator_kwargs
     )
-    return alloc.allocations(uncertainty=uncertainty, normalize=normalize)
+    return alloc.allocations(normalize=normalize)
 
 
 def titlei_grid(
@@ -66,7 +66,6 @@ def titlei_grid(
                     sppe,
                     allocator_kwargs=allocator_kwargs,
                     verbose=False,  # too noisy for a grid search
-                    uncertainty=False,
                     normalize=(not auth)
                 ))
     results = pd.concat(
