@@ -119,10 +119,10 @@ def district_id_from_name(df, name, state=None):
     return ind[0]
 
 
-def get_inputs(year):
+def get_inputs(year, baseline="prelim"):
     # official ESEA data
     official = get_official_combined(
-        f"../data/titlei-allocations/revfinal_{str(year)[2:]}.xls"
+        f"../data/titlei-allocations/{baseline}_{str(year)[2:]}.xls",
     ).drop(columns=[
         'LEAID',
         'Sort C',
