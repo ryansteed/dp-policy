@@ -90,9 +90,23 @@ class Authorizer(Allocator):
         return self.estimates
 
     def _normalize(self, hold_harmless=None, uncertainty=False):
+
+        print(len(self.estimates))
+
+        s = 0
+        for grant_type in [t for t in self.grant_types() if t != "total"] + ["efig"]:
+            appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
+            print(grant_type, appropriation)
+        print(self.estimates.official_total_alloc.sum())
+
+        # -- DEPRECATED by new official file --
         # get this year's budget
-        true_allocs = get_allocation_data("../data/titlei-allocations_20")
-        actual_budget = true_allocs["HistAlloc"].sum()
+        # true_allocs = get_allocation_data("../data/titlei-allocations_20")
+        # actual_budget = true_allocs["HistAlloc"].sum()
+
+        # print(actual_budget)
+        # print(len(true_allocs))
+
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
         for prefix in self.prefixes:

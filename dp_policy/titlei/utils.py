@@ -17,12 +17,12 @@ def get_official_combined(path):
             "LEAID",
             "Name",
             "Basic Hold Harmless",
-            "Conc. Hold Harmless",
+            "Concentration Hold Harmless",
             "Targeted Hold Harmless",
             "EFIG Hold Harmless",
             "Total Hold Harmless",
             "Basic Alloc",
-            "Conc. Alloc",
+            "Concentration Alloc",
             "Targeted Alloc",
             "EFIG Alloc",
             "Total Alloc",
@@ -41,8 +41,8 @@ def get_official_combined(path):
             "5-17 Pop.",
             "Percent Formula",
             "Basic Eligibles",
-            "Conc. Eligibles",
-            "Other Eligibles",
+            "Concentration Eligibles",
+            "Targeted Eligibles",
             "Weighted Counts Targeted",
             "Weighted Counts EFIG"
         ]
@@ -72,25 +72,106 @@ def get_official(path, sheet, header, columns):
 def get_saipe(path):
     saipe = pd.read_excel(path, header=2)\
         .set_index(["State FIPS Code", "District ID"])
-    saipe["cv"] = saipe.apply(
-        lambda x: median_cv(x["Estimated Total Population"]),
-        axis=1
-    )
     return saipe
 
 
+def get_county_saipe(path):
+    saipe = pd.read_excel(path, header=3, usecols=[
+        "State FIPS Code",
+        "County FIPS Code",
+        "Name",
+        "Poverty Estimate, All Ages",
+        "Poverty Percent, All Ages",
+        "Poverty Estimate, Age 5-17 in Families",
+        "Poverty Percent, Age 5-17 in Families"
+    ]).replace('.', np.NaN).fillna(0.0, )
+
+    # convert county FIPS codes to district ids
+    saipe["District ID"] = saipe["County FIPS Code"]
+    # convert to saipe district column names
+    saipe["Estimated Total Population"] = \
+        saipe["Poverty Estimate, All Ages"].astype(float) \
+        / (saipe["Poverty Percent, All Ages"].astype(float) / 100)
+    saipe["Estimated Population 5-17"] = \
+        saipe["Poverty Estimate, Age 5-17 in Families"].astype(float) \
+        / (saipe["Poverty Percent, Age 5-17 in Families"].astype(float) / 100)
+    saipe[
+        'Estimated number of relevant children 5 to 17 years old '
+        'in poverty who are related to the householder'
+    ] = saipe["Poverty Estimate, Age 5-17 in Families"]
+
+    return saipe.set_index(["State FIPS Code", "District ID"]).drop(columns=[
+        "Poverty Estimate, All Ages",
+        "Poverty Percent, All Ages",
+        "Poverty Estimate, Age 5-17 in Families",
+        "Poverty Percent, Age 5-17 in Families"
+    ])
+
+
+def district_id_from_name(df, name, state=None):
+    if state:
+        df = df.loc[state, :]
+    ind = df[df["Name"] == name].index.get_level_values("District ID")
+    if len(ind) == 0:
+        raise Exception("No districts with the name", name)
+    if len(ind) > 1:
+        raise Exception("Multiple district IDs with the name", name)
+    return ind[0]
+
+
 def get_inputs(year):
-    saipe = pd.read_excel(f"../data/saipe{str(year-2)[2:]}.xls", header=2)\
-        .set_index(["State FIPS Code", "District ID"])
-    saipe["cv"] = saipe.apply(
+    # official ESEA data
+    official = get_official_combined(
+        f"../data/titlei-allocations/revfinal_{str(year)[2:]}.xls"
+    ).drop(columns=[
+        'LEAID',
+        'Sort C',
+        'State',
+        'Resident Pop.',
+        '5-17 Pop.',
+        # 'Name'
+    ])
+    official.columns = [
+        f"official_{c.lower().replace(' ', '_')}" if c != "Name" else c
+        for c in official.columns
+    ]
+
+    # join with Census SAIPE
+    saipe = get_saipe(f"../data/saipe{str(year-2)[2:]}.xls")
+    county_saipe = get_county_saipe(
+        f"../data/county_saipe{str(year-2)[2:]}.xls"
+    )
+    # for some reason, NY naming convention different...
+    # fixing that here
+    county_saipe.rename(index={
+        district_id_from_name(county_saipe, c, 36):
+            district_id_from_name(official, c, 36)
+        for c in [
+            "Bronx County",
+            "Kings County",
+            "New York County",
+            "Queens County",
+            "Richmond County"
+        ]
+    }, level='District ID', inplace=True)
+    saipe_stacked = impute_missing(saipe, county_saipe)
+
+    print("-- WARNING: dropping some balances from total budget --")
+    for name, filter in [
+        ("Puerto Rico", official.Name == "Puerto Rico"),
+        ("County balances", official.Name.str.contains("BALANCE OF")),
+        ("Part D Subpart 2", official.Name == "PART D SUBPART 2")
+    ]:
+        print(name, official[filter].official_total_alloc.sum())
+
+    # calculate coefficient of variation
+    inputs = official.join(saipe_stacked.drop(columns="Name"), how="inner")
+    inputs["cv"] = inputs.apply(
         lambda x: median_cv(x["Estimated Total Population"]),
         axis=1
     )
-    # join with official numbers
-    official = get_official_combined(
-        f"../data/titlei-allocations/revfinal_{str(year)[2:]}.xls"
-    )
-    return saipe.join(official.drop(columns=["Name"]), how="inner")
+    print(inputs.official_total_alloc.sum())
+    return inputs
 
 
 def past_saipes(year_lag):
@@ -249,36 +330,16 @@ def split_leaids(leaids: pd.Series):
 
 
 def get_sppe(path):
-    states = {
-        'Alabama': 'AL', 'Alaska': 'AK', 'American Samoa': 'AS',
-        'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
-        'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
-        'District of Columbia': 'DC', 'Florida': 'FL', 'Georgia': 'GA',
-        'Guam': 'GU', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL',
-        'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY',
-        'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
-        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN',
-        'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT',
-        'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH',
-        'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
-        'North Carolina': 'NC', 'North Dakota': 'ND',
-        'Northern Mariana Islands': 'MP', 'Ohio': 'OH', 'Oklahoma': 'OK',
-        'Oregon': 'OR', 'Pennsylvania': 'PA', 'Puerto Rico': 'PR',
-        'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD',
-        'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
-        'Virgin Islands': 'VI', 'Virginia': 'VA', 'Washington': 'WA',
-        'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
-    }
-    states = pd.DataFrame(states.items(), columns=["state", "abbrv"])
-
+    fips_codes = pd.read_csv("../data/fips_codes.csv").rename(columns={
+        'FIPS': 'State FIPS Code'
+    })
     # quirk of original data file - need to change DC's name for join
-    states[states.state == "District of Columbia"] = \
+    fips_codes.loc[fips_codes["Name"] == "District of Columbia", "Name"] = \
         "District Of Columbia Public Schools"
-
     sppe = pd.read_excel(path, header=2)\
-        .rename(columns={"Unnamed: 0": "state"})[["state", "ppe"]]
-
-    return sppe.merge(states, on="state", how="right")
+        .rename(columns={"Unnamed: 0": "Name"})[["Name", "ppe"]]
+    return sppe.merge(fips_codes, on="Name", how="right")\
+        .set_index("State FIPS Code")
 
 
 def median_cv(total_pop):
@@ -401,19 +462,18 @@ def data(
             + grants[f"true_{var}"]
 
     # now, add in the number of foster, TANF, delinquent children
-    other_eligible = saipe["Total Formula Count"] - grants["true_children_poverty"]
+    # derived from final formula count reported by ESEA
+    other_eligible = \
+        saipe["official_total_formula_count"] - grants["true_children_poverty"]
     for prefix in ("true", "est", "dp", "dpest"):
         grants[f"{prefix}_children_eligible"] = grants[
             f"{prefix}_children_poverty"
         ] + other_eligible
 
     # join in SPPE
-    grants = grants.reset_index()\
-        .merge(sppe, left_on="State Postal Code", right_on="abbrv")\
-        .drop(columns=['abbrv', 'state']).rename(columns={'ppe': 'sppe'})\
-        .set_index(["State FIPS Code", "District ID"])
+    grants = grants.join(sppe["ppe"].rename('sppe'), how='left')
 
-    if verbose:
+    if verbose and len(grants[grants.sppe.isna()]['Name'].values) > 0:
         print(
             "[WARN] Dropping districts with missing SPPE data:",
             grants[grants.sppe.isna()]['Name'].values
