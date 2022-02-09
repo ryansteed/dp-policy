@@ -10,7 +10,7 @@ from dp_policy.titlei.utils import get_sppe, data
 
 
 def titlei_funding(
-    allocator, saipe, mechanism, sppe,
+    allocator, inputs, mechanism, sppe,
     uncertainty=False, normalize=True,
     allocator_kwargs={}, sampling_kwargs={},
     **grants_kwargs
@@ -21,7 +21,7 @@ def titlei_funding(
     """
     alloc = allocator(
         data(
-            saipe, mechanism, sppe,
+            inputs, mechanism, sppe,
             sampling_kwargs=sampling_kwargs,
             **grants_kwargs
         ),
@@ -31,7 +31,7 @@ def titlei_funding(
 
 
 def titlei_grid(
-    saipe, mech,
+    inputs, mech,
     eps=list(np.logspace(-3, 10, num=10)) + [2.52], delta=[0.0],
     trials=1,
     mech_kwargs={},
@@ -61,7 +61,7 @@ def titlei_grid(
                     )
                 allocations.append(titlei_funding(
                     SonnenbergAuthorizer,
-                    saipe,
+                    inputs,
                     mechanism,
                     sppe,
                     allocator_kwargs=allocator_kwargs,

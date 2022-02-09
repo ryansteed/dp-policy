@@ -8,6 +8,67 @@ from math import floor, ceil
 from dp_policy.titlei.mechanisms import Sampled
 
 
+def get_official_combined(path):
+    allocs = get_official(
+        path, "Allocations", 10, [
+            "Sort C",
+            "State FIPS Code",
+            "State",
+            "LEAID",
+            "Name",
+            "Basic Hold Harmless",
+            "Conc. Hold Harmless",
+            "Targeted Hold Harmless",
+            "EFIG Hold Harmless",
+            "Total Hold Harmless",
+            "Basic Alloc",
+            "Conc. Alloc",
+            "Targeted Alloc",
+            "EFIG Alloc",
+            "Total Alloc",
+            "Hold Harmless Percentage",
+            "Resident Pop."
+        ]
+    )
+    counts = get_official(
+        path, "Populations", 7, [
+            "Sort C",
+            "State FIPS Code",
+            "State",
+            "LEAID",
+            "Name",
+            "Total Formula Count",
+            "5-17 Pop.",
+            "Percent Formula",
+            "Basic Eligibles",
+            "Conc. Eligibles",
+            "Other Eligibles",
+            "Weighted Counts Targeted",
+            "Weighted Counts EFIG"
+        ]
+    )
+    combined = allocs.set_index("LEAID").join(
+        counts.drop(columns=[
+            "Sort C",
+            "State FIPS Code",
+            "State",
+            "Name"
+        ]).set_index("LEAID"),
+        how="inner"
+    ).reset_index()
+    combined.loc[:, "State FIPS Code"] = \
+        combined["State FIPS Code"].astype(int)
+    combined["District ID"], _ = split_leaids(combined["LEAID"].astype(int))
+    return combined.set_index(["State FIPS Code", "District ID"])
+
+
+def get_official(path, sheet, header, columns):
+    allocs = pd.read_excel(path, sheet_name=sheet, header=header)
+    allocs = allocs.iloc[1:, :len(columns)]
+    allocs.columns = columns
+    return allocs
+
+
 def get_saipe(path):
     saipe = pd.read_excel(path, header=2)\
         .set_index(["State FIPS Code", "District ID"])
@@ -16,6 +77,20 @@ def get_saipe(path):
         axis=1
     )
     return saipe
+
+
+def get_inputs(year):
+    saipe = pd.read_excel(f"../data/saipe{str(year-2)[2:]}.xls", header=2)\
+        .set_index(["State FIPS Code", "District ID"])
+    saipe["cv"] = saipe.apply(
+        lambda x: median_cv(x["Estimated Total Population"]),
+        axis=1
+    )
+    # join with official numbers
+    official = get_official_combined(
+        f"../data/titlei-allocations/revfinal_{str(year)[2:]}.xls"
+    )
+    return saipe.join(official.drop(columns=["Name"]), how="inner")
 
 
 def past_saipes(year_lag):
@@ -98,8 +173,10 @@ def get_acs_data(path, name):
 def impute_missing(original, update):
     for c in [c for c in original.columns if c not in update.columns]:
         update.loc[:, c] = np.nan
-    # print(update.loc[update.index.difference(original.index), original.columns])
-    update_reduced = update.loc[update.index.difference(original.index), original.columns]
+    update_reduced = update.loc[
+        update.index.difference(original.index),
+        original.columns
+    ]
     imputed = pd.concat([
         original,
         update_reduced
@@ -323,11 +400,12 @@ def data(
             grants[f"dpest_{var}"] - grants[f"est_{var}"] \
             + grants[f"true_{var}"]
 
-    # BIG ASSUMPTION, TODO: revisit later
+    # now, add in the number of foster, TANF, delinquent children
+    other_eligible = saipe["Total Formula Count"] - grants["true_children_poverty"]
     for prefix in ("true", "est", "dp", "dpest"):
         grants[f"{prefix}_children_eligible"] = grants[
             f"{prefix}_children_poverty"
-        ]
+        ] + other_eligible
 
     # join in SPPE
     grants = grants.reset_index()\
