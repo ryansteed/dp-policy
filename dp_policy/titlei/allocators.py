@@ -110,11 +110,24 @@ class Authorizer(Allocator):
     def _calc_appropriation_total(self, grant_type):
         appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
         if self.appropriation_total is not None:
+            if self.verbose:
+                print("Usual appropriation:", appropriation)
+                print(
+                    "Usual total:",
+                    self.estimates[f"official_total_alloc"].sum()
+                )
+                print(
+                    self.appropriation_total /
+                    self.estimates[f"official_total_alloc"].sum()
+                )
+                print("New appropriation:", (
+                    appropriation * self.appropriation_total /
+                    self.estimates[f"official_total_alloc"].sum()
+                ))
             # scale appropriation to total budget
             return (
-                appropriation /
-                self.estimates[f"official_total_alloc"].sum() *
-                self.appropriation_total
+                appropriation * self.appropriation_total /
+                self.estimates[f"official_total_alloc"].sum()
             )
         return appropriation
 

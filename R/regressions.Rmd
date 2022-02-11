@@ -418,18 +418,23 @@ for (t in unique(experiment$treatment)) {
 
 ```{r plot-all, warning=FALSE}
 for (experiment_name in c(
-  # "hold_harmless",
-  # "post_processing",
-  # "moving_average",
-  # "moving_average_truth=unmodified",
-  # "moving_average_truth=average",
-  "thresholds"
+  "hold_harmless",
+  "post_processing",
+  "moving_average",
+  "moving_average_truth=unmodified",
+  "moving_average_truth=average",
+  "thresholds",
+  "epsilon"
+  "budget"
 )) {
+  print(experiment_name)
+  rm(experiment)
+  
   experiment = load_experiment(experiment_name)
   plot_race(experiment, experiment_name)
   
-  # from_cache = T
-  # 
+  from_cache = T
+
   # for (t in unique(experiment$treatment)) {
   #   print(sprintf("%s: %s", experiment_name, t))
   #   gam_mr = get_gam(

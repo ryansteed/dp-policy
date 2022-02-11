@@ -115,15 +115,15 @@ def discrimination_treatments_join(treatments_name, epsilon=0.1, delta=0.0):
     ).loc[(
         slice(None),
         slice(None),
-        delta,
-        epsilon,
+        delta if delta is not None else slice(None),
+        epsilon if epsilon is not None else slice(None),
         slice(None),
         slice(None)
     ), :]
     discrimination_joined = discrimination_join(
         joined,
         save_path="../results/policy_experiments/"
-        f"{treatments_name}_discrimination_laplace_eps={epsilon}.csv"
+        f"{treatments_name}_discrimination_laplace.csv"
     )
     return discrimination_joined
 
@@ -395,11 +395,11 @@ def compare_treatments(
     else:
         print("Comparing at eps=", epsilon)
     for treatment, df in treatments.items():
-        print("#", treatment)
+        print("\n#", treatment)
         print("True budget:", df[f"true_grant_total"].sum())
         print("DP est budget:",  df[f"dpest_grant_total"].sum())
         print(
-            "RMSE:",
+            "RMSE over all trials:",
             np.sqrt(((df.dpest_grant_total - df.true_grant_total) ** 2).mean())
         )
         df["became_ineligible"] = \
@@ -417,7 +417,26 @@ def compare_treatments(
             )
         print(
             "Avg prop. districts erroneously ineligible:",
-            df.became_ineligible.mean()
+            df.became_ineligible.groupby("trial").sum().mean()
+        )
+        err = df.dpest_grant_total - df.true_grant_total
+        dperr = df.dpest_grant_total - df.est_grant_total
+        esterr = df.est_grant_total - df.true_grant_total
+        print(
+            "Avg. # of districts losing $$:",
+            (err < 0).groupby("trial").sum().mean()
+        )
+        print(
+            "Total avg. losses:",
+            err[err < 0].groupby("trial").mean().abs().sum()
+        )
+        print(
+            "Total avg. losses (data error):",
+            esterr[esterr < 0].groupby("trial").mean().abs().sum()
+        )
+        print(
+            "Avg. marginal losses (DP):",
+            dperr[dperr < 0].groupby("trial").mean().abs().sum()
         )
 
     # compare bias

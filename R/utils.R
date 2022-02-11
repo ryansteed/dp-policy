@@ -210,7 +210,7 @@ race_comparison = function(comparison, kind) {
 }
 
 load_experiment = function(name) {
-  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace_eps=0.1.csv", name))
+  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
   df = clean(raw)
   return(df)
 }

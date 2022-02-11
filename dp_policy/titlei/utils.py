@@ -119,7 +119,7 @@ def district_id_from_name(df, name, state=None):
     return ind[0]
 
 
-def get_inputs(year, baseline="prelim"):
+def get_inputs(year, baseline="prelim", avg_lag=0):
     # official ESEA data
     official = get_official_combined(
         f"../data/titlei-allocations/{baseline}_{str(year)[2:]}.xls",
@@ -137,10 +137,13 @@ def get_inputs(year, baseline="prelim"):
     ]
 
     # join with Census SAIPE
-    saipe = get_saipe(f"../data/saipe{str(year-2)[2:]}.xls")
-    county_saipe = get_county_saipe(
-        f"../data/county_saipe{str(year-2)[2:]}.xls"
-    )
+    if avg_lag > 0:
+        saipe, county_saipe = average_saipe(year-2, avg_lag)
+    else:
+        saipe = get_saipe(f"../data/saipe{str(year-2)[2:]}.xls")
+        county_saipe = get_county_saipe(
+            f"../data/county_saipe{str(year-2)[2:]}.xls"
+        )
     # for some reason, NY naming convention different...
     # fixing that here
     county_saipe.rename(index={
@@ -174,19 +177,11 @@ def get_inputs(year, baseline="prelim"):
     return inputs
 
 
-def past_saipes(year_lag):
-    paths = [
-        "../data/saipe19.xls",
-        "../data/saipe18.xls",
-        "../data/saipe17.xls",
-        "../data/saipe16.xls",
-        "../data/saipe15.xls"
-    ]
-    return [get_saipe(path) for path in paths[:year_lag+1]]
-
-
-def average_saipe(year_lag):
-    combined = pd.concat(past_saipes(year_lag))
+def average_saipe(year, year_lag):
+    combined = pd.concat([
+        get_saipe(f"../data/saipe{str(year)[2:]}.xls")
+        for year in range(year-year_lag, year+1)
+    ])
     combined = combined \
         .groupby(["State FIPS Code", "District ID"]) \
         .agg({
@@ -195,14 +190,24 @@ def average_saipe(year_lag):
             'Estimated Total Population': 'mean',
             'Estimated Population 5-17': 'mean',
             'Estimated number of relevant children 5 to 17 years old '
-            'in poverty who are related to the householder': 'mean',
-            'cv': 'mean'
+            'in poverty who are related to the householder': 'mean'
         })
-    combined["cv"] = combined.apply(
-        lambda x: median_cv(x["Estimated Total Population"]),
-        axis=1
-    )
-    return combined
+
+    combined_county = pd.concat([
+        get_county_saipe(f"../data/county_saipe{str(year)[2:]}.xls")
+        for year in range(year-year_lag, year+1)
+    ])
+    combined_county = combined_county \
+        .groupby(["State FIPS Code", "District ID"]) \
+        .agg({
+            'Name': 'first',
+            'Estimated Total Population': 'mean',
+            'Estimated Population 5-17': 'mean',
+            'Estimated number of relevant children 5 to 17 years old '
+            'in poverty who are related to the householder': 'mean'
+        })
+
+    return combined, combined_county
 
 
 def get_acs_data(path, name):
