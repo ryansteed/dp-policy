@@ -269,13 +269,15 @@ def plot_treatments(
 ):
     palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
-        df = df_raw.loc[(
-                slice(None),
-                slice(delta),
-                slice(epsilon),
-                slice(None),
-                slice(None)
-            ), :].copy()
+        df = df_raw.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        # print(df.shape)
+        # print(np.unique(df.index.get_level_values(level="epsilon")))
         df.loc[:, "misalloc"] = \
             df[f"dpest_grant_{grant}"] - df[f"true_grant_{grant}"]
         df.loc[:, "misalloc_sq"] = np.power(df["misalloc"], 2)
@@ -382,7 +384,7 @@ def load_treatments(experiment_name):
 
 def compare_treatments(
   treatments,
-  epsilon=None, delta=0.0, mapvar="error_per_child",
+  epsilon=0.1, delta=0.0, mapvar="error_per_child",
   experiment_name=None
 ):
     if epsilon is None:
@@ -465,7 +467,13 @@ def compare_treatments(
     treatments_geo = {
         treatment:
             geo_join(
-                df.loc[:, slice(delta), slice(epsilon), :, :]
+                df.loc[pd.IndexSlice[
+                    :,
+                    delta if delta is not None else slice(None),
+                    epsilon if epsilon is not None else slice(None),
+                    :,
+                    :
+                ]]
             )
         for treatment, df in treatments.items()
     }

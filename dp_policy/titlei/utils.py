@@ -435,6 +435,7 @@ def data(
         "Estimated number of relevant children 5 to 17 years old in poverty"
         " who are related to the householder": "true_children_poverty"
     })
+
     # sample from the sampling distribution
     mechanism_sampling = Sampled(**sampling_kwargs)
     grants["est_pop_total"], \
@@ -445,6 +446,7 @@ def data(
             grants["true_children_poverty"],
             grants["cv"]
         )
+
     # get the noise-infused estimates - after sampling
     grants["dpest_pop_total"], \
         grants["dpest_children_total"], \
@@ -453,6 +455,7 @@ def data(
         grants["est_children_total"],
         grants["est_children_poverty"]
     )
+
     # back out the noise-infused estimates - before sampling
     # doing it this way because we want to see the same noise draws added to
     # both bases - not a separate draw here
@@ -465,6 +468,7 @@ def data(
     # derived from final formula count reported by ESEA
     other_eligible = \
         saipe["official_total_formula_count"] - grants["true_children_poverty"]
+
     for prefix in ("true", "est", "dp", "dpest"):
         grants[f"{prefix}_children_eligible"] = grants[
             f"{prefix}_children_poverty"

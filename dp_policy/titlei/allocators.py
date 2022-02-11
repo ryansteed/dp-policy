@@ -15,6 +15,7 @@ class Allocator:
         congress_cap=0.4,
         adj_sppe_bounds=[0.32, 0.48],
         adj_sppe_bounds_efig=[0.34, 0.46],
+        appropriation=None,
         verbose=False
     ):
         self.estimates = estimates
@@ -22,6 +23,7 @@ class Allocator:
         self.congress_cap = congress_cap
         self.adj_sppe_bounds = adj_sppe_bounds
         self.adj_sppe_bounds_efig = adj_sppe_bounds_efig
+        self.appropriation_total = appropriation
         self.verbose = verbose
 
     def allocations(
@@ -89,7 +91,7 @@ class Authorizer(Allocator):
             for grant_type in self.grant_types():
                 for prefix in self.prefixes:
                     appropriation = \
-                        self.estimates[f"official_{grant_type}_alloc"].sum()
+                        self._calc_appropriation_total(grant_type)
                     self._normalize(grant_type, prefix, appropriation)
             self.calc_total()
             if self.verbose:
@@ -104,6 +106,17 @@ class Authorizer(Allocator):
                     self.estimates.true_grant_total.sum()
                 )
         return self.estimates
+
+    def _calc_appropriation_total(self, grant_type):
+        appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
+        if self.appropriation_total is not None:
+            # scale appropriation to total budget
+            return (
+                appropriation /
+                self.estimates[f"official_total_alloc"].sum() *
+                self.appropriation_total
+            )
+        return appropriation
 
     def _normalize(
         self, grant_type, prefix, appropriation, hold_harmless=None
@@ -336,8 +349,7 @@ class SonnenbergAuthorizer(Authorizer):
         for grant_type in self.grant_types():
             alloc_previous = \
                 self.estimates[f"official_{grant_type}_hold_harmless"]
-            appropriation = \
-                self.estimates[f"official_{grant_type}_alloc"].sum()
+            appropriation = self._calc_appropriation_total(grant_type)
             for prefix in self.prefixes:
                 harmless_rate = SonnenbergAuthorizer._hold_harmless_rate(
                     self.estimates[f"{prefix}_children_eligible"] /
