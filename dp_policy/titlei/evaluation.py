@@ -263,14 +263,18 @@ def plot_treatments(
     xlab=None,
     ylab="Smoothed density",
     grant="total",
-    epsilon=0.1,
-    delta=0.0,
+    epsilon=None,
+    delta=None,
     mean_line=False
 ):
     palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
         df = df_raw.loc[(
-                slice(None), delta, epsilon, slice(None), slice(None)
+                slice(None),
+                slice(delta),
+                slice(epsilon),
+                slice(None),
+                slice(None)
             ), :].copy()
         df.loc[:, "misalloc"] = \
             df[f"dpest_grant_{grant}"] - df[f"true_grant_{grant}"]
@@ -378,10 +382,16 @@ def load_treatments(experiment_name):
 
 def compare_treatments(
   treatments,
-  epsilon=0.1, delta=0.0, mapvar="error_per_child",
+  epsilon=None, delta=0.0, mapvar="error_per_child",
   experiment_name=None
 ):
-    print("Comparing at eps=", epsilon)
+    if epsilon is None:
+        print(
+            "[WARN] Epsilon is none "
+            "- only use this if there is only one eps value in the df."
+        )
+    else:
+        print("Comparing at eps=", epsilon)
     for treatment, df in treatments.items():
         print("#", treatment)
         print("True budget:", df[f"true_grant_total"].sum())
@@ -455,7 +465,7 @@ def compare_treatments(
     treatments_geo = {
         treatment:
             geo_join(
-                df.loc[:, delta, epsilon, :, :]
+                df.loc[:, slice(delta), slice(epsilon), :, :]
             )
         for treatment, df in treatments.items()
     }
