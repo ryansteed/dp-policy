@@ -420,11 +420,11 @@ for (t in unique(experiment$treatment)) {
 for (experiment_name in c(
   "hold_harmless",
   "post_processing",
+  "thresholds",
   "moving_average",
   "moving_average_truth=unmodified",
   "moving_average_truth=average",
-  "thresholds",
-  "epsilon"
+  "epsilon",
   "budget"
 )) {
   print(experiment_name)

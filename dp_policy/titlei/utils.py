@@ -72,6 +72,10 @@ def get_official(path, sheet, header, columns):
 def get_saipe(path):
     saipe = pd.read_excel(path, header=2)\
         .set_index(["State FIPS Code", "District ID"])
+    saipe["cv"] = saipe.apply(
+        lambda x: median_cv(x["Estimated Total Population"]),
+        axis=1
+    )
     return saipe
 
 
@@ -100,6 +104,11 @@ def get_county_saipe(path):
         'in poverty who are related to the householder'
     ] = saipe["Poverty Estimate, Age 5-17 in Families"]
 
+    saipe["cv"] = saipe.apply(
+        lambda x: median_cv(x["Estimated Total Population"]),
+        axis=1
+    )
+
     return saipe.set_index(["State FIPS Code", "District ID"]).drop(columns=[
         "Poverty Estimate, All Ages",
         "Poverty Percent, All Ages",
@@ -119,10 +128,16 @@ def district_id_from_name(df, name, state=None):
     return ind[0]
 
 
-def get_inputs(year, baseline="prelim", avg_lag=0):
+def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
     # official ESEA data
+    if year < 2020:
+        print("[WARN] Using official data for 2020 instead.")
+        official_year = 2020
+    else:
+        official_year = year
+
     official = get_official_combined(
-        f"../data/titlei-allocations/{baseline}_{str(year)[2:]}.xls",
+        f"../data/titlei-allocations/{baseline}_{str(official_year)[2:]}.xls",
     ).drop(columns=[
         'LEAID',
         'Sort C',
@@ -138,7 +153,7 @@ def get_inputs(year, baseline="prelim", avg_lag=0):
 
     # join with Census SAIPE
     if avg_lag > 0:
-        saipe, county_saipe = average_saipe(year-2, avg_lag)
+        saipe, county_saipe = average_saipe(year-2, avg_lag, verbose=verbose)
     else:
         saipe = get_saipe(f"../data/saipe{str(year-2)[2:]}.xls")
         county_saipe = get_county_saipe(
@@ -157,56 +172,61 @@ def get_inputs(year, baseline="prelim", avg_lag=0):
             "Richmond County"
         ]
     }, level='District ID', inplace=True)
-    saipe_stacked = impute_missing(saipe, county_saipe)
+    saipe_stacked = impute_missing(saipe, county_saipe, verbose=verbose)
 
-    print("-- WARNING: dropping some balances from total budget --")
-    for name, filter in [
-        ("Puerto Rico", official.Name == "Puerto Rico"),
-        ("County balances", official.Name.str.contains("BALANCE OF")),
-        ("Part D Subpart 2", official.Name == "PART D SUBPART 2")
-    ]:
-        print(name, official[filter].official_total_alloc.sum())
+    if verbose:
+        print("-- WARNING: dropping some balances from total budget --")
+        for name, filter in [
+            ("Puerto Rico", official.Name == "Puerto Rico"),
+            ("County balances", official.Name.str.contains("BALANCE OF")),
+            ("Part D Subpart 2", official.Name == "PART D SUBPART 2")
+        ]:
+            print(name, official[filter].official_total_alloc.sum())
 
     # calculate coefficient of variation
     inputs = official.join(saipe_stacked.drop(columns="Name"), how="inner")
-    inputs["cv"] = inputs.apply(
-        lambda x: median_cv(x["Estimated Total Population"]),
-        axis=1
-    )
 
     return inputs
 
 
-def average_saipe(year, year_lag):
-    combined = pd.concat([
+def _average_saipe(saipes):
+    combined = pd.concat(saipes)
+    # convert cv to variance
+    combined["stderr"] = \
+        (combined["Estimated Total Population"] * combined["cv"]).pow(2)
+    agg = combined \
+        .groupby(["State FIPS Code", "District ID"]) \
+        .agg({
+            'Name': 'first',
+            'Estimated Total Population': 'mean',
+            'Estimated Population 5-17': 'mean',
+            'Estimated number of relevant children 5 to 17 years old '
+            'in poverty who are related to the householder': 'mean',
+            # variance of average of iid Gaussian is sum of variance over n^2
+            'stderr': lambda cv: np.sum(cv) / (len(saipes)**2)
+        })
+    # convert variance back to cv
+    agg['cv'] = np.sqrt(agg['stderr']) / agg["Estimated Total Population"]
+    return agg.drop(columns='stderr')
+
+
+def average_saipe(year, year_lag, verbose=True):
+    if verbose:
+        print(
+            "Averaging SAIPEs:",
+            [
+                f"saipe{str(year)[2:]}"
+                for year in range(year-year_lag, year+1)
+            ]
+        )
+    combined = _average_saipe([
         get_saipe(f"../data/saipe{str(year)[2:]}.xls")
         for year in range(year-year_lag, year+1)
     ])
-    combined = combined \
-        .groupby(["State FIPS Code", "District ID"]) \
-        .agg({
-            'State Postal Code': 'first',
-            'Name': 'first',
-            'Estimated Total Population': 'mean',
-            'Estimated Population 5-17': 'mean',
-            'Estimated number of relevant children 5 to 17 years old '
-            'in poverty who are related to the householder': 'mean'
-        })
-
-    combined_county = pd.concat([
+    combined_county = _average_saipe([
         get_county_saipe(f"../data/county_saipe{str(year)[2:]}.xls")
         for year in range(year-year_lag, year+1)
     ])
-    combined_county = combined_county \
-        .groupby(["State FIPS Code", "District ID"]) \
-        .agg({
-            'Name': 'first',
-            'Estimated Total Population': 'mean',
-            'Estimated Population 5-17': 'mean',
-            'Estimated number of relevant children 5 to 17 years old '
-            'in poverty who are related to the householder': 'mean'
-        })
-
     return combined, combined_county
 
 
@@ -256,7 +276,7 @@ def get_acs_data(path, name):
     return data
 
 
-def impute_missing(original, update):
+def impute_missing(original, update, verbose=True):
     for c in [c for c in original.columns if c not in update.columns]:
         update.loc[:, c] = np.nan
     update_reduced = update.loc[
@@ -267,6 +287,12 @@ def impute_missing(original, update):
         original,
         update_reduced
     ])
+    if verbose:
+        print(
+            "[INFO] Successfully imputed",
+            len(update.index.difference(original.index)),
+            "new indices"
+        )
     return imputed
 
 
@@ -431,10 +457,10 @@ def weighting(eligible, pop):
 
 
 def data(
-    saipe, mechanism, sppe, sampling_kwargs={}, verbose=True
+    inputs, mechanism, sppe, sampling_kwargs={}, verbose=True
 ):
     # ground truth - assume SAIPE 2019 is ground truth
-    grants = saipe.rename(columns={
+    grants = inputs.rename(columns={
         "Estimated Total Population": "true_pop_total",
         "Estimated Population 5-17": "true_children_total",
         "Estimated number of relevant children 5 to 17 years old in poverty"
@@ -472,7 +498,8 @@ def data(
     # now, add in the number of foster, TANF, delinquent children
     # derived from final formula count reported by ESEA
     other_eligible = \
-        saipe["official_total_formula_count"] - grants["true_children_poverty"]
+        inputs["official_total_formula_count"] \
+        - grants["true_children_poverty"]
 
     for prefix in ("true", "est", "dp", "dpest"):
         grants[f"{prefix}_children_eligible"] = grants[

@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as stats
 
 from dp_policy.titlei.utils import data
-from dp_policy.titlei.utils import average_saipe, past_saipes
+from dp_policy.titlei.utils import get_inputs
 
 
 class Threshold:
@@ -119,8 +119,9 @@ class MOEThresholder(HardThresholder):
 
 
 class PastThresholder(HardThresholder):
-    def __init__(self, lag) -> None:
+    def __init__(self, year, lag) -> None:
         self.prior_estimates = None
+        self.year = year
         self.lag = lag
 
     @staticmethod
@@ -133,14 +134,18 @@ class PastThresholder(HardThresholder):
 
 class RepeatThresholder(PastThresholder):
     def set_prior_estimates(self, *data_args, **data_kwargs):
+        # print(
+        #     "Getting priors from years",
+        #     [self.year-i for i in range(1, self.lag+1)]
+        # )
         self.prior_estimates = [
             data(
-                saipe,
+                get_inputs(self.year-i, verbose=False),
                 *data_args,
                 **data_kwargs
             )
             # first entry is this year, ignore
-            for saipe in past_saipes(self.lag)[1:]
+            for i in range(1, self.lag)
         ]
 
     def process(
@@ -169,7 +174,7 @@ class RepeatThresholder(PastThresholder):
 class AverageThresholder(PastThresholder):
     def set_prior_estimates(self, *data_args, **data_kwargs):
         self.prior_estimates = data(
-            average_saipe(self.lag),
+            get_inputs(self.year, avg_lag=self.lag, verbose=False),
             *data_args,
             **data_kwargs
         )
