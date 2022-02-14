@@ -30,6 +30,7 @@ clean = function(df) {
       nonwhite_children = true_children_total * prop_white,
       not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
       average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
+      renter_occupied_housing_tenure_pct = as.numeric(gsub(',', '', renter_occupied_housing_tenure_pct)),
       median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
       pop_density = true_pop_total / aland
     ) %>% mutate(
