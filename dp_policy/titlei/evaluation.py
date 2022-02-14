@@ -395,13 +395,18 @@ def compare_treatments(
     else:
         print("Comparing at eps=", epsilon)
     for treatment, df in treatments.items():
+        df = df.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        treatments[treatment] = df
+        print(len(df))
         print("\n#", treatment)
         print("True budget:", df[f"true_grant_total"].sum())
         print("DP est budget:",  df[f"dpest_grant_total"].sum())
-        print(
-            "RMSE over all trials:",
-            np.sqrt(((df.dpest_grant_total - df.true_grant_total) ** 2).mean())
-        )
         df["became_ineligible"] = \
             (
                 ~df.dpest_eligible_targeted.astype(bool)
@@ -420,23 +425,35 @@ def compare_treatments(
             df.became_ineligible.groupby("trial").sum().mean()
         )
         err = df.dpest_grant_total - df.true_grant_total
+        experr = err.groupby(["State FIPS Code", "District ID"]).mean()
+        lowerr = err.groupby(["State FIPS Code", "District ID"]).quantile(0.05)
         dperr = df.dpest_grant_total - df.est_grant_total
+        expdperr = dperr.groupby(["State FIPS Code", "District ID"]).mean()
         esterr = df.est_grant_total - df.true_grant_total
+        expesterr = esterr.groupby(["State FIPS Code", "District ID"]).mean()
         print(
-            "Avg. # of districts losing $$:",
+            "RMSE:",
+            np.sqrt((err ** 2).mean())
+        )
+        print(
+            "Avg. (per trial) # of districts losing $$:",
             (err < 0).groupby("trial").sum().mean()
         )
         print(
-            "Total avg. losses:",
-            err[err < 0].groupby("trial").mean().abs().sum()
+            "Total avg. (per sd) losses:",
+            experr[experr < 0].abs().sum()
+        )
+        print(
+            "Total 5% quantile losses:",
+            lowerr[lowerr < 0].abs().sum()
         )
         print(
             "Total avg. losses (data error):",
-            esterr[esterr < 0].groupby("trial").mean().abs().sum()
+            expesterr[expesterr < 0].abs().sum()
         )
         print(
             "Avg. marginal losses (DP):",
-            dperr[dperr < 0].groupby("trial").mean().abs().sum()
+            expdperr[expdperr < 0].abs().sum()
         )
 
     # compare bias
