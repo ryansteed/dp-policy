@@ -1,9 +1,10 @@
-from lib2to3.pgen2.pgen import DFAState
+import types
 import pandas as pd
 from dp_policy.titlei.utils import get_acs_unified
 
 import geopandas as gpd
 import numpy as np
+import scipy.stats as stats
 import matplotlib.pyplot as plt
 import matplotlib.colors as pltc
 import seaborn as sns
@@ -226,7 +227,8 @@ def geo_join(results):
             & results.true_eligible_concentration.astype(bool)
         )
     results["dp_marginal"] = \
-        results["error_dp_per_child"] - results["error_per_child"]
+        results["error_dp_per_child_eligible"] -\
+        results["error_per_child_eligible"]
 
     geo = get_geography()
     joined = geo.join(
@@ -248,23 +250,26 @@ def geo_join(results):
             "became_eligible_dp",
             "became_ineligible_dp",
             "dp_marginal"
-        ]].groupby(["State FIPS Code", "District ID"]).mean(),
+        ]]
+        .groupby(["State FIPS Code", "District ID"])
+        .agg(['mean', 'std', 'sem']),
         how="inner"
     )
-    joined.loc[
-        np.isinf(joined["error_per_child"]), "error_per_child"
-    ] = np.nan
-    joined.loc[
-        np.isinf(joined["error_per_child_eligible"]),
-        "error_per_child_eligible"
-    ] = np.nan
-    joined.loc[
-        np.isinf(joined["error_dp_per_child"]), "error_dp_per_child"
-    ] = np.nan
-    joined.loc[
-        np.isinf(joined["error_dp_per_child_eligible"]),
+    joined.columns = [
+        col if isinstance(col, str) else '_'.join([
+            c for c in col if c != 'mean'
+        ]).rstrip('_')
+        for col in joined.columns.values
+    ]
+    for col in [
+        "error_per_child",
+        "error_per_child_eligible",
+        "error_dp_per_child",
         "error_dp_per_child_eligible"
-    ] = np.nan
+    ]:
+        joined.loc[
+            np.isinf(joined[col]), col
+        ] = np.nan
 
     return joined
 
@@ -343,28 +348,61 @@ def cube(x):
 def heatmap(
     data, label=None, title=None, transform='cube', theme="RdBu",
     y="error_dp_per_child", vcenter=0, file=None,
-    figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300
+    figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300,
+    alpha=0.1
 ):
+    data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * stats.norm.ppf(1 - alpha / 2)
+    sig = ~(
+        ((data[y] + data[f"{y}_moe"]) >= 0) &
+        ((data[y] - data[f"{y}_moe"]) <= 0)
+    )
+    print(
+        "All but",
+        len(data)-sig.sum(),
+        f"are significantly different from zero at {alpha}"
+    )
+
     fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
 
-    if transform == 'cube':
-        data.loc[:, y] = cube(data[y])
-    if transform == 'log':
-        data.loc[:, y] = np.where(data[y] == 0, 0, np.log(data[y]))
+    for key in [y, f"{y}_moe"]:
+        if transform == 'cube':
+            data.loc[:, key] = cube(data[key])
+        if transform == 'log':
+            data.loc[:, key] = np.where(data[key] == 0, 0, np.log(data[key]))
+        if transform == 'sqrt':
+            data.loc[:, key] = np.sign(data[key]) * np.sqrt(np.abs(data[key]))
 
     # Create colorbar as a legend
     if min is None and max is None:
         min = data[y].min()
         max = data[y].max()
 
+    bound = np.max(np.abs([min, max]))
+
     if vcenter is not None and transform != 'log':
-        norm = pltc.TwoSlopeNorm(vcenter=0, vmin=min, vmax=max)
+        norm = pltc.TwoSlopeNorm(vcenter=0, vmin=-bound, vmax=bound)
     else:
         norm = pltc.Normalize(vmin=min, vmax=max)
     sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
 
+    print(
+        f"None of the {(1-alpha)*100}% MOEs exceeds",
+        data[f"{y}_moe"].abs().max()
+    )
+    data[f"{y}_sig"] = np.where(sig, data[y], np.nan)
     data.plot(
-        column=y, cmap=theme, norm=norm, ax=ax, linewidth=0.05, edgecolor='0.2'
+        column=f"{y}_sig",
+        cmap=theme,
+        norm=norm,
+        ax=ax,
+        linewidth=0.05,
+        edgecolor='0.1',
+        missing_kwds=dict(
+            hatch='///',
+            edgecolor=(0, 0, 0, 0.25),
+            facecolor='none',
+            label=f"Not significant (p < {alpha})"
+        )
     )
     cb = fig.colorbar(
         sm, location=bar_location, shrink=0.5, pad=0.05, aspect=30
