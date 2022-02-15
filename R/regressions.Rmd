@@ -318,7 +318,7 @@ stargazer(
 
 ### GAM
 ```{r gam-mr}
-sampling_only = F
+sampling_only = T
 gam_mr = get_gam("baseline", sampling_only, F, df)
 ```
 
@@ -359,7 +359,7 @@ anova(gam_mr, gam_mr_interact)
 
 # vis.gam(gam_mr, view=c("prop_white", "median_income_est"))
 
-plot_gam(getViz(gam_mr), "baseline")
+plot_gam(getViz(gam_mr), sprintf("baseline_sampling=%s", sampling_only))
 ```
 
 ### Inverse welfare
@@ -434,7 +434,7 @@ for (experiment_name in c(
   experiment = load_experiment(experiment_name)
   print(nrow(experiment))
   
-  plot_race(experiment, experiment_name)
+  plot_race(experiment, experiment_name, 2)
   
   # from_cache = T
   # 

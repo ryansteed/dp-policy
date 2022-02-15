@@ -1,3 +1,4 @@
+from lib2to3.pgen2.pgen import DFAState
 import pandas as pd
 from dp_policy.titlei.utils import get_acs_unified
 
@@ -106,11 +107,22 @@ def discrimination_join(results, save_path=None, verbose=False):
     return grants
 
 
-def discrimination_treatments_join(treatments_name, epsilon=0.1, delta=0.0):
+def discrimination_treatments_join(
+    treatments_name,
+    exclude=[],
+    epsilon=0.1,
+    delta=0.0
+):
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
+    treatments = {
+        treatment: df
+        for treatment, df in load_treatments(treatments_name).items()
+        if treatment not in exclude
+    }
+    print("Saving", treatments.keys())
     joined = pd.concat(
-        load_treatments(treatments_name),
+        treatments,
         names=['treatment']
     ).loc[(
         slice(None),

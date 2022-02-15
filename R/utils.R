@@ -216,7 +216,10 @@ load_experiment = function(name) {
   return(df)
 }
 
-plot_race = function(experiment, name) {
+plot_race = function(experiment, name, ncol) {
+  if (missing(ncol)) {
+    ncol = 3
+  }
   grouped = summarise_trials(experiment)
   comparison = race_comparison(grouped, "race_aggregate")
   
@@ -241,7 +244,7 @@ plot_race = function(experiment, name) {
     coord_flip() +
     xlab("Census Race Category") +
     guides(
-      fill = guide_legend(ncol=3)
+      fill = guide_legend(ncol=ncol)
     ) +
     labs(
       fill = "Data error",
