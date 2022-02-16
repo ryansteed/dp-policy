@@ -14,6 +14,7 @@ library(data.table)
 library(boot)
 library(broom)
 library(ggpattern)
+library(arrow)
 
 clean = function(df) {
   # print(sprintf(
@@ -204,7 +205,9 @@ stat = function(data, indices) {
     mean(d$sampling_benefit_per_child),
     mean(d$sampling_benefit_per_child_eligible),
     mean(d$dp_sampling_benefit_per_child),
-    mean(d$dp_sampling_benefit_per_child_eligible)
+    mean(d$dp_sampling_benefit_per_child_eligible),
+    mean(d$dp_sampling_benefit_per_child)-mean(d$sampling_benefit_per_child),
+    mean(d$dp_sampling_benefit_per_child_eligible)-mean(d$sampling_benefit_per_child_eligible)
   )
   names(stats) = c(
     "dp_benefit_per_child",
@@ -212,26 +215,14 @@ stat = function(data, indices) {
     "sampling_benefit_per_child",
     "sampling_benefit_per_child_eligible",
     "dp_sampling_benefit_per_child",
-    "dp_sampling_benefit_per_child_eligible"
+    "dp_sampling_benefit_per_child_eligible",
+    "diff_benefit_per_child",
+    "diff_benefit_per_child_eligible"
   )
   return(stats)
 }
 
-stat_long = function(data) {
-  print(data)
-  d = data %>%
-    summarise(
-      children_of_race = round(true_children_total * race_pct / 100),
-      children_of_race_eligible = round(true_children_eligible * race_pct / 100),
-      benefit_per_child_eligible = sum(misalloc * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE)
-    )
-  
-  stop()
-  # mean should be the same as first - this is just a long vector of the same number
-  return(mean(d$benefit_per_child_eligible))
-}
-
-boot_runs = 10
+boot_runs = 10000
 
 bootstrap_benefit = function(data) {
   t = boot(
@@ -241,55 +232,15 @@ bootstrap_benefit = function(data) {
   )
   res = tidy(t, conf.int=TRUE, conf.method="norm") %>%
     clean_names() %>%
-    dplyr::select(-c(conf_low, conf_high)) %>%
     pivot_wider(
       names_from=term,
       names_glue = "{term}_{.value}",
-      values_from=c(statistic, bias, std_error)
+      values_from=c(statistic, bias, std_error, conf_low, conf_high)
     ) %>%
     rename_with(
       ~ str_replace(.x, "_statistic", ""), ends_with("_statistic")
     )
   return(res)
-}
-
-
-bootstrap_benefit_diff = function(data) {
-  data = data %>%
-    pivot_longer(
-      c(misalloc_sampling, misalloc_dp_sampling),
-      names_to = "misalloc_type",
-      values_to = "misalloc"
-    )
-  s1 = data %>% filter(misalloc_type == "misalloc_dp_sampling")
-  s2 = data %>% filter(misalloc_type == "misalloc_sampling")
-  ind = c(rep(1, length(s1)), rep(2, length(s2)))
-  cnames = colnames(data)
-  func = function(d, idx) {
-    print(sum(tidy(idx)))
-    # print(tidy(idx[ind == 1]))
-    # print(data.frame(d[idx[ind == 1]]))
-    # print(d %>% as.tibble(colnames=cnames))
-    # d1 = d[idx[ind == 1]]
-    # d2 = d[idx[ind == 2]]
-    # print(tidy(d1))
-    return(1)
-    # stat_long(d1) - stat_long(d2)
-  }
-  t = boot(
-    data=data,
-    statistic=func,
-    R=boot_runs,
-    strata=data$misalloc_type
-  )
-  # t = two.boot(
-  #   (data %>% filter(misalloc_type == "misalloc_dp_sampling")),
-  #   (data %>% filter(misalloc_type == "misalloc_sampling")),
-  #   stat_long,
-  #   boot_runs
-  # )
-  print(t)
-  return
 }
 
 
@@ -303,7 +254,12 @@ race_comparison = function(comparison, kind) {
       bootstrap = map(bootstrap_benefit, .x=data)
     ) %>%
     unnest(c(bootstrap, data)) %>%
-    ungroup()
+    ungroup() %>%
+    mutate(
+      dp_sampling_benefit_per_child_eligible_debiased = dp_sampling_benefit_per_child_eligible - dp_sampling_benefit_per_child_eligible_bias,
+      sampling_benefit_per_child_eligible_debiased = sampling_benefit_per_child_eligible - sampling_benefit_per_child_eligible_bias,
+      diff_benefit_per_child_eligible_debiased = diff_benefit_per_child_eligible - diff_benefit_per_child_eligible_bias
+    )
   
   # comparison_mean = comparison_all %>%
   #   group_by(treatment, race) %>%
@@ -316,13 +272,6 @@ race_comparison = function(comparison, kind) {
   #     dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
   #   )
   
-  comparison_all$dp_sampling_benefit_per_child_eligible_debiased = (
-    comparison_all$dp_sampling_benefit_per_child_eligible - comparison_all$dp_sampling_benefit_per_child_eligible_bias
-  )
-  comparison_all$sampling_benefit_per_child_eligible_debiased = (
-    comparison_all$sampling_benefit_per_child_eligible - comparison_all$sampling_benefit_per_child_eligible_bias
-  )
-  
   sorted = comparison_all %>%
     mutate(race = fct_reorder(race, sampling_benefit_per_child_eligible_debiased)) %>%
     distinct(
@@ -330,16 +279,19 @@ race_comparison = function(comparison, kind) {
       sampling_benefit_per_child_eligible_debiased,
       sampling_benefit_per_child_eligible_std_error,
       dp_sampling_benefit_per_child_eligible_debiased,
-      dp_sampling_benefit_per_child_eligible_std_error
+      dp_sampling_benefit_per_child_eligible_std_error,
+      diff_benefit_per_child_eligible_debiased,
+      diff_benefit_per_child_eligible_std_error
     )
-  
+
   return(sorted)
 }
 
 load_experiment = function(name, max_trials) {
   raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
+  # raw = read_feather("results/policy_experiments/post_processing_discrimination_laplace.feather")
   df = clean(raw)
-  if (!missing(trials)) {
+  if (!missing(max_trials)) {
     df = df %>% filter(trial < max_trials)
   }
   return(df)
@@ -448,18 +400,18 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
   if (missing(alpha)) {
     alpha = 0.1
   }
-  comparison$dp_moe = qnorm(1-alpha/2) * comparison$dp_sampling_benefit_per_child_eligible_std_error
-  comparison$sampling_moe = qnorm(1-alpha/2) * comparison$sampling_benefit_per_child_eligible_std_error
-  comparison$sigdiff = ifelse((
-    ( # dp sig greater
-      (comparison$dp_sampling_benefit_per_child_eligible_debiased - comparison$dp_moe) >
-        (comparison$sampling_benefit_per_child_eligible_debiased + comparison$sampling_moe)
-    ) |
-    ( # dp sig less
-      (comparison$dp_sampling_benefit_per_child_eligible_debiased + comparison$dp_moe) <
-        (comparison$sampling_benefit_per_child_eligible_debiased - comparison$sampling_moe)
+  alpha_sig = 0.01
+  comparison = comparison %>%
+    mutate(
+      dp_moe = qnorm(1-alpha/2) * dp_sampling_benefit_per_child_eligible_std_error,
+      sampling_moe = qnorm(1-alpha/2) * sampling_benefit_per_child_eligible_std_error,
+      diff_moe = qnorm(1-alpha_sig/2) * diff_benefit_per_child_eligible_std_error,
+      sigdiff = ifelse((
+        ((diff_benefit_per_child_eligible_debiased - diff_moe) < 0) &
+          ((diff_benefit_per_child_eligible_debiased + diff_moe) > 0)
+      ), "notsig", "sig")
     )
-  ), "sig", "notsig")
+  print(comparison)
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible_debiased)) +
     geom_col(
       position="dodge",
@@ -469,9 +421,9 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       aes(
         y=dp_sampling_benefit_per_child_eligible_debiased,
         shape=treatment,
-        color="",
         linetype=sigdiff
       ),
+      color="black",
       fill="transparent",
       position="dodge"
     ) +
@@ -494,16 +446,19 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       width=0.5
     ) +
     ylab("Race-weighted misallocation per eligible child") +
-    scale_linetype_manual(values=c("sig" = "solid", "notsig" = "dashed"), labels=c(TRUE, FALSE)) +
-    scale_colour_manual(values=c("black")) +
+    scale_linetype_manual(
+      values=c("sig" = "solid", "notsig" = "dashed"),
+      labels=c("sig" = sprintf("Significant\ndifference\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+    ) +
     coord_flip() +
     xlab("Census Race Category") +
     guides(
-      fill = guide_legend(ncol=ncol)
+      fill = guide_legend(ncol=ncol),
+      linetype = guide_legend(ncol=2)
     ) +
     labs(
       fill = "Data error",
-      color = "+ DP error"
+      linetype = "+ DP error"
     ) +
     theme(
       legend.position = "top",

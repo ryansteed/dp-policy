@@ -15,7 +15,8 @@ source("R/utils.R")
 
 ```{r load-baseline}
 # raw = read.csv("results/discrimination.csv")
-raw = fread("results/baseline_eps=0.1.csv")
+# raw = fread("results/baseline_eps=0.1.csv")
+raw = read_feather("results/baseline_eps=0.1.feather")
 ```
 
 ```{r clean}
@@ -394,7 +395,7 @@ experiment = load_experiment(test_experiment)
 ```
 
 ```{r treatment-plot}
-plot_race(experiment, test_experiment, "hispanic")
+plot_race(experiment, test_experiment, "race_aggregate")
 ```
 
 ```{r treatment-gam}
@@ -421,13 +422,13 @@ for (t in unique(experiment$treatment)) {
 trials = 100
 
 for (experiment_name in c(
-  # "hold_harmless",
-  # "post_processing",
-  # "thresholds",
-  # "moving_average",
-  # "moving_average_truth=unmodified",
-  # "moving_average_truth=average",
-  # "epsilon",
+  "hold_harmless",
+  "post_processing",
+  "thresholds",
+  "moving_average",
+  "moving_average_truth=unmodified",
+  "moving_average_truth=average",
+  "epsilon",
   "budget"
 )) {
   rm(experiment)
@@ -436,10 +437,16 @@ for (experiment_name in c(
   experiment = load_experiment(experiment_name)
   print(nrow(experiment))
   
+  ncols = 3
+  if (experiment_name == "budget") {
+    ncols = 2
+  }
+  plot_race(experiment, experiment_name, "race_aggregate", ncols)
+  plot_race(experiment, experiment_name, "race", ncols)
+  plot_race(experiment, experiment_name, "hispanic", ncols)
+  
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
   experiment = experiment %>% filter(trial < trials)
-  
-  plot_race(experiment, experiment_name, "race_aggregate", 2)
   
   # from_cache = T
   # 
