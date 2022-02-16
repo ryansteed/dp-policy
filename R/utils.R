@@ -11,6 +11,8 @@ library(cowplot)
 library(grid)
 library(gridExtra)
 library(data.table)
+library(boot)
+library(broom)
 
 clean = function(df) {
   # print(sprintf(
@@ -92,7 +94,7 @@ cuberoot = function(x) {
   return(sign(x)*abs(x)^(1/3))
 }
 
-race_comparison = function(comparison, kind) {
+race_comparison_long = function(comparison, kind) {
   if (kind == "hispanic") {
     comparison = comparison %>%
       dplyr::select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
@@ -177,10 +179,14 @@ race_comparison = function(comparison, kind) {
       benefit_sampling = ifelse(race_pct > 0.0, misalloc_sampling_per_child / race_pct * 100, NA),
       benefit_dp_sampling = ifelse(race_pct > 0.0, misalloc_dp_sampling_per_child / race_pct * 100, NA)
     )
-  
-  comparison_all = comparison %>%
-    group_by(treatment, race) %>%
-    mutate(
+
+  return(comparison)
+}
+
+stat = function(data, indices) {
+  d = data[indices,]
+  d = d %>%
+    summarise(
       children_of_race = round(true_children_total * race_pct / 100),
       children_of_race_eligible = round(true_children_eligible * race_pct / 100),
       dp_benefit_per_child = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
@@ -189,7 +195,55 @@ race_comparison = function(comparison, kind) {
       sampling_benefit_per_child_eligible = sum(misalloc_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE),
       dp_sampling_benefit_per_child = sum(misalloc_dp_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
       dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE)
-    )  %>%
+    )
+  stats = c(
+    sum(d$dp_benefit_per_child),
+    sum(d$dp_benefit_per_child_eligible),
+    sum(d$sampling_benefit_per_child),
+    sum(d$sampling_benefit_per_child_eligible),
+    sum(d$dp_sampling_benefit_per_child),
+    sum(d$dp_sampling_benefit_per_child_eligible)
+  )
+  names(stats) = c(
+    "dp_benefit_per_child",
+    "dp_benefit_per_child_eligible",
+    "sampling_benefit_per_child",
+    "sampling_benefit_per_child_eligible",
+    "dp_sampling_benefit_per_child",
+    "dp_sampling_benefit_per_child_eligible"
+  )
+  return(stats)
+}
+
+bootstrap_benefit = function(data) {
+  t = boot(
+    data=data,
+    statistic=stat,
+    R=1000
+  )
+  res = tidy(t, conf.int=TRUE, conf.method="norm") %>%
+    clean_names() %>%
+    dplyr::select(-c(conf_low, conf_high)) %>%
+    pivot_wider(
+      names_from=term,
+      names_glue = "{term}_{.value}",
+      values_from=c(statistic, bias, std_error)
+    ) %>%
+    rename_with(
+      ~ str_replace(.x, "_statistic", ""), ends_with("_statistic")
+    )
+  return(res)
+}
+
+
+race_comparison = function(comparison, kind) {
+  comparison = race_comparison_long(comparison, kind)
+  
+  comparison_all = comparison %>%
+    group_by(treatment, race) %>%
+    nest() %>%
+    mutate(bootstrap = map(bootstrap_benefit, .x=data)) %>%
+    unnest(c(bootstrap, data)) %>%
     ungroup()
   
   # comparison_mean = comparison_all %>%
@@ -204,15 +258,26 @@ race_comparison = function(comparison, kind) {
   #   )
   
   sorted = comparison_all %>%
-    mutate(race = fct_reorder(race, sampling_benefit_per_child)) %>%
-    distinct(treatment, race, sampling_benefit_per_child_eligible, dp_sampling_benefit_per_child_eligible)
+    mutate(race = fct_reorder(race, sampling_benefit_per_child_eligible)) %>%
+    distinct(
+      treatment, race, 
+      sampling_benefit_per_child_eligible,
+      sampling_benefit_per_child_eligible_bias,
+      sampling_benefit_per_child_eligible_std_error,
+      dp_sampling_benefit_per_child_eligible,
+      dp_sampling_benefit_per_child_eligible_bias,
+      dp_sampling_benefit_per_child_eligible_std_error
+    )
   
   return(sorted)
 }
 
-load_experiment = function(name) {
+load_experiment = function(name, trials) {
+  if (missing(trials)) {
+    trials = 100
+  }
   raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
-  df = clean(raw)
+  df = clean(raw) %>% filter(trial < trials)
   return(df)
 }
 
