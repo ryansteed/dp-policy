@@ -48,8 +48,8 @@ ggplot(grouped) +
 ```
 
 ```{r race}
-kind = "hispanic"
-# kind = "race_aggregate"
+# kind = "hispanic"
+kind = "race_aggregate"
 # kind = "race"
 # kind = "intersectional"
 
@@ -169,46 +169,6 @@ ggsave(sprintf("plots/race/misalloc_%s.png", kind), dpi=300, width=5, height=6)
 # misalloc_white = df$misalloc * df$prop_white
 # t.test(misalloc_white, misalloc_nonwhite)
 ```
-
-
-
-### Bootstrap
-```{r bootstrap}
-test_experiment = "hold_harmless"
-experiment = load_experiment(test_experiment)
-```
-
-```{r}
-grouped = summarise_trials(experiment)
-```
-
-```{r}
-comparison = race_comparison_long(grouped, "race_aggregate")
-```
-
-```{r}
-res = bootstrap_benefit(comparison %>% filter(race == "White", treatment=="Hold harmless"))
-res
-```
-```{r}
-# comparison %>%
-#   filter(race == "White") %>%
-#   group_split(treatment) %>%
-#   map_df(~ bootstrap_benefit(.x))
-
-comparison %>%
-  group_by(treatment, race) %>%
-  nest() %>%
-  mutate(bootstrap = map(bootstrap_benefit, .x=data)) %>%
-  unnest(c(bootstrap, data)) %>%
-  distinct(treatment, race, dp_benefit_per_child_eligible_std_error, dp_benefit_per_child_eligible_bias, dp_benefit_per_child_eligible)
-```
-
-```{r}
-plot_race(experiment, test_experiment)
-```
-
-
 
 
 ## Individual variable plots
@@ -432,8 +392,9 @@ plot_gam(getViz(gam_mr), sprintf("baseline_sampling=%s", sampling_only))
 test_experiment = "hold_harmless"
 experiment = load_experiment(test_experiment)
 ```
+
 ```{r treatment-plot}
-plot_race(experiment, test_experiment)
+plot_race(experiment, test_experiment, "hispanic")
 ```
 
 ```{r treatment-gam}
@@ -472,10 +433,13 @@ for (experiment_name in c(
   rm(experiment)
 
   print(experiment_name)
-  experiment = load_experiment(experiment_name, trials)
+  experiment = load_experiment(experiment_name)
   print(nrow(experiment))
   
-  plot_race(experiment, experiment_name, 2)
+  # reduced size for GAM - otherwise takes too long... maybe reverse this later
+  experiment = experiment %>% filter(trial < trials)
+  
+  plot_race(experiment, experiment_name, "race_aggregate", 2)
   
   # from_cache = T
   # 
