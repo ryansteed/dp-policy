@@ -16,6 +16,8 @@ library(broom)
 library(ggpattern)
 library(arrow)
 
+boot_runs = 10
+
 clean = function(df) {
   # print(sprintf(
   #   "Dropping %d rows with NA ACS data",
@@ -25,17 +27,14 @@ clean = function(df) {
     clean_names() %>%
     filter(total_population_race_est != 0) %>%
     mutate_at(
-      vars(matches("race_pct$")), as.numeric
+      vars(matches("_pct$")), as.numeric
     ) %>%
     mutate_at(
       vars(matches("race_pct$")), list(`children`= ~(. / 100 * true_children_total))
     ) %>% mutate(
       prop_white = as.numeric(white_race_pct) / 100,
       nonwhite_children = true_children_total * prop_white,
-      not_a_u_s_citizen_u_s_citizenship_status_pct = as.numeric(not_a_u_s_citizen_u_s_citizenship_status_pct),
-      average_household_size_of_renter_occupied_unit_housing_tenure_est = as.numeric(gsub(',', '', average_household_size_of_renter_occupied_unit_housing_tenure_est)),
-      renter_occupied_housing_tenure_pct = as.numeric(gsub(',', '', renter_occupied_housing_tenure_pct)),
-      median_income_est = as.numeric(gsub('[\\+]|[,]', '', as.character(median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est))),
+      median_income_est = median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est,
       pop_density = true_pop_total / aland
     ) %>% mutate(
       # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
@@ -43,6 +42,15 @@ clean = function(df) {
       misalloc_sampling = est_grant_total - true_grant_total,
       misalloc_dp_sampling = dpest_grant_total - true_grant_total
     )
+  print(sprintf("%s rows", nrow(df_clean)))
+  print(sprintf("%s trials", nrow(df_clean %>% distinct(trial))))
+  print(sprintf("%s districts", nrow(df_clean %>% distinct(state_fips_code, district_id))))
+  print(
+    df_clean %>% 
+      summarise_each(funs(sum(is.na(.)))) %>% 
+      pivot_longer(everything(), names_to="var", values_to="missing") %>%
+      filter(missing > 0)
+  )
   return(df_clean)
 }
 
@@ -66,13 +74,9 @@ summarise_trials = function(df) {
         prop_white,
         ends_with("race_pct"),
         language_other_than_english_language_spoken_at_home_pct,
-        language_other_than_english_language_spoken_at_home_est,
-        foreign_born_place_of_birth_est,
         foreign_born_place_of_birth_pct,
-        not_a_u_s_citizen_u_s_citizenship_status_est,
         not_a_u_s_citizen_u_s_citizenship_status_pct,
         renter_occupied_housing_tenure_pct,
-        renter_occupied_housing_tenure_est,
         average_household_size_of_renter_occupied_unit_housing_tenure_est,
         median_income_est,
         pop_density
@@ -222,8 +226,6 @@ stat = function(data, indices) {
   return(stats)
 }
 
-boot_runs = 10000
-
 bootstrap_benefit = function(data) {
   t = boot(
     data=data,
@@ -288,8 +290,8 @@ race_comparison = function(comparison, kind) {
 }
 
 load_experiment = function(name, max_trials) {
-  raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
-  # raw = read_feather("results/policy_experiments/post_processing_discrimination_laplace.feather")
+  # raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
+  raw = read_feather("results/policy_experiments/post_processing_discrimination_laplace.feather")
   df = clean(raw)
   if (!missing(max_trials)) {
     df = df %>% filter(trial < max_trials)
@@ -522,8 +524,13 @@ clean_for_reg = function(df) {
         sq_share(samoan_race_pct) +
         sq_share(some_other_race_race_pct) +
         sq_share(two_or_more_races_race_pct),
-      prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100
+      prop_hispanic = 1-not_hispanic_or_latino_hispanic_or_latino_and_race_pct/100,
     ) %>%
+    # impute mean
+    mutate_at(
+      c(median_income_est, average_household_size_of_renter_occupied_unit_housing_tenure_est),
+      ~ replace(., is.na(.), median(.))
+    )
     dplyr::select(
       -ends_with("hispanic_or_latino_and_race_pct"),
       -asian_race_pct

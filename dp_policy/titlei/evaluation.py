@@ -8,6 +8,7 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import matplotlib.colors as pltc
 import seaborn as sns
+import pyarrow.feather as feather
 import pickle
 
 
@@ -60,51 +61,67 @@ def discrimination_join(results, save_path=None, verbose=False):
     # add rural/urban - need a 3rd data source
     # add immigrant status
     variables += [
-        "Foreign born (PLACE OF BIRTH) - est",
+        # "Foreign born (PLACE OF BIRTH) - est",
         "Foreign born (PLACE OF BIRTH) - pct",
-        "Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - est",
+        # "Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - est",
         "Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - pct"
     ]
     # add language isolation
     variables += [
-        'Language other than English (LANGUAGE SPOKEN AT HOME) - est',
+        # 'Language other than English (LANGUAGE SPOKEN AT HOME) - est',
         'Language other than English (LANGUAGE SPOKEN AT HOME) - pct'
     ]
     # add renters vs. homeowners (housing security)
     variables += [
-        'Renter-occupied (HOUSING TENURE) - est',
+        # 'Renter-occupied (HOUSING TENURE) - est',
         'Renter-occupied (HOUSING TENURE) - pct',
         'Average household size of renter-occupied unit (HOUSING TENURE) - est'
     ]
+
+    # look in these columns for '-' and replace with nan according to ACS docs
+    # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
+    # otherwise convert to numeric
+    acs_vars = acs[variables]\
+        .replace(['-', "**", "***", "(X)", "N", "null"], np.nan)\
+        .replace('250,000+', 250000)\
+        .apply(pd.to_numeric, errors='raise')
+
     if verbose:
         print(variables)
-        print(acs[variables].shape)
+        print(acs_vars.shape)
         print(results.shape)
 
-    grants = results.join(acs[variables], how="inner")
+    # adding geographic area
+    geo = get_geography()
+
+    to_join = acs_vars.join(geo["ALAND"], how="inner")
+    if verbose:
+        print("ACS", acs_vars.shape)
+        print("Geo joined ACS", to_join.shape)
+        print(
+            to_join[
+                to_join["Total population (RACE) - est"].isna()
+            ].groupby(["State FIPS Code", "District ID"]).groups.keys()
+        )
+
+    print("Joining ACS/geo variables...")
+    grants = results.join(to_join, how="inner")
     if verbose:
         print(
-            "missing some districts in ACS:",
+            "missing some districts in ACS/geo:",
             len(results.groupby([
                 "State FIPS Code", "District ID"
             ])) - len(grants.groupby([
                 "State FIPS Code", "District ID"
             ]))
         )
+        # print(results[results.index.difference(to_join.index)])
         print(grants.shape)
 
-    # adding geographic area
-    geo = get_geography()
-    grants = grants.join(geo["ALAND"])
-    if verbose:
-        print(grants.shape)
-        print(
-            grants[
-                grants["Total population (RACE) - est"].isna()
-            ].groupby(["State FIPS Code", "District ID"]).groups.keys()
-        )
     if save_path:
-        grants.to_csv(save_path)
+        print("Saving to feather...")
+        grants.reset_index().to_feather(f"{save_path}.feather")
+        # grants.to_csv(f"{save_path}.csv")
     return grants
 
 
@@ -117,7 +134,22 @@ def discrimination_treatments_join(
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
     treatments = {
-        treatment: df
+        treatment: df.loc[(
+            slice(None),
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            slice(None),
+            slice(None)
+        ), [
+            c for c in df.columns
+            if c.endswith("- pct")
+            or c.endswith("- est")
+            or c.startswith("true")
+            or c.endswith("grant_total")
+            or c in [
+                "ALAND"
+            ]
+        ]]
         for treatment, df in load_treatments(treatments_name).items()
         if treatment not in exclude
     }
@@ -125,18 +157,11 @@ def discrimination_treatments_join(
     joined = pd.concat(
         treatments,
         names=['treatment']
-    ).loc[(
-        slice(None),
-        slice(None),
-        delta if delta is not None else slice(None),
-        epsilon if epsilon is not None else slice(None),
-        slice(None),
-        slice(None)
-    ), :]
+    )
     discrimination_joined = discrimination_join(
         joined,
         save_path="../results/policy_experiments/"
-        f"{treatments_name}_discrimination_laplace.csv"
+        f"{treatments_name}_discrimination_laplace"
     )
     return discrimination_joined
 
