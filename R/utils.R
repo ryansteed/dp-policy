@@ -292,7 +292,7 @@ race_comparison = function(comparison, kind) {
 
 load_experiment = function(name, max_trials) {
   # raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
-  raw = read_feather("results/policy_experiments/post_processing_discrimination_laplace.feather")
+  raw = read_feather(sprintf("results/policy_experiments/%s_discrimination_laplace.feather", name))
   df = clean(raw)
   if (!missing(max_trials)) {
     df = df %>% filter(trial < max_trials)
