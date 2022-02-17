@@ -21,7 +21,9 @@ def run(
         name,
         **kwargs
     )
-    if not just_join:
+    if just_join:
+        click.echo("Skipping run, straight to join")
+    else:
         experiment.run()
     experiment.discrimination_join()
 

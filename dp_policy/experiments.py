@@ -251,7 +251,7 @@ class Epsilon(Experiment):
 
 class Budget(Experiment):
     def _get_treatments(self):
-        if len(self.eps > 0):
+        if len(self.eps) > 0:
             print("[WARN] Using first value of epsilon for budget calcs.")
 
         e = self.eps[0]
