@@ -24,8 +24,10 @@ class Experiment:
         self.eps = eps
         self.delta = delta
         if baseline == "cached":
+            print("Using cached baseline...")
             self.baseline = load_treatments("baseline")['baseline']
         elif baseline is None:
+            print("Generating baseline...")
             self.baseline = test_params(
                 self.saipe, Laplace,
                 eps=eps, delta=delta,
@@ -33,6 +35,7 @@ class Experiment:
                 print_results=False,
                 allocator_kwargs={'verbose': False}
             )
+            print("Using given baseline...")
             save_treatments({'baseline': self.baseline}, "baseline")
         else:
             self.baseline = baseline

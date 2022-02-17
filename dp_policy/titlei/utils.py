@@ -194,7 +194,10 @@ def _average_saipe(saipes):
     combined = pd.concat(saipes)
     # convert cv to variance
     combined["stderr"] = \
-        (combined["Estimated Total Population"] * combined["cv"]).pow(2)
+        (combined[
+            'Estimated number of relevant children 5 to 17 years old '
+            'in poverty who are related to the householder'
+        ] * combined["cv"]).pow(2)
     agg = combined \
         .groupby(["State FIPS Code", "District ID"]) \
         .agg({
