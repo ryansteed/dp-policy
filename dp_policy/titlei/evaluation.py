@@ -445,6 +445,21 @@ def heatmap(
 
 
 def save_treatments(treatments, experiment_name):
+    # minify treatments
+    treatments = {
+        treatment: df.loc[:, [
+            c for c in df.columns
+            if c.endswith("- pct")
+            or c.endswith("- est")
+            or c.startswith("true")
+            or "eligible" in c
+            or "grant" in c
+            or c in [
+                "ALAND"
+            ]
+        ]]
+        for treatment, df in treatments.items()
+    }
     pickle.dump(
         treatments,
         open(f"../results/policy_experiments/{experiment_name}.pkl", 'wb')

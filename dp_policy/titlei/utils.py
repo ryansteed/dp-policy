@@ -185,7 +185,6 @@ def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
 
     # calculate coefficient of variation
     inputs = official.join(saipe_stacked.drop(columns="Name"), how="inner")\
-        .drop(columns=["State Postal Code"])\
         .astype({'Name': 'string'})
 
     return inputs
