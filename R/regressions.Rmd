@@ -434,21 +434,19 @@ for (experiment_name in c(
   print(experiment_name)
   experiment = load_experiment(experiment_name)
   
-  ncols = 3
-  if (experiment_name == "budget") {
-    ncols = 2
-  }
-  print("Race")
-  plot_race(experiment, experiment_name, "race_aggregate", ncols)
-  stop()
-  
-  # plot_race(experiment, experiment_name, "race", ncols)
-  print("Ethnicity")
-  plot_race(experiment, experiment_name, "hispanic", ncols)
+  # ncols = 3
+  # if (experiment_name == "budget") {
+  #   ncols = 2
+  # }
+  # print("# Race")
+  # plot_race(experiment, experiment_name, "race_aggregate", ncols)
+  # # plot_race(experiment, experiment_name, "race", ncols)
+  # print("Ethnicity")
+  # plot_race(experiment, experiment_name, "hispanic", ncols)
   
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
   experiment = experiment %>% filter(trial < trials)
-  print(experiment %>% distinct(trial) %>% n())
+  print(nrow(experiment %>% distinct(trial)))
   
   from_cache = F
 

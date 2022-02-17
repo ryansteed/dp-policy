@@ -16,7 +16,7 @@ library(broom)
 library(ggpattern)
 library(arrow)
 
-boot_runs = 10
+boot_runs = 1000
 
 clean = function(df) {
   # print(sprintf(
@@ -249,6 +249,7 @@ bootstrap_benefit = function(data) {
 race_comparison = function(comparison, kind) {
   comparison = race_comparison_long(comparison, kind)
   
+  print("Bootstrapping...")
   comparison_all = comparison %>%
     group_by(treatment, race) %>%
     nest() %>%
@@ -482,6 +483,7 @@ plot_race = function(experiment, name, kind, ncol) {
   grouped = summarise_trials(experiment)
   comparison = race_comparison(grouped, kind)
   
+  print("Plotting...")
   plt = plot_race_bar_stacked(comparison, ncol)
   print(plt)
   
@@ -528,9 +530,9 @@ clean_for_reg = function(df) {
     ) %>%
     # impute mean
     mutate_at(
-      c(median_income_est, average_household_size_of_renter_occupied_unit_housing_tenure_est),
-      ~ replace(., is.na(.), median(.))
-    )
+      c("median_income_est", "average_household_size_of_renter_occupied_unit_housing_tenure_est"),
+      ~ replace(.x, is.na(.x), median(.x))
+    ) %>%
     dplyr::select(
       -ends_with("hispanic_or_latino_and_race_pct"),
       -asian_race_pct
