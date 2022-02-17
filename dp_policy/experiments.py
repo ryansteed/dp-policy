@@ -286,7 +286,7 @@ class Budget(Experiment):
 
         budgets = {"{} (${:.1e})".format(k, v): v for k, v in budgets.items()}
 
-        usual_budget = test["official_total_alloc"]\
+        usual_budget = self.saipe["official_total_alloc"]\
             .groupby(["State FIPS Code", "District ID"]).first().sum()
         print("baseline budget: {:.1e}".format(usual_budget))
         print(budgets)

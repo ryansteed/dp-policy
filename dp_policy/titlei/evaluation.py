@@ -121,6 +121,7 @@ def discrimination_join(results, save_path=None, verbose=False):
     if save_path:
         print("Saving to feather...")
         grants.reset_index().to_feather(f"{save_path}.feather")
+        print("... saved.")
         # grants.to_csv(f"{save_path}.csv")
     return grants
 
@@ -158,6 +159,10 @@ def discrimination_treatments_join(
         treatments,
         names=['treatment']
     )
+    print("Concatenated has {} rows and {} treatments".format(
+        len(joined),
+        len(treatments)
+    ))
     discrimination_joined = discrimination_join(
         joined,
         save_path="../results/policy_experiments/"
@@ -361,7 +366,11 @@ def plot_treatments(
     plt.ylabel(ylab)
     plt.legend(loc='upper right')
     if filename:
-        plt.savefig(f"../plots/bootstrap/{filename}.png", dpi=100)
+        plt.savefig(
+            f"../plots/bootstrap/{filename}.png",
+            dpi=100,
+            bbox_inches='tight'
+        )
     plt.show()
     plt.close()
 
@@ -371,7 +380,7 @@ def cube(x):
 
 
 def heatmap(
-    data, label=None, title=None, transform='cube', theme="RdBu",
+    data, label=None, title=None, transform='cube', theme="seismic_r",
     y="error_dp_per_child", vcenter=0, file=None,
     figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300,
     alpha=0.1
@@ -438,7 +447,7 @@ def heatmap(
     plt.axis('off')
     plt.tight_layout()
     if file is not None:
-        plt.savefig(f"../plots/geo/{file}", dpi=dpi)
+        plt.savefig(f"../plots/geo/{file}", dpi=dpi, bbox_inches='tight')
         plt.close()
     else:
         plt.show()
