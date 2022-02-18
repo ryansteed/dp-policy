@@ -10,3 +10,5 @@ results/*
 default.profraw
 *__pycache__
 data/shapefiles/*/
+venv
+build
