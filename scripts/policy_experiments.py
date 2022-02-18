@@ -25,7 +25,6 @@ def run(
         click.echo("Skipping run, straight to join")
     else:
         experiment.run()
-    experiment.discrimination_join()
 
 
 @cli.command('run_all')
