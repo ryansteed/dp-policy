@@ -419,19 +419,20 @@ for (t in unique(experiment$treatment)) {
 ```
 
 ```{r plot-all, warning=FALSE}
-trials = 100
+gam_trials = 100
 
 for (experiment_name in c(
-  "hold_harmless"
-  # "post_processing"
-  # "thresholds",
-  # "moving_average_truth=average",
-  # "epsilon",
-  # "budget"
+  "hold_harmless",
+  "post_processing",
+  "thresholds",
+  "moving_average_truth=average",
+  "epsilon",
+  "budget"
 )) {
   rm(experiment)
 
   print(experiment_name)
+  print("Loading experiment...")
   experiment = load_experiment(experiment_name)
   
   ncols = 3
@@ -440,13 +441,13 @@ for (experiment_name in c(
   }
   print("# Race")
   plot_race(experiment, experiment_name, "race_aggregate", ncols)
-  stop()
+  
   # plot_race(experiment, experiment_name, "race", ncols)
-  print("Ethnicity")
+  print("# Ethnicity")
   plot_race(experiment, experiment_name, "hispanic", ncols)
   
   # # reduced size for GAM - otherwise takes too long... maybe reverse this later
-  # experiment = experiment %>% filter(trial < trials)
+  # experiment = experiment %>% filter(trial < gam_trials)
   # print(nrow(experiment %>% distinct(trial)))
   # 
   # from_cache = F
