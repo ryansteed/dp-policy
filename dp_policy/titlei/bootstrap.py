@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm.notebook import tqdm
 
-from dp_policy.api import titlei_funding as funding
+from dp_policy.experiments import titlei_funding as funding
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
 
 COLS_INDEX = ['State FIPS Code', 'District ID']

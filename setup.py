@@ -2,8 +2,8 @@ from distutils.core import setup
 
 setup(
     name='dp_policy',
-    version='0.1',
-    packages=['dp_policy',],
+    version='1.0',
+    packages=['dp_policy'],
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     long_description=open('README.md').read(),
     install_requires=[
@@ -12,6 +12,13 @@ setup(
         'numpy',
         'diffprivlib',
         'geopandas',
-        'tqdm'
-    ]
+        'tqdm',
+        'click',
+        'seaborn',
+        'pyarrow',
+        'xlrd'
+    ],
+    entry_points={
+        'console_scripts': ['dp_policy = dp_policy.api:cli']
+    }
 )

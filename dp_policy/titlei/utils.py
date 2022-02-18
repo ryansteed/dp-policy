@@ -129,6 +129,7 @@ def district_id_from_name(df, name, state=None):
 
 
 def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
+
     # official ESEA data
     if year < 2020:
         print("[WARN] Using official data for 2020 instead.")
