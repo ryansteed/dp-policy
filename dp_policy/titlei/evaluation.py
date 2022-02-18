@@ -628,10 +628,10 @@ def compare_treatments(
                 for f in df.index.get_level_values("State FIPS Code").unique()
                 if f not in [2, 15]
             ]],
-            y="error_per_child",
-            label="Misallocation per child (cube root)",
+            y="error_per_child_eligible",
+            label="Misallocation per eligible child (cube root)",
             title=treatment,
-            # file="misalloc_nation_sampling.png",
+            file=f"{experiment_name}_{treatment}.png",
             figsize=(15, 10),
             bar_location='right',
             min=ymin,

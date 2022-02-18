@@ -52,9 +52,9 @@ class Experiment:
     def discrimination_join(self, **join_kwargs):
         discrimination_treatments_join(self.name, **join_kwargs)
 
-    def plot(self):
+    def plot(self, **kwargs):
         treatments = load_treatments(self.name)
-        compare_treatments(treatments, experiment_name=self.name)
+        compare_treatments(treatments, experiment_name=self.name, **kwargs)
 
     @staticmethod
     def get_experiment(name, *args, **kwargs):
@@ -63,6 +63,7 @@ class Experiment:
             'post_processing': PostProcessing,
             'thresholds': Thresholds,
             'epsilon': Epsilon,
+            'moving_average': MovingAverage,
             'budget': Budget
         }
         Exp = experiments.get(name)
@@ -247,6 +248,9 @@ class Epsilon(Experiment):
 
     def discrimination_join(self):
         return super().discrimination_join(epsilon=None)
+    
+    def plot(self):
+        return super().plot(epsilon=None)
 
 
 class Budget(Experiment):

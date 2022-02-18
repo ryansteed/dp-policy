@@ -207,7 +207,7 @@ def _average_saipe(saipes):
             'Estimated number of relevant children 5 to 17 years old '
             'in poverty who are related to the householder': 'mean',
             # variance of average of iid Gaussian is sum of variance over n^2
-            'stderr': lambda cv: np.sum(cv) / (len(saipes)**2)
+            'stderr': lambda stderr: np.sum(stderr) / (len(saipes)**2)
         })
     # convert variance back to cv
     agg['cv'] = np.sqrt(agg['stderr']) / agg["Estimated Total Population"]
