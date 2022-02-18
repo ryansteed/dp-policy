@@ -419,7 +419,7 @@ for (t in unique(experiment$treatment)) {
 ```
 
 ```{r plot-all, warning=FALSE}
-gam_trials = 100
+trials = 100
 
 for (experiment_name in c(
   "hold_harmless",
@@ -433,7 +433,7 @@ for (experiment_name in c(
 
   print(experiment_name)
   print("Loading experiment...")
-  experiment = load_experiment(experiment_name)
+  experiment = load_experiment(experiment_name, trials)
   
   ncols = 3
   if (experiment_name == "budget") {
