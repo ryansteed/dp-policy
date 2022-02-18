@@ -12,7 +12,6 @@ setup(
         'numpy',
         'diffprivlib',
         'geopandas',
-        'tqdm',
-        'seaborn'
+        'tqdm'
     ]
 )
