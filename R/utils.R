@@ -180,7 +180,9 @@ race_comparison_long = function(comparison, kind) {
     mutate(
       benefit_dp = ifelse(race_pct > 0.0, misalloc_dp_per_child / race_pct * 100, NA),
       benefit_sampling = ifelse(race_pct > 0.0, misalloc_sampling_per_child / race_pct * 100, NA),
-      benefit_dp_sampling = ifelse(race_pct > 0.0, misalloc_dp_sampling_per_child / race_pct * 100, NA)
+      benefit_dp_sampling = ifelse(race_pct > 0.0, misalloc_dp_sampling_per_child / race_pct * 100, NA),
+      children_of_race = round(true_children_total * race_pct / 100),
+      children_of_race_eligible = round(true_children_eligible * race_pct / 100)
     )
   
   return(comparison)
@@ -188,14 +190,11 @@ race_comparison_long = function(comparison, kind) {
 
 
 race_comparison = function(comparison, kind) {
-  comparison = race_comparison_long(comparison, kind)
-  
-  comparison_all = comparison %>%
+
+  comparison_all = race_comparison_long(comparison, kind) %>%
     group_by(treatment, race, trial) %>%
     # compute race-weighted misallocation for each trial
     summarise(
-      children_of_race = round(true_children_total * race_pct / 100),
-      children_of_race_eligible = round(true_children_eligible * race_pct / 100),
       dp_benefit_per_child = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
       dp_benefit_per_child_eligible = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race_eligible, na.rm=TRUE),
       sampling_benefit_per_child = sum(misalloc_sampling * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
@@ -205,15 +204,14 @@ race_comparison = function(comparison, kind) {
       diff_benefit_per_child = dp_sampling_benefit_per_child - sampling_benefit_per_child,
       diff_benefit_per_child_eligible = dp_sampling_benefit_per_child_eligible - sampling_benefit_per_child_eligible
     ) %>%
+    ungroup() %>%
     group_by(treatment, race) %>%
     # average over trials
     summarise_all(funs(
       mean = mean,
       std_error = sd(.)/sqrt(n())
-    )) %>% 
+    )) %>%
     ungroup()
-
-  print(comparison_all)
   
   # comparison_mean = comparison_all %>%
   #   group_by(treatment, race) %>%
@@ -247,6 +245,7 @@ load_experiment = function(name, max_trials) {
   print("Cleaning...")
   df = clean(raw)
   if (!missing(max_trials)) {
+    print(sprintf("Limiting to %d trials", max_trials))
     df = df %>% filter(trial < max_trials)
   }
   return(df)
@@ -366,7 +365,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
           ((diff_benefit_per_child_eligible_mean + diff_moe) > 0)
       ), "notsig", "sig")
     )
-  print(comparison)
+
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible_mean)) +
     geom_col(
       position="dodge",
@@ -433,7 +432,6 @@ plot_race = function(experiment, name, kind, ncol) {
   }
   
   # no longer grouping before computation...
-  
   # print("Grouping...")
   # grouped = summarise_trials(experiment)
   

@@ -422,8 +422,8 @@ for (t in unique(experiment$treatment)) {
 trials = 100
 
 for (experiment_name in c(
-  "hold_harmless",
-  "post_processing",
+  # "hold_harmless",
+  # "post_processing",
   "thresholds",
   "moving_average_truth=average",
   "epsilon",
@@ -441,7 +441,7 @@ for (experiment_name in c(
   }
   print("# Race")
   plot_race(experiment, experiment_name, "race_aggregate", ncols)
-  
+
   # plot_race(experiment, experiment_name, "race", ncols)
   print("# Ethnicity")
   plot_race(experiment, experiment_name, "hispanic", ncols)
