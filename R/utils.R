@@ -1,20 +1,25 @@
-library(stargazer)
-library(tidyverse)
-library(ggpubr)
-library(janitor)
-library(mgcv)
-library(lmtest)
-library(mgcViz)
-library(tidymv)
-library(MASS)
-library(cowplot)
-library(grid)
-library(gridExtra)
-library(data.table)
-library(boot)
-library(broom)
-library(ggpattern)
-library(arrow)
+chooseCRANmirror(ind=1)
+# install.packages("pacman")
+
+pacman::p_load(
+  stargazer,
+  tidyverse,
+  ggpubr,
+  janitor,
+  mgcv,
+  lmtest,
+  mgcViz,
+  tidymv,
+  MASS,
+  cowplot,
+  grid,
+  gridExtra,
+  data.table,
+  boot,
+  broom,
+  ggpattern,
+  arrow
+)
 
 boot_runs = 1000
 
