@@ -5,9 +5,17 @@ Author: Ryan Steed
 WIP
 
 ```
-conda activate dp-acs
-pip install -e .
+make
 ```
+
+## Running on server
+To sync discrimination files:
+
+```bash
+rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-acs/results/policy_experiments
+```
+
+To run R files, first [set the lib path](https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory).
 
 ## Onboarding (for Terrance)
 
