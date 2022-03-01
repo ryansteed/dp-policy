@@ -37,6 +37,7 @@ class Experiment:
             )
             print("Using given baseline...")
             save_treatments({'baseline': self.baseline}, "baseline")
+            discrimination_treatments_join("baseline")
         else:
             self.baseline = baseline
         self.saipe = get_inputs(year)
@@ -248,7 +249,7 @@ class Epsilon(Experiment):
 
     def discrimination_join(self):
         return super().discrimination_join(epsilon=None)
-    
+
     def plot(self):
         return super().plot(epsilon=None)
 

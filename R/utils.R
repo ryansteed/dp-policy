@@ -1,5 +1,6 @@
 chooseCRANmirror(ind=1)
 # install.packages("pacman")
+library(pacman)
 
 pacman::p_load(
   stargazer,
@@ -368,8 +369,15 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       sigdiff = ifelse((
         ((diff_benefit_per_child_eligible_mean - diff_moe) < 0) &
           ((diff_benefit_per_child_eligible_mean + diff_moe) > 0)
-      ), "notsig", "sig")
+      ), "notsig", "sig"),
+      treatment = fct_reorder(treatment, treatment, .desc=TRUE)
     )
+  
+  # for baseline
+  if (nrow(comparison %>% distinct(treatment)) == 1) {
+    print("Just printing one treatment")
+    comparison$treatment = ""
+  }
 
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible_mean)) +
     geom_col(
@@ -423,6 +431,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       legend.position = "top",
       legend.box="vertical"
     )
+  
   return(plt)
 }
 

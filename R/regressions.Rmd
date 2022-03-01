@@ -390,12 +390,8 @@ plot_gam(getViz(gam_mr), sprintf("baseline_sampling=%s", sampling_only))
 
 ## Treatment comparison
 ```{r treatments}
-test_experiment = "hold_harmless"
+test_experiment = "baseline"
 experiment = load_experiment(test_experiment)
-```
-
-```{r treatment-plot}
-plot_race(experiment, test_experiment, "race_aggregate")
 ```
 
 ```{r treatment-gam}
