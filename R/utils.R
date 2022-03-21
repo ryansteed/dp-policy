@@ -420,12 +420,12 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     coord_flip() +
     xlab("Census Race Category") +
     guides(
-      fill = guide_legend(ncol=ncol),
-      linetype = guide_legend(ncol=2)
+      fill = guide_legend(ncol=ncol, order=1),
+      linetype = guide_legend(ncol=2, order=2)
     ) +
     labs(
-      fill = "Data error",
-      linetype = "+ DP error"
+      fill = "Data\ndeviations",
+      linetype = "+ privacy\ndevations"
     ) +
     theme(
       legend.position = "top",

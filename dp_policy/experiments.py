@@ -23,7 +23,7 @@ class Experiment:
         self.trials = trials
         self.eps = eps
         self.delta = delta
-        if baseline == "cached":
+        if str(baseline) == "cached":
             print("Using cached baseline...")
             self.baseline = load_treatments("baseline")['baseline']
         elif baseline is None:
