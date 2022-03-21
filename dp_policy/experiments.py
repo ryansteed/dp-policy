@@ -94,7 +94,7 @@ def titlei_grid(
     if print_results:
         eps, allocations = list(zip(*results.groupby("epsilon")))
 
-        for prefix in ("est", "dpest"):
+        for prefix in ("est", "dp", "dpest"):
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
                 for grant_type in (
@@ -180,7 +180,7 @@ def titlei_grid(
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        "/plots/robustness/eps_sensitivity_frontier.png"
+                        "plots/robustness/eps_sensitivity_frontier.png"
                     ),
                     dpi=300
                 )
