@@ -30,4 +30,9 @@ To sync discrimination files:
 rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-acs/results/policy_experiments
 ```
 
+To sync data files:
+```bash
+rsync -avz data/* heinz:/home/rsteed/dp-acs/data
+```
+
 To run R files, first [set the lib path](https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory).

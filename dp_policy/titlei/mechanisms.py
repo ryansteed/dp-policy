@@ -69,8 +69,10 @@ class DiffPriv(Mechanism):
         if self.mechanism is None:
             raise NotImplementedError
 
-        pop_total = pop_total.apply(self.mechanism.randomise)
-        children_total = children_total.apply(self.mechanism.randomise)
+        # NOTE: as of 3/21, only adding noise to poverty estimate
+        # (for consistency with sampling, where est. var. is unavailable)
+        # pop_total = pop_total.apply(self.mechanism.randomise)
+        # children_total = children_total.apply(self.mechanism.randomise)
         children_poverty = children_poverty.apply(self.mechanism.randomise)
 
         # print("After estimation, privacy acc:", self.accountant.total())

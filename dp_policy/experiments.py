@@ -256,7 +256,7 @@ class Experiment:
         self.eps = eps
         self.delta = delta
         self.saipe = get_inputs(year)
-        
+
         if str(baseline) == "cached":
             print("Using cached baseline...")
             try:
