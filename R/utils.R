@@ -18,9 +18,11 @@ pacman::p_load(
   data.table,
   boot,
   broom,
-  ggpattern,
   arrow
 )
+# p_load_gh(
+#   "coolbutuseless/ggpattern"
+# )
 
 boot_runs = 1000
 

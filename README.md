@@ -36,3 +36,10 @@ rsync -avz data/* heinz:/home/rsteed/dp-acs/data
 ```
 
 To run R files, first [set the lib path](https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory).
+
+Managing jobs:
+```bash
+scripts/kickoff.sh # or cp paste for jobs management
+jobs
+watch -n 60 ps
+```
