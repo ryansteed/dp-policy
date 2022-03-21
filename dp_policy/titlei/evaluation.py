@@ -166,7 +166,7 @@ def discrimination_treatments_join(
     ))
     discrimination_joined = discrimination_join(
         joined,
-        save_path=f"{config.root}results/policy_experiments/"
+        save_path=f"{config.root}/results/policy_experiments/"
         f"{treatments_name}_discrimination_laplace"
     )
     return discrimination_joined
