@@ -166,7 +166,7 @@ def discrimination_treatments_join(
     ))
     discrimination_joined = discrimination_join(
         joined,
-        save_path="../results/policy_experiments/"
+        save_path=f"{config.root}results/policy_experiments/"
         f"{treatments_name}_discrimination_laplace"
     )
     return discrimination_joined
@@ -368,7 +368,7 @@ def plot_treatments(
     plt.legend(loc='upper right')
     if filename:
         plt.savefig(
-            f"../plots/bootstrap/{filename}.png",
+            f"{config.root}/plots/bootstrap/{filename}.png",
             dpi=100,
             bbox_inches='tight'
         )
@@ -448,7 +448,10 @@ def heatmap(
     plt.axis('off')
     plt.tight_layout()
     if file is not None:
-        plt.savefig(f"../plots/geo/{file}", dpi=dpi, bbox_inches='tight')
+        plt.savefig(
+            f"{config.root}/plots/geo/{file}",
+            dpi=dpi, bbox_inches='tight'
+        )
         plt.close()
     else:
         plt.show()
@@ -472,13 +475,19 @@ def save_treatments(treatments, experiment_name):
     }
     pickle.dump(
         treatments,
-        open(f"../results/policy_experiments/{experiment_name}.pkl", 'wb')
+        open(
+            f"{config.root}/results/policy_experiments/{experiment_name}.pkl",
+            'wb'
+        )
     )
 
 
 def load_treatments(experiment_name):
     return pickle.load(
-        open(f"../results/policy_experiments/{experiment_name}.pkl", 'rb')
+        open(
+            f"{config.root}/results/policy_experiments/{experiment_name}.pkl",
+            'rb'
+        )
     )
 
 

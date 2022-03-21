@@ -41,10 +41,11 @@ def titlei_funding(
 def titlei_grid(
     inputs, mech,
     eps=list(np.logspace(-3, 10, num=10)) + [2.52], delta=[0.0],
-    trials=1,
+    trials=100,
     mech_kwargs={},
     auth=False,
     allocator_kwargs={},
+    sampling_kwargs={},
     verbose=True,
     print_results=[2.52, 0.1],
     plot_results=False,
@@ -78,6 +79,7 @@ def titlei_grid(
                         mechanism,
                         sppe,
                         allocator_kwargs=allocator_kwargs,
+                        sampling_kwargs=sampling_kwargs,
                         verbose=False,  # too noisy for a grid search
                         normalize=(not auth)
                     ))
@@ -176,7 +178,10 @@ def titlei_grid(
                     f"Avg. RMSE in {grant_type} grants over {trials} trials"
                 )
                 plt.savefig(
-                    "../plots/robustness/eps_sensitivity_frontier.png",
+                    os.path.join(
+                        config.root,
+                        "/plots/robustness/eps_sensitivity_frontier.png"
+                    ),
                     dpi=300
                 )
                 plt.show()
@@ -250,28 +255,32 @@ class Experiment:
         self.trials = trials
         self.eps = eps
         self.delta = delta
+        self.saipe = get_inputs(year)
+
         if baseline == "cached":
             print("Using cached baseline...")
             try:
                 self.baseline = load_treatments("baseline")['baseline']
             except FileNotFoundError:
-                print("[WARN] Could not find cached baseline.")
-                baseline = None
+                print("[WARN] Could not find cached baseline, generating.")
+                self._generate_baseline()
         elif baseline is None:
             print("Generating baseline...")
-            self.baseline = titlei_grid(
-                self.saipe, Laplace,
-                eps=eps, delta=delta,
-                trials=self.trials,
-                print_results=False,
-                allocator_kwargs={'verbose': False}
-            )
-            print("Using given baseline...")
-            save_treatments({'baseline': self.baseline}, "baseline")
-            discrimination_treatments_join("baseline")
+            self._generate_baseline()
         else:
+            print("Using given baseline...")
             self.baseline = baseline
-        self.saipe = get_inputs(year)
+
+    def _generate_baseline(self):
+        self.baseline = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials,
+            print_results=False,
+            allocator_kwargs={'verbose': False}
+        )
+        save_treatments({'baseline': self.baseline}, "baseline")
+        discrimination_treatments_join("baseline")
 
     def run(self):
         treatments = self._get_treatments()
@@ -291,17 +300,26 @@ class Experiment:
     @staticmethod
     def get_experiment(name, *args, **kwargs):
         experiments = {
+            'baseline': Baseline,
             'hold_harmless': HoldHarmless,
             'post_processing': PostProcessing,
             'thresholds': Thresholds,
             'epsilon': Epsilon,
             'moving_average': MovingAverage,
-            'budget': Budget
+            'budget': Budget,
+            'sampling': Sampling
         }
         Exp = experiments.get(name)
         if Exp is None:
             raise ValueError(f"{name} not a supported experiment name.")
         return Exp(name, *args, **kwargs)
+
+
+class Baseline(Experiment):
+    def _get_treatments(self):
+        return {
+            'baseline': self.baseline
+        }
 
 
 class HoldHarmless(Experiment):
@@ -317,7 +335,7 @@ class HoldHarmless(Experiment):
 
         # save treatments to file for later
         return {
-            'No hold harmless': self.baseline,
+            'No hold harmless (baseline)': self.baseline,
             'Hold harmless': hold_harmless
         }
 
@@ -350,8 +368,8 @@ class PostProcessing(Experiment):
         match_true(self.baseline, [none, rounding])
         return {
             'None': none,
-            'Clipping': clipping,
-            'Rounding': rounding
+            'Clipping (baseline)': clipping,
+            'Clipping + Rounding': rounding
         }
 
 
@@ -377,11 +395,10 @@ class MovingAverage(Experiment):
             )
             for i in range(4)
         ]
-        # pickle.dump(averaged, open("../results/averaged.pkl", 'wb'))
         match_true(averaged[-1], [single_year] + averaged[:-1])
         return {
-            'lag_0': single_year,
-            **{f"lag_{i+1}": a for i, a in enumerate(averaged)}
+            'Lag 0': single_year,
+            **{f"Lag {i+1}": a for i, a in enumerate(averaged)}
         }
 
 
@@ -457,32 +474,13 @@ class Thresholds(Experiment):
 
         match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
         return {
-            'none': none,
-            'hard': hard,
-            'average': averaged,
-            'repeat_years=2': repeat2,
-            'repeat_years=3': repeat3,
-            'moe_alpha=0.1': moe_01
+            'None': none,
+            'Hard (baseline)': hard,
+            'Averaged': averaged,
+            'Repeated years (2)': repeat2,
+            'Repeated years (3)': repeat3,
+            'Margin of error (90%)': moe_01
         }
-
-
-class Epsilon(Experiment):
-    def _get_treatments(self):
-        return {
-            f"eps={e}": titlei_grid(
-                self.saipe, Laplace,
-                eps=[e], delta=self.delta,
-                trials=self.trials, print_results=False
-            ) if e not in self.eps
-            else self.baseline.loc[pd.IndexSlice[:, 0.0, e, :, :], :].copy()
-            for e in [1e-3, 1e-2, 1e-1, 1, 10]
-        }
-
-    def discrimination_join(self):
-        return super().discrimination_join(epsilon=None)
-
-    def plot(self):
-        return super().plot(epsilon=None)
 
 
 class Budget(Experiment):
@@ -538,6 +536,57 @@ class Budget(Experiment):
             ) for name, budget in budgets.items()
         }
         match_true(self.baseline, list(treatments.values()))
-        treatments["Original appropriation"] = test
+        treatments["FY2019 appropriation (baseline)"] = test
 
         return treatments
+
+
+class Epsilon(Experiment):
+    def _get_treatments(self):
+        return {
+            e: titlei_grid(
+                self.saipe, Laplace,
+                eps=[e], delta=self.delta,
+                trials=self.trials, print_results=False
+            ) if e not in self.eps
+            else self.baseline.loc[pd.IndexSlice[:, 0.0, e, :, :], :].copy()
+            for e in [1e-3, 1e-2, 1e-1, 1, 10, 30]
+        }
+
+    def discrimination_join(self):
+        return super().discrimination_join(epsilon=None)
+
+    def plot(self):
+        return super().plot(epsilon=None)
+
+
+class Sampling(Experiment):
+    def _get_treatments(self):
+        gaussian = {
+            f"Gaussian ({m})": titlei_grid(
+                self.saipe, Laplace,
+                eps=self.eps, delta=self.delta,
+                trials=self.trials, print_results=False,
+                sampling_kwargs=dict(
+                    multiplier=m,
+                    distribution="gaussian"
+                )
+            )
+            for m in [0.5, 0.75, 1, 1.5]
+        }
+        laplace = {
+            f"Laplace ({m})": titlei_grid(
+                self.saipe, Laplace,
+                eps=self.eps, delta=self.delta,
+                trials=self.trials, print_results=False,
+                sampling_kwargs=dict(
+                    multiplier=m,
+                    distribution="laplace"
+                )
+            )
+            for m in [0.5, 1, 1.5]
+        }
+        return {
+            **gaussian,
+            **laplace
+        }

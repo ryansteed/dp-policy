@@ -16,7 +16,8 @@ setup(
         'click',
         'seaborn',
         'pyarrow',
-        'xlrd'
+        'xlrd',
+        'openpyxl'
     ],
     entry_points={
         'console_scripts': ['dp_policy = dp_policy.api:cli']

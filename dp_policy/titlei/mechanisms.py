@@ -106,19 +106,42 @@ class Gaussian(DiffPriv):
 
 
 class Sampled(Mechanism):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        multiplier=1.0, distribution="gaussian",
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         # these are fixed, because sampling error
         # is theoretically immutable by algo means.
         # reported estimates are non-negative integers.
         self.clip = True
         self.round = True
+        self.multiplier = multiplier
+        self.distribution = distribution
 
     def poverty_estimates(
         self, pop_total, children_total, children_poverty, cv
     ):
+        if self.distribution == "gaussian":
+            noised = np.random.normal(
+                children_poverty,  # mean
+                children_poverty * cv * self.multiplier  # variance
+            )
+        elif self.distribution == "laplace":
+            noised = np.random.laplace(
+                # mean
+                children_poverty,
+                # variance is 2b^2, so b = np.sqrt ( 1/2 variance )
+                np.sqrt(0.5 * children_poverty * cv * self.multiplier)
+            )
+        else:
+            raise ValueError(
+                f"{self.distribution} is not a valid distribution."
+            )
         children_poverty = np.clip(
-            np.random.normal(children_poverty, children_poverty * cv),
+            noised,
             0,
             None
         )

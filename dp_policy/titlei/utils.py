@@ -263,7 +263,8 @@ def get_acs_data(path, name):
             "data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx"
         ),
         sheet_name=name,
-        index_col=0
+        index_col=0,
+        engine='openpyxl'
     )
 
     drop = []
@@ -379,7 +380,7 @@ def get_sppe(path):
     # quirk of original data file - need to change DC's name for join
     fips_codes.loc[fips_codes["Name"] == "District of Columbia", "Name"] = \
         "District Of Columbia Public Schools"
-    sppe = pd.read_excel(path, header=2)\
+    sppe = pd.read_excel(path, header=2, engine='openpyxl')\
         .rename(columns={"Unnamed: 0": "Name"})[["Name", "ppe"]]
     return sppe.merge(fips_codes, on="Name", how="right")\
         .set_index("State FIPS Code")
