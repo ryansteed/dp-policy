@@ -27,7 +27,8 @@ class Allocator:
         self.verbose = verbose
 
     def allocations(
-        self
+        self,
+        normalize=True
     ) -> pd.DataFrame:
         self.calc_auth()
         return self.estimates
@@ -69,6 +70,26 @@ class Allocator:
             *np.round(np.array(self.adj_sppe_bounds_efig)*average, decimals=2)
         )
         return adj_sppe_trunc, adj_sppe_efig
+
+
+class AbowdAllocator(Allocator):
+    """
+    As described in https://arxiv.org/pdf/1808.06303.pdf
+    """
+    def grant_types(self):
+        return (
+            "total"
+        )
+
+    def calc_auth(self):
+        adj_sppe, _ = self.adj_sppe()
+
+        self.estimates["adj_sppe"] = adj_sppe
+        for prefix in self.prefixes:
+            self.estimates[f"{prefix}_grant_total"] = \
+                adj_sppe * self.estimates[f"{prefix}_children_eligible"]
+
+        return self.estimates
 
 
 class Authorizer(Allocator):
@@ -174,26 +195,6 @@ class Authorizer(Allocator):
             total_budget (int): Estimated total budget for Title I this year.
         """
         return authorizations / authorizations.sum() * total_budget
-
-
-class AbowdAllocator(Allocator):
-    """
-    As described in https://arxiv.org/pdf/1808.06303.pdf
-    """
-    def grant_types(self):
-        return (
-            "total"
-        )
-
-    def calc_auth(self):
-        adj_sppe, _ = self.adj_sppe()
-
-        self.estimates["adj_sppe"] = adj_sppe
-        for prefix in self.prefixes:
-            self.estimates[f"{prefix}_grant_total"] = \
-                adj_sppe * self.estimates[f"{prefix}_children_eligible"]
-
-        return self.estimates
 
 
 class SonnenbergAuthorizer(Authorizer):
