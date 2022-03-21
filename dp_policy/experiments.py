@@ -1,9 +1,11 @@
+import os
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 
+import dp_policy.config as config
 from dp_policy.titlei.evaluation import \
     discrimination_treatments_join, save_treatments, load_treatments, \
     match_true, compare_treatments
@@ -58,7 +60,10 @@ def titlei_grid(
             for d in tqdm(delta, desc='delta', leave=False, disable=True):
                 for e in tqdm(eps, desc='eps', leave=False, disable=True):
                     mechanism = mech(e, d, **mech_kwargs)
-                    sppe = get_sppe("../data/sppe18.xlsx")
+                    sppe = get_sppe(os.path.join(
+                        config.root,
+                        "data/sppe18.xlsx"
+                    ))
                     if thresholder is not None and isinstance(
                             thresholder, PastThresholder
                     ):

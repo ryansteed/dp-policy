@@ -1,21 +1,22 @@
-import types
+import os
 import pandas as pd
-from dp_policy.titlei.utils import get_acs_unified
-
 import geopandas as gpd
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 import matplotlib.colors as pltc
 import seaborn as sns
-import pyarrow.feather as feather
 import pickle
+
+from dp_policy.titlei.utils import get_acs_unified
+import dp_policy.config as config
 
 
 def get_geography():
-    geo = gpd.read_file(
-        "../data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp"
-    )
+    geo = gpd.read_file(os.path.join(
+        config.root,
+        "data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp"
+    ))
     geo.STATEFP = geo.STATEFP.astype(int)
     geo["District ID"] = np.where(
         geo.UNSDLEA.notna(),

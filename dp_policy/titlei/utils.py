@@ -1,10 +1,10 @@
-from asyncio import start_unix_server
 import pandas as pd
 import numpy as np
 import re
 import os
 from math import floor, ceil
 
+import dp_policy.config as config
 from dp_policy.titlei.mechanisms import Sampled
 
 
@@ -137,9 +137,11 @@ def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
     else:
         official_year = year
 
-    official = get_official_combined(
-        f"../data/titlei-allocations/{baseline}_{str(official_year)[2:]}.xls",
-    ).drop(columns=[
+    print(config.root)
+    official = get_official_combined(os.path.join(
+        config.root,
+        f"data/titlei-allocations/{baseline}_{str(official_year)[2:]}.xls"
+    )).drop(columns=[
         'LEAID',
         'Sort C',
         'State',
@@ -156,9 +158,9 @@ def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
     if avg_lag > 0:
         saipe, county_saipe = average_saipe(year-2, avg_lag, verbose=verbose)
     else:
-        saipe = get_saipe(f"../data/saipe{str(year-2)[2:]}.xls")
+        saipe = get_saipe(f"{config.root}/data/saipe{str(year-2)[2:]}.xls")
         county_saipe = get_county_saipe(
-            f"../data/county_saipe{str(year-2)[2:]}.xls"
+            f"{config.root}/data/county_saipe{str(year-2)[2:]}.xls"
         )
     # for some reason, NY naming convention different...
     # fixing that here
@@ -225,11 +227,11 @@ def average_saipe(year, year_lag, verbose=True):
             ]
         )
     combined = _average_saipe([
-        get_saipe(f"../data/saipe{str(year)[2:]}.xls")
+        get_saipe(f"{config.root}/data/saipe{str(year)[2:]}.xls")
         for year in range(year-year_lag, year+1)
     ])
     combined_county = _average_saipe([
-        get_county_saipe(f"../data/county_saipe{str(year)[2:]}.xls")
+        get_county_saipe(f"{config.root}/data/county_saipe{str(year)[2:]}.xls")
         for year in range(year-year_lag, year+1)
     ])
     return combined, combined_county
@@ -256,7 +258,10 @@ def get_acs_data(path, name):
     data = data.query("`District ID` != 99999")
 
     varnames = pd.read_excel(
-        "../data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx",
+        os.path.join(
+            config.root,
+            "data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx"
+        ),
         sheet_name=name,
         index_col=0
     )
@@ -304,47 +309,47 @@ def impute_missing(original, update, verbose=True):
 def get_acs_unified(verbose=False):
     # get public school children data
     demographics_students = get_acs_data(
-        "../data/discrimination/CDP05.txt",
+        f"{config.root}/data/discrimination/CDP05.txt",
         "CDP_ChildPop"
     )
     # update any missing with general pop data
     demographics = impute_missing(
         demographics_students,
         get_acs_data(
-            "../data/discrimination/DP05.txt",
+            f"{config.root}/data/discrimination/DP05.txt",
             "DP_TotalPop"
         )
     )
     social_students = get_acs_data(
-        "../data/discrimination/CDP02.txt",
+        f"{config.root}/data/discrimination/CDP02.txt",
         "CDP_ChildPop"
     )
     social = impute_missing(
         social_students,
         get_acs_data(
-            "../data/discrimination/DP02.txt",
+            f"{config.root}/data/discrimination/DP02.txt",
             "DP_TotalPop"
         )
     )
     economic_students = get_acs_data(
-        "../data/discrimination/CDP03.txt",
+        f"{config.root}/data/discrimination/CDP03.txt",
         "CDP_ChildPop"
     )
     economic = impute_missing(
         economic_students,
         get_acs_data(
-            "../data/discrimination/DP03.txt",
+            f"{config.root}/data/discrimination/DP03.txt",
             "DP_TotalPop"
         )
     )
     housing_students = get_acs_data(
-        "../data/discrimination/CDP04.txt",
+        f"{config.root}/data/discrimination/CDP04.txt",
         "CDP_ChildPop"
     )
     housing = impute_missing(
         housing_students,
         get_acs_data(
-            "../data/discrimination/DP04.txt",
+            f"{config.root}/data/discrimination/DP04.txt",
             "DP_TotalPop"
         )
     )
@@ -366,9 +371,11 @@ def split_leaids(leaids: pd.Series):
 
 
 def get_sppe(path):
-    fips_codes = pd.read_csv("../data/fips_codes.csv").rename(columns={
-        'FIPS': 'State FIPS Code'
-    })
+    fips_codes = pd.read_csv(f"{config.root}/data/fips_codes.csv").rename(
+        columns={
+            'FIPS': 'State FIPS Code'
+        }
+    )
     # quirk of original data file - need to change DC's name for join
     fips_codes.loc[fips_codes["Name"] == "District of Columbia", "Name"] = \
         "District Of Columbia Public Schools"
