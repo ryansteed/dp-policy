@@ -3,6 +3,7 @@ PYTHON=${VENV_NAME}/bin/python
 
 dp_policy: $(VENV_NAME)/bin/activate
 	mkdir -p results/policy_experiments
+	mkdir -p results/bootstrap
 
 $(VENV_NAME)/bin/activate: requirements.txt setup.py
 	test -d $(VENV_NAME) || python3 -m venv $(VENV_NAME)
