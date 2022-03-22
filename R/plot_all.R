@@ -22,4 +22,8 @@ for (experiment_name in c(
   print(nrow(experiment %>% distinct(trial)))
 
   gam_experiment(experiment)
+  if (experiment_name == "baseline") {
+    print("Also running sampling alone")
+    gam_experiment(experiment, T)
+  }
 }

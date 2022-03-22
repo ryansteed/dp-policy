@@ -17,7 +17,11 @@ plot_experiment = function(experiment) {
   plot_race(experiment, experiment_name, "hispanic", ncols)
 }
 
-gam_experiment = function(experiment) {
+gam_experiment = function(experiment, sampling_only) {
+  if (missing(sampling_only)) {
+    sampling_only = F
+  }
+  
   print("- GAM")
   from_cache = T
   
@@ -25,11 +29,19 @@ gam_experiment = function(experiment) {
     print(sprintf("%s: %s", experiment_name, t))
     gam_mr = get_gam(
       sprintf("%s_%s", experiment_name, t),
-      F,
+      sampling_only,
       from_cache,  # load gam from cache?
       experiment %>% filter(treatment == t)
     )
-    plotname = sprintf("%s_%s", experiment_name, t)
+    if (sampling_only) {
+      plotname = sprintf("%s_%s_sampling", experiment_name, t)
+    }
+    else {
+      plotname = sprintf("%s_%s", experiment_name, t)
+    }
+    
+    gam_table(gam_mr, sprintf("plots/tables/%s.tex", plotname))
+    
     viz = get_gam_viz(
       plotname,
       from_cache,  # load viz from cache?
