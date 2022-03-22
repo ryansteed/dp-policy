@@ -1,0 +1,198 @@
+[1] "baseline"
+[1] "Loading experiment..."
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2812
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2812
+[1] "Limiting to 100 trials"
+[1] "- Race"
+[1] "Comparing..."
+[1] "1600 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "- Race Detail"
+[1] "Comparing..."
+[1] "1600 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "1400 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "- GAM"
+[1] 100
+[1] "baseline: baseline"
+
+Call:
+lm(formula = misalloc ~ log(pop_density) + median_income_est + 
+    hhi + prop_white + prop_hispanic + renter_occupied_housing_tenure_pct, 
+    data = df_abbrv)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-98098518    -52729     -5893     57000 108010640 
+
+Coefficients:
+                                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                        -7.416e+04  6.428e+03 -11.537  < 2e-16 ***
+log(pop_density)                   -4.729e+03  3.521e+02 -13.432  < 2e-16 ***
+median_income_est                   1.377e-01  2.465e-02   5.587 2.32e-08 ***
+hhi                                 1.049e+04  6.281e+03   1.670  0.09485 .  
+prop_white                          1.203e+04  6.391e+03   1.883  0.05976 .  
+prop_hispanic                      -9.587e+03  3.679e+03  -2.606  0.00916 ** 
+renter_occupied_housing_tenure_pct -4.401e+01  5.831e+01  -0.755  0.45038    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 733800 on 1308693 degrees of freedom
+  (8100 observations deleted due to missingness)
+Multiple R-squared:  0.000343,	Adjusted R-squared:  0.0003384 
+F-statistic: 74.84 on 6 and 1308693 DF,  p-value: < 2.2e-16
+
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)   -36.89     641.33  -0.058    0.954
+
+Approximate significance of smooth terms:
+                                        edf Ref.df      F  p-value    
+s(log(pop_density))                   7.698  8.582 20.056  < 2e-16 ***
+s(hhi)                                8.327  8.846  8.502  < 2e-16 ***
+s(prop_white)                         7.792  8.574 18.471  < 2e-16 ***
+s(prop_hispanic)                      3.059  3.800  2.597   0.0373 *  
+s(median_income_est)                  3.095  3.902  7.145 1.62e-05 ***
+s(renter_occupied_housing_tenure_pct) 5.485  6.596  5.262 1.92e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.000596   Deviance explained = 0.0623%
+-REML = 1.9532e+07  Scale est. = 5.3827e+11  n = 1308700
+Analysis of Variance Table
+
+Model 1: misalloc ~ log(pop_density) + median_income_est + hhi + prop_white + 
+    prop_hispanic + renter_occupied_housing_tenure_pct
+Model 2: misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+   Res.Df        RSS     Df  Sum of Sq      F    Pr(>F)    
+1 1308693 7.0461e+17                                       
+2 1308664 7.0441e+17 29.455 1.9718e+14 12.437 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Method: REML   Optimizer: outer newton
+full convergence after 9 iterations.
+Gradient range [-6.280555,0.9802713]
+(score 19532014 & scale 538269056549).
+eigenvalue range [-0.5125151,654352.8].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value  
+s(log(pop_density))                   9.00 7.70    1.00   0.605  
+s(hhi)                                9.00 8.33    1.00   0.445  
+s(prop_white)                         9.00 7.79    1.05   0.995  
+s(prop_hispanic)                      9.00 3.06    1.01   0.775  
+s(median_income_est)                  9.00 3.09    1.01   0.870  
+s(renter_occupied_housing_tenure_pct) 9.00 5.48    0.97   0.035 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+[1] "hold_harmless"
+[1] "Loading experiment..."
+[1] "Cleaning..."
+[1] "26336000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  162000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  296000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           9398000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       148000
+5 median_income_est                                                       162000
+6 misalloc_dp_per_child                                                     5620
+7 misalloc_sampling_per_child                                               8000
+8 misalloc_dp_sampling_per_child                                            5620
+[1] "Limiting to 100 trials"
+[1] "- Race"
+[1] "Comparing..."
+[1] "3200 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Race Detail"
+[1] "Comparing..."
+[1] "3200 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "2800 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- GAM"
+[1] 100
+[1] "hold_harmless: No hold harmless (baseline)"
+
+Call:
+lm(formula = misalloc ~ log(pop_density) + median_income_est + 
+    hhi + prop_white + prop_hispanic + renter_occupied_housing_tenure_pct, 
+    data = df_abbrv)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-98098518    -52729     -5893     57000 108010640 
+
+Coefficients:
+                                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                        -7.416e+04  6.428e+03 -11.537  < 2e-16 ***
+log(pop_density)                   -4.729e+03  3.521e+02 -13.432  < 2e-16 ***
+median_income_est                   1.377e-01  2.465e-02   5.587 2.32e-08 ***
+hhi                                 1.049e+04  6.281e+03   1.670  0.09485 .  
+prop_white                          1.203e+04  6.391e+03   1.883  0.05976 .  
+prop_hispanic                      -9.587e+03  3.679e+03  -2.606  0.00916 ** 
+renter_occupied_housing_tenure_pct -4.401e+01  5.831e+01  -0.755  0.45038    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 733800 on 1308693 degrees of freedom
+  (8100 observations deleted due to missingness)
+Multiple R-squared:  0.000343,	Adjusted R-squared:  0.0003384 
+F-statistic: 74.84 on 6 and 1308693 DF,  p-value: < 2.2e-16
+
+
+There were 18 warnings (use warnings() to see them)
+Execution halted
