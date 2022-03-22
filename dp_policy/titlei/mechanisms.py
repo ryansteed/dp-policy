@@ -129,14 +129,14 @@ class Sampled(Mechanism):
         if self.distribution == "gaussian":
             noised = np.random.normal(
                 children_poverty,  # mean
-                children_poverty * cv * self.multiplier  # variance
+                children_poverty * cv * self.multiplier  # stderr
             )
         elif self.distribution == "laplace":
             noised = np.random.laplace(
                 # mean
                 children_poverty,
-                # variance is 2b^2, so b = np.sqrt ( 1/2 variance )
-                np.sqrt(0.5 * children_poverty * cv * self.multiplier)
+                # variance is 2b^2, so b = stderr * np.sqrt ( 1/2 )
+                np.sqrt(0.5) * children_poverty * cv * self.multiplier
             )
         else:
             raise ValueError(
