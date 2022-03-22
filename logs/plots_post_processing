@@ -1,3 +1,237 @@
 [1] "post_processing"
 [1] "Loading experiment..."
 [1] "Cleaning..."
+[1] "39504000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  2.43e5
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  4.44e5
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                            1.41e7
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       2.22e5
+5 median_income_est                                                       2.43e5
+6 misalloc_dp_per_child                                                   8.42e3
+7 misalloc_sampling_per_child                                             1.2 e4
+8 misalloc_dp_sampling_per_child                                          8.42e3
+[1] "Limiting to 100 trials"
+Warning messages:
+1: `summarise_each_()` was deprecated in dplyr 0.7.0.
+Please use `across()` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+2: `funs()` was deprecated in dplyr 0.8.0.
+Please use a list of either functions or lambdas: 
+
+  # Simple named list: 
+  list(mean = mean, median = median)
+
+  # Auto named with `tibble::lst()`: 
+  tibble::lst(mean, median)
+
+  # Using lambdas
+  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+[1] 100
+[1] "- GAM"
+[1] "post_processing: None"
+
+Method: REML   Optimizer: outer newton
+full convergence after 7 iterations.
+Gradient range [-80.8633,0.9868559]
+(score 19451015 & scale 4.75593e+11).
+eigenvalue range [-0.3866139,654427.4].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value  
+s(log(pop_density))                   9.00 2.72    1.02   0.975  
+s(hhi)                                9.00 2.71    1.02   0.970  
+s(prop_white)                         9.00 2.42    0.99   0.080 .
+s(prop_hispanic)                      9.00 8.55    0.98   0.030 *
+s(median_income_est)                  9.00 8.83    1.00   0.275  
+s(renter_occupied_housing_tenure_pct) 9.00 8.23    0.98   0.045 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+[1] "post_processing: Clipping (baseline)"
+
+Call:
+lm(formula = misalloc ~ log(pop_density) + median_income_est + 
+    hhi + prop_white + prop_hispanic + renter_occupied_housing_tenure_pct, 
+    data = df_abbrv)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-98098518    -52729     -5893     57000 108010640 
+
+Coefficients:
+                                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                        -7.416e+04  6.428e+03 -11.537  < 2e-16 ***
+log(pop_density)                   -4.729e+03  3.521e+02 -13.432  < 2e-16 ***
+median_income_est                   1.377e-01  2.465e-02   5.587 2.32e-08 ***
+hhi                                 1.049e+04  6.281e+03   1.670  0.09485 .  
+prop_white                          1.203e+04  6.391e+03   1.883  0.05976 .  
+prop_hispanic                      -9.587e+03  3.679e+03  -2.606  0.00916 ** 
+renter_occupied_housing_tenure_pct -4.401e+01  5.831e+01  -0.755  0.45038    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 733800 on 1308693 degrees of freedom
+  (8100 observations deleted due to missingness)
+Multiple R-squared:  0.
+Family: gaussian 
+Link function: identity 
+
+Formula:
+misalloc ~ s(log(pop_density), bs = "tp") + s(h
+Family: gaussian 
+Link function: identity 
+
+Formula:
+misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)   -36.89     641.33  -0.058    0.954
+
+Approximate significance of smooth terms:
+                                        edf Ref.df      F  p-value    
+s(log(pop_density))                   7.698  8.582 20.056  < 2e-16 ***
+s(hhi)                                8.327  8.846  8.502  < 2e-16 ***
+s(prop_white)                         7.792  8.574 18.471  < 2e-16 ***
+s(prop_hispanic)                      3.059  3.800  2.597   0.0373 *  
+s(median_income_est)                  3.095  3.902  7.145 1.62e-05 ***
+s(renter_occupied_housing_tenure_pct) 5.485  6.596  5.262 1.92e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.000596   Deviance explained = 0.0623%
+-REML = 1.9532e+07  Scale est. = 5.3827e+11  n = 1308700
+Analysis of Variance Table
+
+Model 1: misalloc ~ log(pop_density) + median_income_est + hhi + prop_white + 
+    prop_hispanic + renter_occupied_housing_tenure_pct
+Model 2: misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+   Res.Df        RSS     Df  Sum of Sq      F    Pr(>F)    
+1 1308693 7.0461e+17                                       
+2 1308664 7.0441e+17 29.455 1.9718e+14 12.437 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Method: REML   Optimizer: outer newton
+full convergence after 9 iterations.
+Gradient range [-6.280555,0.9802713]
+(score 19532014 & scale 538269056549).
+eigenvalue range [-0.5125151,654352.8].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value   
+s(log(pop_density))                   9.00 7.70    0.99   0.285   
+s(hhi)                                9.00 8.33    1.00   0.650   
+s(prop_white)                         9.00 7.79    0.94   0.005 **
+s(prop_hispanic)                      9.00 3.06    0.98   0.080 . 
+s(median_income_est)                  9.00 3.09    0.97   0.020 * 
+s(renter_occupied_housing_tenure_pct) 9.00 5.48    1.00   0.480   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+[1] "post_processing: Clipping + Rounding"
+
+Method: REML   Optimizer: outer newton
+full convergence after 5 iterations.
+Gradient range [-1.993141,1.063732]
+(score 19508624 & scale 519395401048).
+eigenvalue range [-0.4759938,654348.5].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value
+s(log(pop_density))                   9.00 2.73    0.99    0.17
+s(hhi)                                9.00 6.15    1.01    0.92
+s(prop_white)                         9.00 1.93    1.01    0.91
+s(prop_hispanic)                      9.00 3.06    1.05    0.99
+s(median_income_est)                  9.00 3.10    1.03    0.99
+s(renter_occupied_housing_tenure_pct) 9.00 3.45    1.05    0.99
+[1] "DONE"
+�� 1
+
+Residual standard error: 720700 on 1308693 degrees of freedom
+  (8100 observations deleted due to missingness)
+Multiple R-squared:  0.0002019,	Adjusted R-squared:  0.0001973 
+F-statistic: 44.04 on 6 and 1308693 DF,  p-value: < 2.2e-16
+
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)     1032        630   1.638    0.101
+
+Approximate significance of smooth terms:
+                                        edf Ref.df      F p-value    
+s(log(pop_density))                   2.725  3.471 22.729 < 2e-16 ***
+s(hhi)                                6.151  7.293  2.865 0.00504 ** 
+s(prop_white)                         1.934  2.507  0.542 0.62632    
+s(prop_hispanic)                      3.065  3.803  4.130 0.00309 ** 
+s(median_income_est)                  3.105  3.909  2.774 0.02387 *  
+s(renter_occupied_housing_tenure_pct) 3.455  4.353  1.486 0.17665    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.000237   Deviance explained = 0.0253%
+-REML = 1.9509e+07  Scale est. = 5.194e+11  n = 1308700
+Analysis of Variance Table
+
+Model 1: misalloc ~ log(pop_density) + median_income_est + hhi + prop_white + 
+    prop_hispanic + renter_occupied_housing_tenure_pct
+Model 2: misalloc ~ s(log(pop_density), bs = "tp") + s(hhi, bs = "tp") + 
+    s(prop_white, bs = "tp") + s(prop_hispanic, bs = "tp") + 
+    s(median_income_est, bs = "tp") + s(renter_occupied_housing_tenure_pct, 
+    bs = "tp")
+   Res.Df        RSS     Df  Sum of Sq      F    Pr(>F)    
+1 1308693 6.7976e+17                                       
+2 1308679 6.7972e+17 14.434 3.4592e+13 4.6141 1.133e-08 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Method: REML   Optimizer: outer newton
+full convergence after 5 iterations.
+Gradient range [-1.993141,1.063732]
+(score 19508624 & scale 519395401048).
+eigenvalue range [-0.4759938,654348.5].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value   
+s(log(pop_density))                   9.00 2.73    0.99   0.185   
+s(hhi)                                9.00 6.15    0.98   0.045 * 
+s(prop_white)                         9.00 1.93    0.97   0.005 **
+s(prop_hispanic)                      9.00 3.06    0.97   0.010 **
+s(median_income_est)                  9.00 3.10    0.98   0.045 * 
+s(renter_occupied_housing_tenure_pct) 9.00 3.45    1.08   1.000   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+[1] "DONE"

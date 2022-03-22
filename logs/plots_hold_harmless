@@ -1,3 +1,78 @@
 [1] "hold_harmless"
 [1] "Loading experiment..."
 [1] "Cleaning..."
+[1] "26336000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  162000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  296000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           9398000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       148000
+5 median_income_est                                                       162000
+6 misalloc_dp_per_child                                                     5620
+7 misalloc_sampling_per_child                                               8000
+8 misalloc_dp_sampling_per_child                                            5620
+[1] "Limiting to 100 trials"
+Warning messages:
+1: `summarise_each_()` was deprecated in dplyr 0.7.0.
+Please use `across()` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+2: `funs()` was deprecated in dplyr 0.8.0.
+Please use a list of either functions or lambdas: 
+
+  # Simple named list: 
+  list(mean = mean, median = median)
+
+  # Auto named with `tibble::lst()`: 
+  tibble::lst(mean, median)
+
+  # Using lambdas
+  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+[1] 100
+[1] "- GAM"
+[1] "hold_harmless: No hold harmless (baseline)"
+
+Method: REML   Optimizer: outer newton
+full convergence after 9 iterations.
+Gradient range [-6.280555,0.9802713]
+(score 19532014 & scale 538269056549).
+eigenvalue range [-0.5125151,654352.8].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value
+s(log(pop_density))                   9.00 7.70    1.02    0.96
+s(hhi)                                9.00 8.33    1.03    0.99
+s(prop_white)                         9.00 7.79    1.02    0.97
+s(prop_hispanic)                      9.00 3.06    1.01    0.87
+s(median_income_est)                  9.00 3.09    1.03    0.98
+s(renter_occupied_housing_tenure_pct) 9.00 5.48    1.03    0.98
+[1] "hold_harmless: Hold harmless"
+
+Method: REML   Optimizer: outer newton
+full convergence after 8 iterations.
+Gradient range [-7.033888,2.807813]
+(score 19145209 & scale 2.97989e+11).
+Hessian positive definite, eigenvalue range [3.872418,654353.5].
+Model rank =  55 / 55 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                                        k'  edf k-index p-value    
+s(log(pop_density))                   9.00 8.97    0.98   0.035 *  
+s(hhi)                                9.00 8.98    0.95  <2e-16 ***
+s(prop_white)                         9.00 8.96    0.99   0.110    
+s(prop_hispanic)                      9.00 8.92    0.95  <2e-16 ***
+s(median_income_est)                  9.00 8.81    0.98   0.015 *  
+s(renter_occupied_housing_tenure_pct) 9.00 8.94    1.01   0.785    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1

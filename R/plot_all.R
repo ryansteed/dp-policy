@@ -1,9 +1,9 @@
 source("R/plots.R")
 
 for (experiment_name in c(
-  "baseline",
-  "hold_harmless",
-  "post_processing",
+  # "baseline",
+  # "hold_harmless",
+  # "post_processing",
   "thresholds",
   "moving_average_truth=average",
   "epsilon",
@@ -15,7 +15,7 @@ for (experiment_name in c(
   print("Loading experiment...")
   experiment = load_experiment(experiment_name, trials)
 
-  plot_experiment(experiment)
+  # plot_experiment(experiment)
   
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
   experiment = experiment %>% filter(trial < gam_trials)

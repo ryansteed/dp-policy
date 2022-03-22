@@ -19,7 +19,7 @@ plot_experiment = function(experiment) {
 
 gam_experiment = function(experiment) {
   print("- GAM")
-  from_cache = F
+  from_cache = T
   
   for (t in unique(experiment$treatment)) {
     print(sprintf("%s: %s", experiment_name, t))

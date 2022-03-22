@@ -408,8 +408,9 @@ def heatmap(
             data.loc[:, key] = np.sign(data[key]) * np.sqrt(np.abs(data[key]))
 
     # Create colorbar as a legend
-    if min is None and max is None:
+    if min is None:
         min = data[y].min()
+    if max is None:
         max = data[y].max()
 
     bound = np.max(np.abs([min, max]))
@@ -440,7 +441,9 @@ def heatmap(
         )
     )
     cb = fig.colorbar(
-        sm, location=bar_location, shrink=0.5, pad=0.05, aspect=30
+        sm,
+        # location=bar_location,
+        shrink=0.5, pad=0.05, aspect=30
     )
     cb.set_label(label)
     if title is not None:
