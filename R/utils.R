@@ -616,15 +616,33 @@ regression_tables = function(experiment_name, sampling_only, trials) {
   )
   
   print("- GAM")
-  gam_mr = get_gam("baseline", sampling_only, T, experiment)
+  gam_mr = get_gam("baseline", sampling_only, TRUE, experiment)
   gam_table(gam_mr, sprintf("plots/tables/%s_gam.tex", experiment_name))
-  xtable(
-    anova(lm_final, gam_mr),
+  print(
+    xtable(anova(lm_final, gam_mr)),
     file=sprintf("plots/tables/%s_anova_lm_gam.tex", experiment_name)
   )
   
   print("- GAM with interaction")
-  gam_mr_interact = get_gam()
+  gam_mr_interact = gam(
+    misalloc ~
+      te(
+        prop_white,
+        median_income_est
+      ) +
+      s(log(pop_density), bs="tp") +
+      s(hhi, bs="tp") +
+      s(prop_hispanic, bs="tp") +
+      s(renter_occupied_housing_tenure_pct, bs="tp"),
+    data=df_reg
+  )
+  sink(sprintf("plots/tables/%s_interact.tex", experiment_name))
+  gamtabs(gam_mr_interact, label="Demographic GAN with interactions")
+  sink()
+  print(
+    xtable(anova(gam_mr, gam_mr_interact)),
+    file=sprintf("plots/tables/%s_anova_gam_interact.tex", experiment_name)
+  )
 }
 
 gam_table = function(gam, savepath) {
