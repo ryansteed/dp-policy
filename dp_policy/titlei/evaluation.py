@@ -556,8 +556,16 @@ def compare_treatments(
             experr[experr < 0].abs().sum()
         )
         print(
+            "Avg. expected loss:",
+            experr[experr < 0].mean()
+        )
+        print(
             "Total 5% quantile losses:",
             lowerr[lowerr < 0].abs().sum()
+        )
+        print(
+            "Avg. 5% quantile loss:",
+            lowerr[lowerr < 0].mean()
         )
         print(
             "Total avg. losses (data error):",
