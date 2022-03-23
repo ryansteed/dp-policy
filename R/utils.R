@@ -516,11 +516,11 @@ clean_for_reg = function(df, sampling_only) {
     )
   # filter(trial < 10)
   if (sampling_only) {
-    df_abbrv = df_reg %>% mutate(misalloc = misalloc_sampling)
+    df = df %>% mutate(misalloc = misalloc_sampling)
   } else {
-    df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
+    df = df %>% mutate(misalloc = misalloc_dp_sampling)
   }
-  return(df_abbrv)
+  return(df)
 }
 
 run_regs = function(df, sampling_only, savepath) {
