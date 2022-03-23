@@ -2,16 +2,14 @@ source("R/plots.R")
 
 for (experiment_name in c(
   "baseline",
-  # "hold_harmless",
-  # "post_processing",
-  # "thresholds",
-  # "moving_average_truth=average",
-  # "epsilon",
-  # "budget",
-  "sampling"
+  "hold_harmless",
+  "post_processing",
+  "thresholds",
+  "moving_average_truth=average",
+  "epsilon",
+  "budget"
+  # "sampling"
 )) {
-  rm(experiment)
-
   print(experiment_name)
   print("Loading experiment...")
   experiment = load_experiment(experiment_name, trials)

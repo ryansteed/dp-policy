@@ -520,7 +520,7 @@ clean_for_reg = function(df, sampling_only) {
   } else {
     df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
   }
-  return(df)
+  return(df_abbrv)
 }
 
 run_regs = function(df, sampling_only, savepath) {
@@ -539,7 +539,7 @@ run_regs = function(df, sampling_only, savepath) {
       s(renter_occupied_housing_tenure_pct, bs="tp"),
     # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
     method="REML", # restricted MLE
-    data=df_abbrv
+    data=df_reg
   )
   print(summary(gam_mr))
   
@@ -567,7 +567,7 @@ regression_tables = function(experiment_name, sampling_only, trials) {
       log(true_pop_total) +
       true_children_total +
       true_children_poverty,
-    data=df_abbrv
+    data=df_reg
   )
   lm_final = lm(
     misalloc ~
@@ -577,7 +577,7 @@ regression_tables = function(experiment_name, sampling_only, trials) {
       prop_hispanic +
       median_income_est +
       renter_occupied_housing_tenure_pct,
-    data=df_abbrv
+    data=df_reg
   )
   lm_extra = lm(
     misalloc ~
@@ -592,7 +592,7 @@ regression_tables = function(experiment_name, sampling_only, trials) {
       true_children_poverty +
       not_a_u_s_citizen_u_s_citizenship_status_pct +
       average_household_size_of_renter_occupied_unit_housing_tenure_est,
-    data=df_abbrv
+    data=df_reg
   )
   stargazer(
     lm_formula, lm_extra, lm_final,
