@@ -1,8 +1,5 @@
 source("R/utils.R")
 
-trials = 100
-gam_trials = trials
-
 plot_experiment = function(experiment) {
   ncols = 3
   if (experiment_name == "budget") {

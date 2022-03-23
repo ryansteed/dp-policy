@@ -1,5 +1,8 @@
 source("R/plots.R")
 
+trials = 100
+gam_trials = trials
+
 for (experiment_name in c(
   "baseline",
   "hold_harmless",
@@ -14,15 +17,15 @@ for (experiment_name in c(
   print("Loading experiment...")
   experiment = load_experiment(experiment_name, trials)
 
-  # plot_experiment(experiment)
+  plot_experiment(experiment)
   
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
-  experiment = experiment %>% filter(trial < gam_trials)
-  print(nrow(experiment %>% distinct(trial)))
+  # experiment = experiment %>% filter(trial < gam_trials)
+  # print(nrow(experiment %>% distinct(trial)))
 
-  gam_experiment(experiment)
-  if (experiment_name == "baseline") {
-    print("Also running sampling alone")
-    gam_experiment(experiment, T)
-  }
+  # gam_experiment(experiment)
+  # if (experiment_name == "baseline") {
+  #   print("Also running sampling alone")
+  #   gam_experiment(experiment, T)
+  # }
 }

@@ -20,7 +20,8 @@ pacman::p_load(
   broom,
   arrow,
   itsadug,
-  xtable
+  xtable,
+  comprehenr
 )
 # p_load_gh(
 #   "coolbutuseless/ggpattern"
@@ -382,6 +383,16 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     print("Just printing one treatment")
     comparison$treatment = ""
   }
+  
+  # specify default value - used for baseline
+  # then use that color anytime "baseline" appears in treatment name
+  # otherwise, use a normal palette
+  palette = function(treatments) {
+    pal = RColorBrewer::brewer.pal(8, "Accent")
+    default_color = tail(pal, n=1)
+    pal = head(pal, n=7)
+    setNames(ifelse(grepl("baseline", treatments), default_color, pal), treatments)
+  }
 
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible_mean)) +
     geom_col(
@@ -420,6 +431,10 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     scale_linetype_manual(
       values=c("sig" = "solid", "notsig" = "dashed"),
       labels=c("sig" = sprintf("Significant\ndifference\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+    ) +
+    scale_fill_manual(
+      labels = function(x) str_wrap(x, width=5),
+      values = palette(unique(comparison$treatment))
     ) +
     coord_flip() +
     xlab("Census Race Category") +
@@ -460,7 +475,7 @@ plot_race = function(experiment, name, kind, ncol) {
   plt = plot_race_bar_stacked(comparison, ncol)
   print(plt)
   
-  ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=5, height=6)
+  ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
 }
 
 sq_share = function(x) {
