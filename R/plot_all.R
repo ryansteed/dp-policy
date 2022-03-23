@@ -4,13 +4,13 @@ trials = 100
 gam_trials = trials
 
 for (experiment_name in c(
-  "baseline",
-  "hold_harmless",
-  "post_processing",
-  "thresholds",
-  "moving_average_truth=average",
-  "epsilon",
-  "budget"
+  # "baseline",
+  # "hold_harmless",
+  # "post_processing",
+  # "thresholds",
+  # "moving_average_truth=average",
+  # "budget",
+  "epsilon"
   # "sampling"
 )) {
   print(experiment_name)
@@ -28,4 +28,6 @@ for (experiment_name in c(
   #   print("Also running sampling alone")
   #   gam_experiment(experiment, T)
   # }
+
+  rm(experiment)
 }

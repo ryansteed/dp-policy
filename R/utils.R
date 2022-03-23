@@ -366,6 +366,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     alpha = 0.01
   }
   alpha_sig = alpha
+  
   comparison = comparison %>%
     mutate(
       dp_moe = qnorm(1-alpha/2) * dp_sampling_benefit_per_child_eligible_std_error,
@@ -375,7 +376,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
         ((diff_benefit_per_child_eligible_mean - diff_moe) < 0) &
           ((diff_benefit_per_child_eligible_mean + diff_moe) > 0)
       ), "notsig", "sig"),
-      treatment = fct_reorder(treatment, treatment, .desc=TRUE)
+      treatment = fct_reorder(as.factor(treatment), treatment, .desc=TRUE)
     )
   
   # for baseline

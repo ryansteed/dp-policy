@@ -8,10 +8,12 @@ plot_experiment = function(experiment) {
 
   print("- Race")
   plot_race(experiment, experiment_name, "race_aggregate", ncols)
-  print("- Race Detail")
-  plot_race(experiment, experiment_name, "race", ncols)
   print("- Ethnicity")
   plot_race(experiment, experiment_name, "hispanic", ncols)
+  if (experiment_name == "baseline") {
+    print("- Race Detail")
+    plot_race(experiment, experiment_name, "race", ncols)
+  }
 }
 
 gam_experiment = function(experiment, sampling_only) {
