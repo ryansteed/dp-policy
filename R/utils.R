@@ -18,7 +18,8 @@ pacman::p_load(
   data.table,
   boot,
   broom,
-  arrow
+  arrow,
+  fs
 )
 # p_load_gh(
 #   "coolbutuseless/ggpattern"
@@ -590,6 +591,10 @@ get_gam_viz = function(plotname, from_cache, gam) {
   }
 }
 
+sanitize = function(string) {
+  return(str_replace(string, "%", ""))
+}
+
 plot_gam = function(viz, plotname) {
   labels = c(
     # "# children",
@@ -655,7 +660,10 @@ plot_gam = function(viz, plotname) {
   # print(plot)
   
   if (!missing(plotname)) {
-    ggsave(sprintf("plots/smooths/%s.png", plotname), plot, width=12, height=6, dpi=300) 
+    ggsave(
+      sprintf("plots/smooths/%s.png", sanitize(plotname)),
+      plot, width=12, height=6, dpi=300
+    )
   }
   
   check(viz)
