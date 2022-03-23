@@ -19,7 +19,8 @@ pacman::p_load(
   boot,
   broom,
   arrow,
-  fs
+  itsadug,
+  xtable
 )
 # p_load_gh(
 #   "coolbutuseless/ggpattern"
@@ -466,7 +467,11 @@ sq_share = function(x) {
   return((x/100)^2)
 }
 
-clean_for_reg = function(df) {
+clean_for_reg = function(df, sampling_only) {
+  if (missing(sampling_only)) {
+    sampling_only = F
+  }
+  
   df = df %>%
     mutate(
       white_agg_race_pct = white_race_pct,
@@ -510,32 +515,16 @@ clean_for_reg = function(df) {
       -asian_race_pct
     )
   # filter(trial < 10)
-  return(df)
-}
-
-run_regs = function(df, sampling_only, savepath) {
-  df_reg = clean_for_reg(df)
-  
   if (sampling_only) {
     df_abbrv = df_reg %>% mutate(misalloc = misalloc_sampling)
   } else {
     df_abbrv = df_reg %>% mutate(misalloc = misalloc_dp_sampling)
   }
-  
-  lm_mr = lm(
-    misalloc ~ log(pop_density) +
-      median_income_est +
-      hhi +
-      prop_white +
-      prop_hispanic +
-      renter_occupied_housing_tenure_pct,
-    # true_children_total + 
-    # true_children_poverty +
-    # not_a_u_s_citizen_u_s_citizenship_status_pct +
-    # average_household_size_of_renter_occupied_unit_housing_tenure_est,
-    data=df_abbrv
-  )
-  print(summary(lm_mr))
+  return(df)
+}
+
+run_regs = function(df, sampling_only, savepath) {
+  df_reg = clean_for_reg(df, sampling_only)
   
   gam_mr = gam(
     misalloc ~
@@ -553,13 +542,106 @@ run_regs = function(df, sampling_only, savepath) {
     data=df_abbrv
   )
   print(summary(gam_mr))
-  print(anova(lm_mr, gam_mr))
   
   if (!missing(savepath)) {
     saveRDS(gam_mr, savepath)
   }
   
   return(gam_mr)
+}
+
+
+
+regression_tables = function(experiment_name, sampling_only, trials) {
+  if (missing(trials)) {
+    trials = 100
+  }
+  
+  experiment = load_experiment(experiment_name) %>% filter(trial < trials)
+  
+  df_reg = clean_for_reg(experiment, sampling_only)
+  
+  print("- OLS")
+  lm_formula = lm(
+    misalloc ~
+      log(true_pop_total) +
+      true_children_total +
+      true_children_poverty,
+    data=df_abbrv
+  )
+  lm_final = lm(
+    misalloc ~
+      log(pop_density) +
+      hhi +
+      prop_white +
+      prop_hispanic +
+      median_income_est +
+      renter_occupied_housing_tenure_pct,
+    data=df_abbrv
+  )
+  lm_extra = lm(
+    misalloc ~
+      log(pop_density) +
+      hhi +
+      prop_white +
+      prop_hispanic +
+      median_income_est +
+      renter_occupied_housing_tenure_pct +
+      log(true_pop_total) +
+      true_children_total +
+      true_children_poverty +
+      not_a_u_s_citizen_u_s_citizenship_status_pct +
+      average_household_size_of_renter_occupied_unit_housing_tenure_est,
+    data=df_abbrv
+  )
+  stargazer(
+    lm_formula, lm_extra, lm_final,
+    type="latex",
+    column.labels = c("Formula components", "All variables", "Demographic variables"),
+    dep.var.labels = "Misallocation (deviated minus true)",
+    covariate.labels=c(
+      "Log population density",
+      "Racial homogeneity (HHI)",
+      "Proportion White",
+      "Proportion Hispanic",
+      "Median income",
+      "% households renting",
+      "Log total population",
+      "Total # children",
+      "Total # children in poverty",
+      "% not a U.S. citizen",
+      "Avg. renter's household size"
+    ),
+    out=sprintf("plots/tables/%s_ols.tex", experiment_name)
+  )
+  
+  print("- GAM")
+  gam_mr = get_gam("baseline", sampling_only, T, experiment)
+  gam_table(gam_mr, sprintf("plots/tables/%s_gam.tex", experiment_name))
+  xtable(
+    anova(lm_final, gam_mr),
+    file=sprintf("plots/tables/%s_anova_lm_gam.tex", experiment_name)
+  )
+  
+  print("- GAM with interaction")
+  gam_mr_interact = get_gam()
+}
+
+gam_table = function(gam, savepath) {
+  sink(savepath)
+  gamtabs(
+    gam,
+    label="Demographic GAM",
+    snames=c(
+      "Log population density",
+      "Racial homogeneity (HHI)",
+      "Proportion White",
+      "Proportion Hispanic",
+      "Median income",
+      "% households renting"
+    )
+  )
+  sink()
 }
 
 get_gam = function(name, sampling_only, from_cache, df) {
@@ -668,3 +750,4 @@ plot_gam = function(viz, plotname) {
   
   check(viz)
 }
+
