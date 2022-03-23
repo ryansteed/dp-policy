@@ -7,12 +7,13 @@ for (experiment_name in c(
   # "baseline",
   # "hold_harmless",
   # "post_processing",
-  # "thresholds",
+  "thresholds"
   # "moving_average_truth=average",
   # "budget",
-  "epsilon"
+  # "epsilon",
   # "sampling"
 )) {
+  print("\n")
   print(experiment_name)
   print("Loading experiment...")
   experiment = load_experiment(experiment_name, trials)
@@ -29,5 +30,6 @@ for (experiment_name in c(
   #   gam_experiment(experiment, T)
   # }
 
+  print(sprintf("DONE with %s", experiment_name)
   rm(experiment)
 }
