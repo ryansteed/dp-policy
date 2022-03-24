@@ -442,7 +442,7 @@ def heatmap(
     )
     cb = fig.colorbar(
         sm,
-        # location=bar_location,
+        location=bar_location,
         shrink=0.5, pad=0.05, aspect=30
     )
     cb.set_label(label)

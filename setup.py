@@ -8,7 +8,7 @@ setup(
     long_description=open('README.md').read(),
     install_requires=[
         'pandas',
-        'matplotlib',
+        'matplotlib>=3.4.1',
         'numpy',
         'diffprivlib',
         'geopandas',
