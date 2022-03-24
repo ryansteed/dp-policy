@@ -30,6 +30,6 @@ for (experiment_name in c(
     gam_experiment(experiment, T)
   }
 
-  print(sprintf("DONE with %s", experiment_name)
+  print(sprintf("DONE with %s", experiment_name))
   rm(experiment)
 }
