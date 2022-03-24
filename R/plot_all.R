@@ -21,15 +21,15 @@ for (experiment_name in c(
   plot_experiment(experiment)
   
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
-  experiment = experiment %>% filter(trial < gam_trials)
-  print(nrow(experiment %>% distinct(trial)))
+  # experiment = experiment %>% filter(trial < gam_trials)
+  # print(nrow(experiment %>% distinct(trial)))
 
-  gam_experiment(experiment)
-  if (experiment_name == "baseline") {
-    print("Also running sampling alone")
-    gam_experiment(experiment, T)
-  }
+  # gam_experiment(experiment)
+  # if (experiment_name == "baseline") {
+  #   print("Also running sampling alone")
+  #   gam_experiment(experiment, T)
+  # }
 
-  print(sprintf("DONE with %s", experiment_name))
-  rm(experiment)
+  # print(sprintf("DONE with %s", experiment_name))
+  # rm(experiment)
 }

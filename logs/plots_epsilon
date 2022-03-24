@@ -1,3 +1,55 @@
+[1] "\n"
 [1] "epsilon"
 [1] "Loading experiment..."
+[1] "Limiting to 100 trials"
 [1] "Cleaning..."
+[1] "7900800 rows"
+[1] "100 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   48600
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…   88800
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           2819400
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        44400
+5 median_income_est                                                        48600
+6 misalloc_dp_per_child                                                     1877
+7 misalloc_sampling_per_child                                               2400
+8 misalloc_dp_sampling_per_child                                            1877
+[1] "- Race"
+[1] "Comparing..."
+[1] "9600 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Also plotting R-U curves"
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "8400 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Also plotting R-U curves"
+Warning messages:
+1: `summarise_each_()` was deprecated in dplyr 0.7.0.
+Please use `across()` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+2: `funs()` was deprecated in dplyr 0.8.0.
+Please use a list of either functions or lambdas: 
+
+  # Simple named list: 
+  list(mean = mean, median = median)
+
+  # Auto named with `tibble::lst()`: 
+  tibble::lst(mean, median)
+
+  # Using lambdas
+  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+3: Ignoring unknown aesthetics: shape 
+4: Ignoring unknown aesthetics: fill 
+5: Ignoring unknown aesthetics: shape 
+6: Ignoring unknown aesthetics: fill 
