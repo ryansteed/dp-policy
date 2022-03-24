@@ -201,7 +201,7 @@ race_comparison_long = function(comparison, kind) {
 
 
 race_comparison = function(comparison, kind) {
-
+  
   comparison_all = race_comparison_long(comparison, kind) %>%
     group_by(treatment, race, trial) %>%
     # compute race-weighted misallocation for each trial
@@ -253,12 +253,12 @@ race_comparison = function(comparison, kind) {
 load_experiment = function(name, max_trials) {
   # raw = fread(sprintf("results/policy_experiments/%s_discrimination_laplace.csv", name))
   raw = read_feather(sprintf("results/policy_experiments/%s_discrimination_laplace.feather", name))
-  print("Cleaning...")
-  df = clean(raw)
   if (!missing(max_trials)) {
     print(sprintf("Limiting to %d trials", max_trials))
-    df = df %>% filter(trial < max_trials)
+    raw = raw %>% filter(trial < max_trials)
   }
+  print("Cleaning...")
+  df = clean(raw)
   return(df)
 }
 
@@ -394,7 +394,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     pal = head(pal, n=7)
     setNames(ifelse(grepl("baseline", treatments), default_color, pal), treatments)
   }
-
+  
   plt = ggplot(comparison, aes(x=race, y=sampling_benefit_per_child_eligible_mean)) +
     geom_col(
       position="dodge",
@@ -455,6 +455,39 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
   return(plt)
 }
 
+plot_ru_by_race = function(comparison, alpha) {
+  if (missing(alpha)) {
+    alpha = 0.01
+  }
+  alpha_sig = alpha
+  
+  comparison = comparison %>%
+    mutate(
+      dp_moe = qnorm(1-alpha/2) * dp_sampling_benefit_per_child_eligible_std_error,
+    )
+  
+  plt = ggplot(comparison, aes(x=treatment, y=dp_sampling_benefit_per_child_eligible_mean)) +
+    geom_errorbar(aes(ymin=dp_sampling_benefit_per_child_eligible_mean - dp_moe, ymax = dp_sampling_benefit_per_child_eligible_mean + dp_moe, color=race), width=0.1) +
+    geom_line(aes(color=race)) +
+    geom_point(aes(color=race)) +
+    scale_x_continuous(trans='log10') +
+    scale_color_brewer(palette="Accent") +
+    xlab("Epsilon") +
+    ylab("Race-weighted misallocation per eligible child") +
+    labs(
+      color = ""
+    ) +
+    guides(
+      color = guide_legend(ncol=3)
+    ) +
+    theme(
+      legend.position = "top",
+      legend.box="vertical"
+    )
+  
+  return(plt)
+}
+
 
 plot_race = function(experiment, name, kind, ncol) {
   if (missing(ncol)) {
@@ -477,6 +510,12 @@ plot_race = function(experiment, name, kind, ncol) {
   print(plt)
   
   ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+  
+  if (name == "epsilon") {
+    print("Also plotting R-U curves")
+    plt = plot_ru_by_race(comparison)
+    ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+  }
 }
 
 sq_share = function(x) {

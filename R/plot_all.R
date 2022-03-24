@@ -10,8 +10,8 @@ for (experiment_name in c(
   # "thresholds",
   # "moving_average_truth=average",
   # "budget",
-  # "epsilon",
-  "sampling"
+  "epsilon"
+  # "sampling"
 )) {
   print("\n")
   print(experiment_name)

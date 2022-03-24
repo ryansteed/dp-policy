@@ -20,9 +20,10 @@ regression_tables("baseline", F, 10)
 
 ## Treatment comparison
 ```{r treatments}
-test_experiment = "baseline"
-experiment = load_experiment(test_experiment)
+test_experiment = "epsilon"
+experiment = load_experiment(test_experiment, 100)
 ```
+
 
 ```{r treatment-gam}
 experiment_name = "hold_harmless"
