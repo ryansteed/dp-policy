@@ -506,16 +506,19 @@ plot_race = function(experiment, name, kind, ncol) {
   comparison = race_comparison(experiment, kind)
   
   print("Plotting...")
-  plt = plot_race_bar_stacked(comparison, ncol)
-  print(plt)
-  
-  ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
-  
   if (name == "epsilon") {
     print("Also plotting R-U curves")
     plt = plot_ru_by_race(comparison)
     ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+
+    # for epsilon experiment, disparities are too large to see if we include 0.001
+    comparison = comparison %>% filter(treatment > 0.001)
   }
+  
+  plt = plot_race_bar_stacked(comparison, ncol)
+  print(plt)
+  
+  ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
 }
 
 sq_share = function(x) {
