@@ -201,10 +201,12 @@ race_comparison_long = function(comparison, kind) {
 
 
 race_comparison = function(comparison, kind) {
-  
-  comparison_all = dplyr::select(
-      "treatment",
+  comparison_all = comparison %>%
+    dplyr::select(
+      treatment,
+      trial,
       ends_with("race_pct"),
+      starts_with("true_children"),
       contains("misalloc")
     ) %>%
     race_comparison_long(kind) %>%
@@ -458,8 +460,8 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       ),
       colour="black",
       shape=21,
-      size=2,
-      stroke=1,
+      size=1.5,
+      stroke=0.75,
       position=position_dodge(width=0.9)
     ) +
     ylab("Race-weighted misallocation per eligible child") +
