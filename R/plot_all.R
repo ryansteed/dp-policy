@@ -1,6 +1,6 @@
 source("R/plots.R")
 
-trials = 10
+trials = 1000
 gam_trials = 100
 
 for (experiment_name in c(
@@ -30,6 +30,6 @@ for (experiment_name in c(
   #   gam_experiment(experiment, T)
   # }
 
-  # print(sprintf("DONE with %s", experiment_name))
-  # rm(experiment)
+  print(sprintf("DONE with %s", experiment_name))
+  rm(experiment)
 }
