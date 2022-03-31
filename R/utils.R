@@ -202,7 +202,12 @@ race_comparison_long = function(comparison, kind) {
 
 race_comparison = function(comparison, kind) {
   
-  comparison_all = race_comparison_long(comparison, kind) %>%
+  comparison_all = dplyr::select(
+      "treatment",
+      ends_with("race_pct"),
+      contains("misalloc")
+    ) %>%
+    race_comparison_long(kind) %>%
     group_by(treatment, race, trial) %>%
     # compute race-weighted misallocation for each trial
     summarise(
@@ -411,14 +416,32 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       position="dodge"
     ) +
     # dp errorbar
+    # geom_errorbar(
+    #   aes(
+    #     y = dp_sampling_benefit_per_child_eligible_mean,
+    #     ymin=(
+    #       dp_sampling_benefit_per_child_eligible_mean - dp_moe
+    #     ), 
+    #     ymax=(
+    #       dp_sampling_benefit_per_child_eligible_mean + dp_moe
+    #     ),
+    #     # linetype="",
+    #     fill=treatment
+    #   ),
+    #   color="black",
+    #   position=position_dodge2(width=0.9),
+    #   size=0.5,
+    #   width=0.5
+    # ) +
+    # sampling errorbar
     geom_errorbar(
       aes(
-        y = dp_sampling_benefit_per_child_eligible_mean,
+        y = sampling_benefit_per_child_eligible_mean,
         ymin=(
-          dp_sampling_benefit_per_child_eligible_mean - dp_moe
+          sampling_benefit_per_child_eligible_mean - dp_moe
         ), 
         ymax=(
-          dp_sampling_benefit_per_child_eligible_mean + dp_moe
+          sampling_benefit_per_child_eligible_mean + dp_moe
         ),
         # linetype="",
         fill=treatment
@@ -427,6 +450,17 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       position=position_dodge(width=0.9),
       size=0.5,
       width=0.5
+    ) +
+    geom_point(
+      aes(
+        y = sampling_benefit_per_child_eligible_mean,
+        fill = treatment
+      ),
+      colour="black",
+      shape=21,
+      size=2,
+      stroke=1,
+      position=position_dodge(width=0.9)
     ) +
     ylab("Race-weighted misallocation per eligible child") +
     scale_linetype_manual(
@@ -437,6 +471,9 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       labels = function(x) str_wrap(x, width=5),
       values = palette(unique(comparison$treatment))
     ) +
+    scale_x_discrete(
+      labels = function(x) str_wrap(x, width=8)
+    ) +
     coord_flip() +
     xlab("Census Race Category") +
     guides(
@@ -445,7 +482,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     ) +
     labs(
       fill = "Data\ndeviations",
-      linetype = "+ privacy\ndevations"
+      linetype = "+ privacy\ndevations\n(ε=0.1)"
     ) +
     theme(
       legend.position = "top",

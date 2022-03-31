@@ -1,16 +1,16 @@
 source("R/plots.R")
 
-trials = 100
-gam_trials = trials
+trials = 10
+gam_trials = 100
 
 for (experiment_name in c(
-  # "baseline",
-  # "hold_harmless",
+  "baseline",
+  "hold_harmless"
   # "post_processing",
   # "thresholds",
   # "moving_average_truth=average",
   # "budget",
-  "epsilon"
+  # "epsilon",
   # "sampling"
 )) {
   print("\n")

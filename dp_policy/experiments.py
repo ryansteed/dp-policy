@@ -127,6 +127,12 @@ def titlei_grid(
                             ].abs().groupby("trial").sum().mean()
                         )
                         print(
+                            f"Std. sum of negative misallocs:",
+                            error[
+                                error < 0
+                            ].abs().groupby("trial").sum().std()
+                        )
+                        print(
                             "Total exp losses:",
                             exp_error[exp_error < 0].abs().sum()
                         )
