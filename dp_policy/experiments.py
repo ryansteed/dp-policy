@@ -92,9 +92,8 @@ def titlei_grid(
         )
 
     if print_results:
-        eps, allocations = list(zip(*results.groupby("epsilon")))
-
-        for prefix in ("est", "dp", "dpest"):
+        prefixes = ["est", "dp", "dpest"]
+        for prefix in prefixes:
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
                 for grant_type in (
@@ -108,7 +107,7 @@ def titlei_grid(
                     exp_error = err_grouped.mean()
                     if e in print_results:
                         print(f"## {grant_type} grants - eps={e} ##")
-                        print(f"# districts: {len(error)}")
+                        print(f"# rows: {len(error)}")
                         print("Average true alloc: {}".format(
                             alloc[f"true_grant_{grant_type}"].mean()
                         ))
@@ -123,9 +122,22 @@ def titlei_grid(
                         )
                         print(
                             f"Avg. sum of negative misallocs:",
-                            np.sum(np.abs(exp_error[exp_error < 0]))
+                            error[
+                                error < 0
+                            ].abs().groupby("trial").sum().mean()
                         )
-                        print(f"Avg. total misalloc:", sum(abs(exp_error)))
+                        print(
+                            "Total exp losses:",
+                            exp_error[exp_error < 0].abs().sum()
+                        )
+                        print(
+                            f"Avg. total abs misalloc:",
+                            error.abs().groupby("trial").sum().mean()
+                        )
+                        print(
+                            f"Total avg misalloc:",
+                            exp_error.abs().sum()
+                        )
 
                         small_district = alloc["true_pop_total"]\
                             .groupby(["State FIPS Code", "District ID"])\
@@ -135,11 +147,11 @@ def titlei_grid(
                             small_district.sum()
                         )
                         print(
-                            "Total avg misalloc to large districts:",
+                            "Total exp misalloc to large districts:",
                             exp_error[~small_district].abs().sum()
                         )
                         print(
-                            "Total avg misalloc to small districts:",
+                            "Total exp misalloc to small districts:",
                             exp_error[small_district].abs().sum()
                         )
                         print(
@@ -150,7 +162,9 @@ def titlei_grid(
                         )
 
             if plot_results:
-                trials = len(results.groupby("trial"))
+                trials = len(np.unique(
+                    results.index.get_level_values("trial")
+                ))
 
                 grant_type = "total"
 
@@ -166,6 +180,7 @@ def titlei_grid(
                     'lower': rmse.groupby("epsilon").quantile(alpha/2),
                     'upper': rmse.groupby("epsilon").quantile(1-alpha/2)
                 }
+                eps = mse['mean'].index
                 plt.plot(eps, mse['mean'])
                 plt.fill_between(
                     eps, mse['lower'], mse['upper'],
