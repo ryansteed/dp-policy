@@ -1,18 +1,18 @@
 source("R/utils.R")
 
-plot_experiment = function(experiment) {
+plot_experiment = function(experiment_name, trials) {
   ncols = 3
   if (experiment_name == "budget") {
     ncols = 2
   }
 
   print("- Race")
-  plot_race(experiment, experiment_name, "race_aggregate", ncols)
+  plot_race(experiment_name, trials, "race_aggregate", ncols)
   print("- Ethnicity")
-  plot_race(experiment, experiment_name, "hispanic", ncols)
+  plot_race(experiment_name, trials, "hispanic", ncols)
   if (experiment_name == "baseline") {
     print("- Race Detail")
-    plot_race(experiment, experiment_name, "race", ncols)
+    plot_race(experiment_name, trials, "race", ncols)
   }
 }
 

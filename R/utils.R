@@ -199,16 +199,22 @@ race_comparison_long = function(comparison, kind) {
   return(comparison)
 }
 
-
-race_comparison = function(comparison, kind) {
-  comparison_all = comparison %>%
+trim_comparison = function(comparison) {
+  return(comparison %>%
     dplyr::select(
       treatment,
       trial,
       ends_with("race_pct"),
       starts_with("true_children"),
       contains("misalloc")
-    ) %>%
+    )
+  )
+}
+
+
+race_comparison = function(comparison, kind) {
+  comparison =  comparison %>%
+    trim_comparison() %>%
     race_comparison_long(kind) %>%
     group_by(treatment, race, trial) %>%
     # compute race-weighted misallocation for each trial
@@ -231,7 +237,7 @@ race_comparison = function(comparison, kind) {
     )) %>%
     ungroup()
   
-  # comparison_mean = comparison_all %>%
+  # comparison_mean = comparison %>%
   #   group_by(treatment, race) %>%
   #   summarise(
   #     dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
@@ -242,7 +248,7 @@ race_comparison = function(comparison, kind) {
   #     dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
   #   )
   
-  sorted = comparison_all %>%
+  sorted = comparison %>%
     mutate(race = fct_reorder(race, sampling_benefit_per_child_eligible_mean)) %>%
     distinct(
       treatment, race, 
@@ -527,8 +533,7 @@ plot_ru_by_race = function(comparison, alpha) {
   return(plt)
 }
 
-
-plot_race = function(experiment, name, kind, ncol) {
+plot_race = function(name, trials, kind, ncol) {
   if (missing(ncol)) {
     ncol = 3
   }
@@ -542,7 +547,7 @@ plot_race = function(experiment, name, kind, ncol) {
   # grouped = summarise_trials(experiment)
   
   print("Comparing...")
-  comparison = race_comparison(experiment, kind)
+  comparison = race_comparison(load_experiment(name, trials), kind)
   
   print("Plotting...")
   if (name == "epsilon") {

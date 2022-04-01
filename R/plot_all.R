@@ -1,26 +1,28 @@
 source("R/plots.R")
 
-trials = 1000
+trials_main = 1000
+trials_appendix = 500
 gam_trials = 100
 
 for (experiment_name in c(
   "baseline",
   "hold_harmless"
-  # "post_processing",
-  # "thresholds",
-  # "moving_average_truth=average",
-  # "budget",
-  # "epsilon",
-  # "sampling"
+  "post_processing",
+  "thresholds",
+  "moving_average_truth=average",
+  "budget",
+  "epsilon",
+  "sampling"
 )) {
   print("\n")
   print(experiment_name)
-  print("Loading experiment...")
-  experiment = load_experiment(experiment_name, trials)
-
-  plot_experiment(experiment)
   
+  plot_experiment(
+    experiment_name,
+    if (experiment_name %in% c("baseline", "hold_harmless")) trials_main else trials_appendix
+  )
   # reduced size for GAM - otherwise takes too long... maybe reverse this later
+  # experiment = load_experiment(experiment_name, trials)
   # experiment = experiment %>% filter(trial < gam_trials)
   # print(nrow(experiment %>% distinct(trial)))
 
