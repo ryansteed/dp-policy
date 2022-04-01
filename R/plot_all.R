@@ -1,12 +1,12 @@
 source("R/plots.R")
 
 trials_main = 1000
-trials_appendix = 500
+trials_appendix = 250
 gam_trials = 100
 
 for (experiment_name in c(
   "baseline",
-  "hold_harmless"
+  "hold_harmless",
   "post_processing",
   "thresholds",
   "moving_average_truth=average",

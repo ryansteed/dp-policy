@@ -473,7 +473,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     ylab("Race-weighted misallocation per eligible child") +
     scale_linetype_manual(
       values=c("sig" = "solid", "notsig" = "dashed"),
-      labels=c("sig" = sprintf("Significant\ndifference\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+      labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
     ) +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
