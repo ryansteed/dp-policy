@@ -1,99 +1,406 @@
-[1] "budget"
-[1] "Loading experiment..."
+[1] "\n"
+[1] "baseline"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 1000 trials"
 [1] "Cleaning..."
-[1] "52672000 rows"
+[1] "13168000 rows"
 [1] "1000 trials"
 [1] "13168 districts"
 # A tibble: 8 × 2
   var                                                                    missing
   <chr>                                                                    <int>
-1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  3.24e5
-2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  5.92e5
-3 not_a_u_s_citizen_u_s_citizenship_status_pct                            1.88e7
-4 average_household_size_of_renter_occupied_unit_housing_tenure_est       2.96e5
-5 median_income_est                                                       3.24e5
-6 misalloc_dp_per_child                                                   1.12e4
-7 misalloc_sampling_per_child                                             1.6 e4
-8 misalloc_dp_sampling_per_child                                          1.12e4
-[1] "Limiting to 100 trials"
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2812
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2812
+[1] "16000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 1000 trials"
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2812
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2812
+[1] "14000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "- Race Detail"
+[1] "Comparing..."
+[1] "Limiting to 1000 trials"
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2812
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2812
+[1] "16000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Just printing one treatment"
+[1] "DONE with baseline"
+[1] "\n"
+[1] "hold_harmless"
 [1] "- Race"
 [1] "Comparing..."
-[1] "6400 rows with overfull race percent"
+[1] "Limiting to 1000 trials"
+[1] "Cleaning..."
+[1] "26336000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  162000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  296000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           9398000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       148000
+5 median_income_est                                                       162000
+6 misalloc_dp_per_child                                                     5620
+7 misalloc_sampling_per_child                                               8000
+8 misalloc_dp_sampling_per_child                                            5620
+[1] "32000 rows with overfull race percent"
 `summarise()` has grouped output by 'treatment', 'race'. You can override using
 the `.groups` argument.
 [1] "Plotting..."
 [1] "- Ethnicity"
 [1] "Comparing..."
-[1] "5600 rows with overfull race percent"
-`summarise()` has grouped output by 'treatment', 'race'. You can override using
-the `.groups` argument.
-[1] "Plotting..."
-[1] "epsilon"
-[1] "Loading experiment..."
+[1] "Limiting to 1000 trials"
 [1] "Cleaning..."
-[1] "79008000 rows"
+[1] "26336000 rows"
 [1] "1000 trials"
 [1] "13168 districts"
 # A tibble: 8 × 2
   var                                                                    missing
   <chr>                                                                    <int>
-1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  4.86e5
-2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  8.88e5
-3 not_a_u_s_citizen_u_s_citizenship_status_pct                            2.82e7
-4 average_household_size_of_renter_occupied_unit_housing_tenure_est       4.44e5
-5 median_income_est                                                       4.86e5
-6 misalloc_dp_per_child                                                   1.89e4
-7 misalloc_sampling_per_child                                             2.4 e4
-8 misalloc_dp_sampling_per_child                                          1.89e4
-[1] "Limiting to 100 trials"
-[1] "- Race"
-[1] "Comparing..."
-[1] "9600 rows with overfull race percent"
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  162000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  296000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           9398000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       148000
+5 median_income_est                                                       162000
+6 misalloc_dp_per_child                                                     5620
+7 misalloc_sampling_per_child                                               8000
+8 misalloc_dp_sampling_per_child                                            5620
+[1] "28000 rows with overfull race percent"
 `summarise()` has grouped output by 'treatment', 'race'. You can override using
 the `.groups` argument.
 [1] "Plotting..."
-Error in `mutate()`:
-! Problem while computing `treatment = fct_reorder(treatment, treatment,
-  .desc = TRUE)`.
-Caused by error:
-! `f` must be a factor (or character vector).
-Backtrace:
-     ▆
-  1. ├─global plot_experiment(experiment)
-  2. │ └─global plot_race(experiment, experiment_name, "race_aggregate", ncols)
-  3. │   └─global plot_race_bar_stacked(comparison, ncol)
-  4. │     └─comparison %>% ...
-  5. ├─dplyr::mutate(...)
-  6. ├─dplyr:::mutate.data.frame(...)
-  7. │ └─dplyr:::mutate_cols(.data, dplyr_quosures(...), caller_env = caller_env())
-  8. │   ├─base::withCallingHandlers(...)
-  9. │   └─mask$eval_all_mutate(quo)
- 10. ├─forcats::fct_reorder(treatment, treatment, .desc = TRUE)
- 11. │ └─forcats:::check_factor(.f)
- 12. │   └─base::stop("`f` must be a factor (or character vector).", call. = FALSE)
- 13. └─base::.handleSimpleError(...)
- 14.   └─dplyr h(simpleError(msg, call))
- 15.     └─rlang::abort(...)
-Warning messages:
-1: `summarise_each_()` was deprecated in dplyr 0.7.0.
-Please use `across()` instead.
-This warning is displayed once every 8 hours.
-Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
-2: `funs()` was deprecated in dplyr 0.8.0.
-Please use a list of either functions or lambdas: 
-
-  # Simple named list: 
-  list(mean = mean, median = median)
-
-  # Auto named with `tibble::lst()`: 
-  tibble::lst(mean, median)
-
-  # Using lambdas
-  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
-This warning is displayed once every 8 hours.
-Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
-3: Ignoring unknown aesthetics: shape 
-4: Ignoring unknown aesthetics: fill 
-5: Ignoring unknown aesthetics: shape 
-6: Ignoring unknown aesthetics: fill 
-Execution halted
+[1] "DONE with hold_harmless"
+[1] "\n"
+[1] "post_processing"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "9876000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   60750
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  111000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           3524250
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        55500
+5 median_income_est                                                        60750
+6 misalloc_dp_per_child                                                     2091
+7 misalloc_sampling_per_child                                               3000
+8 misalloc_dp_sampling_per_child                                            2091
+[1] "12000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "9876000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   60750
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  111000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           3524250
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        55500
+5 median_income_est                                                        60750
+6 misalloc_dp_per_child                                                     2091
+7 misalloc_sampling_per_child                                               3000
+8 misalloc_dp_sampling_per_child                                            2091
+[1] "10500 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "DONE with post_processing"
+[1] "\n"
+[1] "thresholds"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "19752000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  121500
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  222000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           7048500
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       111000
+5 median_income_est                                                       121500
+6 misalloc_dp_per_child                                                     3921
+7 misalloc_sampling_per_child                                               6000
+8 misalloc_dp_sampling_per_child                                            3921
+[1] "24000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "19752000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  121500
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  222000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           7048500
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       111000
+5 median_income_est                                                       121500
+6 misalloc_dp_per_child                                                     3921
+7 misalloc_sampling_per_child                                               6000
+8 misalloc_dp_sampling_per_child                                            3921
+[1] "21000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "DONE with thresholds"
+[1] "\n"
+[1] "moving_average_truth=average"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "16460000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  101250
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  185000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           5873750
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        92500
+5 median_income_est                                                       101250
+6 misalloc_dp_per_child                                                     3499
+7 misalloc_sampling_per_child                                               5000
+8 misalloc_dp_sampling_per_child                                            3499
+[1] "20000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "16460000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  101250
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  185000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           5873750
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        92500
+5 median_income_est                                                       101250
+6 misalloc_dp_per_child                                                     3499
+7 misalloc_sampling_per_child                                               5000
+8 misalloc_dp_sampling_per_child                                            3499
+[1] "17500 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "DONE with moving_average_truth=average"
+[1] "\n"
+[1] "budget"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2794
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2794
+[1] "16000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2794
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2794
+[1] "14000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "DONE with budget"
+[1] "\n"
+[1] "epsilon"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "19752000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  121500
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  222000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           7048500
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       111000
+5 median_income_est                                                       121500
+6 misalloc_dp_per_child                                                     4719
+7 misalloc_sampling_per_child                                               6000
+8 misalloc_dp_sampling_per_child                                            4719
+[1] "24000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Also plotting R-U curves"
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "19752000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  121500
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  222000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           7048500
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       111000
+5 median_income_est                                                       121500
+6 misalloc_dp_per_child                                                     4719
+7 misalloc_sampling_per_child                                               6000
+8 misalloc_dp_sampling_per_child                                            4719
+[1] "21000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "Also plotting R-U curves"
+[1] "DONE with epsilon"
+[1] "\n"
+[1] "sampling"
+[1] "- Race"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "23044000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  141750
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  259000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           8223250
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       129500
+5 median_income_est                                                       141750
+6 misalloc_dp_per_child                                                     4847
+7 misalloc_sampling_per_child                                               7000
+8 misalloc_dp_sampling_per_child                                            4847
+[1] "28000 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "- Ethnicity"
+[1] "Comparing..."
+[1] "Limiting to 250 trials"
+[1] "Cleaning..."
+[1] "23044000 rows"
+[1] "250 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…  141750
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  259000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           8223250
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est       129500
+5 median_income_est                                                       141750
+6 misalloc_dp_per_child                                                     4847
+7 misalloc_sampling_per_child                                               7000
+8 misalloc_dp_sampling_per_child                                            4847
+[1] "24500 rows with overfull race percent"
+`summarise()` has grouped output by 'treatment', 'race'. You can override using
+the `.groups` argument.
+[1] "Plotting..."
+[1] "DONE with sampling"
+There were 50 or more warnings (use warnings() to see the first 50)
+Warning message:
+system call failed: Cannot allocate memory 

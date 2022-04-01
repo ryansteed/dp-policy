@@ -199,10 +199,23 @@ race_comparison_long = function(comparison, kind) {
   return(comparison)
 }
 
+trim_comparison = function(comparison) {
+  return(comparison %>%
+    dplyr::select(
+      treatment,
+      trial,
+      ends_with("race_pct"),
+      starts_with("true_children"),
+      contains("misalloc")
+    )
+  )
+}
+
 
 race_comparison = function(comparison, kind) {
-  
-  comparison_all = race_comparison_long(comparison, kind) %>%
+  comparison =  comparison %>%
+    trim_comparison() %>%
+    race_comparison_long(kind) %>%
     group_by(treatment, race, trial) %>%
     # compute race-weighted misallocation for each trial
     summarise(
@@ -224,7 +237,7 @@ race_comparison = function(comparison, kind) {
     )) %>%
     ungroup()
   
-  # comparison_mean = comparison_all %>%
+  # comparison_mean = comparison %>%
   #   group_by(treatment, race) %>%
   #   summarise(
   #     dp_benefit_per_child = sum(misalloc_dp * race_pct / 100) / sum(children_of_race),
@@ -235,7 +248,7 @@ race_comparison = function(comparison, kind) {
   #     dp_sampling_benefit_per_child_eligible = sum(misalloc_dp_sampling * race_pct / 100) / sum(children_of_race_eligible)
   #   )
   
-  sorted = comparison_all %>%
+  sorted = comparison %>%
     mutate(race = fct_reorder(race, sampling_benefit_per_child_eligible_mean)) %>%
     distinct(
       treatment, race, 
@@ -411,14 +424,32 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       position="dodge"
     ) +
     # dp errorbar
+    # geom_errorbar(
+    #   aes(
+    #     y = dp_sampling_benefit_per_child_eligible_mean,
+    #     ymin=(
+    #       dp_sampling_benefit_per_child_eligible_mean - dp_moe
+    #     ), 
+    #     ymax=(
+    #       dp_sampling_benefit_per_child_eligible_mean + dp_moe
+    #     ),
+    #     # linetype="",
+    #     fill=treatment
+    #   ),
+    #   color="black",
+    #   position=position_dodge2(width=0.9),
+    #   size=0.5,
+    #   width=0.5
+    # ) +
+    # sampling errorbar
     geom_errorbar(
       aes(
-        y = dp_sampling_benefit_per_child_eligible_mean,
+        y = sampling_benefit_per_child_eligible_mean,
         ymin=(
-          dp_sampling_benefit_per_child_eligible_mean - dp_moe
+          sampling_benefit_per_child_eligible_mean - dp_moe
         ), 
         ymax=(
-          dp_sampling_benefit_per_child_eligible_mean + dp_moe
+          sampling_benefit_per_child_eligible_mean + dp_moe
         ),
         # linetype="",
         fill=treatment
@@ -428,14 +459,28 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       size=0.5,
       width=0.5
     ) +
+    geom_point(
+      aes(
+        y = sampling_benefit_per_child_eligible_mean,
+        fill = treatment
+      ),
+      colour="black",
+      shape=21,
+      size=1.5,
+      stroke=0.75,
+      position=position_dodge(width=0.9)
+    ) +
     ylab("Race-weighted misallocation per eligible child") +
     scale_linetype_manual(
       values=c("sig" = "solid", "notsig" = "dashed"),
-      labels=c("sig" = sprintf("Significant\ndifference\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+      labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
     ) +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
       values = palette(unique(comparison$treatment))
+    ) +
+    scale_x_discrete(
+      labels = function(x) str_wrap(x, width=8)
     ) +
     coord_flip() +
     xlab("Census Race Category") +
@@ -445,7 +490,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
     ) +
     labs(
       fill = "Data\ndeviations",
-      linetype = "+ privacy\ndevations"
+      linetype = "+ privacy\ndevations\n(ε=0.1)"
     ) +
     theme(
       legend.position = "top",
@@ -488,8 +533,7 @@ plot_ru_by_race = function(comparison, alpha) {
   return(plt)
 }
 
-
-plot_race = function(experiment, name, kind, ncol) {
+plot_race = function(name, trials, kind, ncol) {
   if (missing(ncol)) {
     ncol = 3
   }
@@ -503,7 +547,7 @@ plot_race = function(experiment, name, kind, ncol) {
   # grouped = summarise_trials(experiment)
   
   print("Comparing...")
-  comparison = race_comparison(experiment, kind)
+  comparison = race_comparison(load_experiment(name, trials), kind)
   
   print("Plotting...")
   if (name == "epsilon") {
