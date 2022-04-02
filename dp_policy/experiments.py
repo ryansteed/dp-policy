@@ -117,6 +117,12 @@ def titlei_grid(
                         print(f"Max error: {np.abs(error).max()}")
                         print(f"RMSE:", np.sqrt(np.mean(error**2)))
                         print(
+                            "Avg. RMSE",
+                            np.mean(
+                                np.sqrt((error**2).groupby('trial').mean())
+                            )
+                        )
+                        print(
                             f"RMSE in exp. error:",
                             np.sqrt(np.mean(exp_error**2))
                         )
