@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import dp_policy.config as config
 from dp_policy.titlei.evaluation import \
     discrimination_treatments_join, save_treatments, load_treatments, \
-    match_true, compare_treatments
+    match_true, compare_treatments, misalloc_statistics
 from dp_policy.titlei.mechanisms import Laplace
 from dp_policy.titlei.utils import get_inputs, data, get_sppe
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
@@ -99,72 +99,14 @@ def titlei_grid(
                 for grant_type in (
                     "basic", "concentration", "targeted", "total"
                 ):
-                    error = alloc[f"{prefix}_grant_{grant_type}"] \
-                        - alloc[f"true_grant_{grant_type}"]
-                    err_grouped = error.groupby(
-                        ["State FIPS Code", "District ID"]
-                    )
-                    exp_error = err_grouped.mean()
                     if e in print_results:
+                        error = alloc[f"{prefix}_grant_{grant_type}"] \
+                            - alloc[f"true_grant_{grant_type}"]
                         print(f"## {grant_type} grants - eps={e} ##")
-                        print(f"# rows: {len(error)}")
-                        print("Average true alloc: {}".format(
-                            alloc[f"true_grant_{grant_type}"].mean()
-                        ))
-                        print("Max true alloc: {}".format(
-                            alloc[f"true_grant_{grant_type}"].max()
-                        ))
-                        print(f"Max error: {np.abs(error).max()}")
-                        print(f"RMSE:", np.sqrt(np.mean(error**2)))
-                        print(
-                            f"RMSE in exp. error:",
-                            np.sqrt(np.mean(exp_error**2))
-                        )
-                        print(
-                            f"Avg. sum of negative misallocs:",
-                            error[
-                                error < 0
-                            ].abs().groupby("trial").sum().mean()
-                        )
-                        print(
-                            f"Std. sum of negative misallocs:",
-                            error[
-                                error < 0
-                            ].abs().groupby("trial").sum().std()
-                        )
-                        print(
-                            "Total exp losses:",
-                            exp_error[exp_error < 0].abs().sum()
-                        )
-                        print(
-                            f"Avg. total abs misalloc:",
-                            error.abs().groupby("trial").sum().mean()
-                        )
-                        print(
-                            f"Total avg misalloc:",
-                            exp_error.abs().sum()
-                        )
-
-                        small_district = alloc["true_pop_total"]\
-                            .groupby(["State FIPS Code", "District ID"])\
-                            .first() < 20000
-                        print(
-                            "# small districts:",
-                            small_district.sum()
-                        )
-                        print(
-                            "Total exp misalloc to large districts:",
-                            exp_error[~small_district].abs().sum()
-                        )
-                        print(
-                            "Total exp misalloc to small districts:",
-                            exp_error[small_district].abs().sum()
-                        )
-                        print(
-                            "Avg total true alloc:",
-                            alloc[f"true_grant_{grant_type}"]
-                            .groupby(["State FIPS Code", "District ID"])
-                            .first().abs().sum()
+                        misalloc_statistics(
+                            error,
+                            allocations=alloc,
+                            grant_type=grant_type
                         )
 
             if plot_results:
