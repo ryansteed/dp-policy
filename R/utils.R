@@ -374,7 +374,7 @@ load_experiment = function(name, max_trials) {
 #   return(plt)
 # }
 
-plot_race_bar_stacked = function(comparison, ncol, alpha) {
+plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
   if (missing(alpha)) {
     alpha = 0.01
   }
@@ -480,7 +480,7 @@ plot_race_bar_stacked = function(comparison, ncol, alpha) {
       values = palette(unique(comparison$treatment))
     ) +
     scale_x_discrete(
-      labels = function(x) str_wrap(x, width=8)
+      labels = function(x) str_wrap(x, width=label_width)
     ) +
     coord_flip() +
     xlab("Census Race Category") +
@@ -559,7 +559,7 @@ plot_race = function(name, trials, kind, ncol) {
     comparison = comparison %>% filter(treatment > 0.001)
   }
   
-  plt = plot_race_bar_stacked(comparison, ncol)
+  plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
   print(plt)
   
   ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
