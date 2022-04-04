@@ -113,6 +113,8 @@ race_comparison_long = function(comparison, kind) {
     comparison = comparison %>%
       dplyr::select(ends_with("hispanic_or_latino_and_race_pct") | !ends_with("race_pct"))
   } else if (kind == "race_aggregate") {
+    # aggregation of detailed race categories to OMB race minimums based on
+    # https://www.socialexplorer.com/data/ACS2017_5yr/metadata/?ds=ACS17_5yr&table=C02003
     comparison = comparison %>%
       mutate(
         white_agg_race_pct = white_race_pct,
