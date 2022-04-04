@@ -536,44 +536,20 @@ def compare_treatments(
             "Avg prop. districts erroneously ineligible:",
             df.became_ineligible.groupby("trial").sum().mean()
         )
-        err = df.dpest_grant_total - df.true_grant_total
-        experr = err.groupby(["State FIPS Code", "District ID"]).mean()
-        lowerr = err.groupby(["State FIPS Code", "District ID"]).quantile(0.05)
-        dperr = df.dpest_grant_total - df.est_grant_total
-        expdperr = dperr.groupby(["State FIPS Code", "District ID"]).mean()
-        esterr = df.est_grant_total - df.true_grant_total
-        expesterr = esterr.groupby(["State FIPS Code", "District ID"]).mean()
-        print(
-            "RMSE:",
-            np.sqrt((err ** 2).mean())
+
+        print("# est")
+        misalloc_statistics(
+            df.est_grant_total - df.true_grant_total
         )
-        print(
-            "Avg. (per trial) # of districts losing $$:",
-            (err < 0).groupby("trial").sum().mean()
+
+        print("# dpest")
+        misalloc_statistics(
+            df.dpest_grant_total - df.true_grant_total
         )
-        print(
-            "Total avg. (per sd) losses:",
-            experr[experr < 0].abs().sum()
-        )
-        print(
-            "Avg. expected loss:",
-            experr[experr < 0].mean()
-        )
-        print(
-            "Total 5% quantile losses:",
-            lowerr[lowerr < 0].abs().sum()
-        )
-        print(
-            "Avg. 5% quantile loss:",
-            lowerr[lowerr < 0].mean()
-        )
-        print(
-            "Total avg. losses (data error):",
-            expesterr[expesterr < 0].abs().sum()
-        )
-        print(
-            "Avg. marginal losses (DP):",
-            expdperr[expdperr < 0].abs().sum()
+
+        print("# marginal")
+        misalloc_statistics(
+            df.dpest_grant_total - df.est_grant_total
         )
 
     # compare bias
@@ -665,3 +641,101 @@ def match_true(df_true, dfs_to_match):
     for c in (c for c in df_true.columns if "true" in c):
         for df in dfs_to_match:
             df.loc[:, c] = df_true.loc[:, c]
+
+
+def misalloc_statistics(error, allocations=None, grant_type=None):
+    err_grouped = error.groupby(
+        ["State FIPS Code", "District ID"]
+    )
+    exp_error = err_grouped.mean()
+    print(f"# rows: {len(error)}")
+    print(f"Max error: {np.abs(error).max()}")
+
+    print("-- RMSE --")
+    print(f"RMSE:", np.sqrt(np.mean(error**2)))
+    print(
+        "Avg. RMSE",
+        np.mean(
+            np.sqrt((error**2).groupby('trial').mean())
+        )
+    )
+    print(
+        f"RMSE in exp. error:",
+        np.sqrt(np.mean(exp_error**2))
+    )
+
+    print("-- Losses --")
+    print(
+        "Avg. (per trial) # of districts losing $$:",
+        (error < 0).groupby("trial").sum().mean()
+    )
+    print(
+        f"Avg. total losses:",
+        error[
+            error < 0
+        ].abs().groupby("trial").sum().mean()
+    )
+    print(
+        f"Std. total losses:",
+        error[
+            error < 0
+        ].abs().groupby("trial").sum().std()
+    )
+    print(
+        "Total exp losses:",
+        exp_error[exp_error < 0].abs().sum()
+    )
+    print(
+        "Average exp loss",
+        exp_error[exp_error < 0].abs().mean()
+    )
+    lowerr = error.groupby(["State FIPS Code", "District ID"]).quantile(0.05)
+    print(
+        "Total 5% quantile losses:",
+        lowerr[lowerr < 0].abs().sum()
+    )
+    print(
+        "Avg. 5% quantile loss:",
+        lowerr[lowerr < 0].mean()
+    )
+
+    print("-- Misalloc --")
+    print(
+        f"Avg. total abs misalloc:",
+        error.abs().groupby("trial").sum().mean()
+    )
+    print(
+        f"Total exp abs misalloc:",
+        exp_error.abs().sum()
+    )
+
+    if allocations is not None:
+        print("-- Other stats --")
+        print(
+            "Avg total true alloc:",
+            allocations[f"true_grant_{grant_type}"]
+            .groupby(["State FIPS Code", "District ID"])
+            .first().abs().sum()
+        )
+        small_district = allocations["true_pop_total"]\
+            .groupby(["State FIPS Code", "District ID"])\
+            .first() < 20000
+        print(
+            "# small districts:",
+            small_district.sum()
+        )
+        print(
+            "Total exp misalloc to large districts:",
+            exp_error[~small_district].abs().sum()
+        )
+        print(
+            "Total exp misalloc to small districts:",
+            exp_error[small_district].abs().sum()
+        )
+        if grant_type is not None:
+            print("Average true alloc: {}".format(
+                allocations[f"true_grant_{grant_type}"].mean()
+            ))
+            print("Max true alloc: {}".format(
+                allocations[f"true_grant_{grant_type}"].max()
+            ))
