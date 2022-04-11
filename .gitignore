@@ -12,3 +12,4 @@ default.profraw
 data/shapefiles/*/
 venv
 build
+*.zip

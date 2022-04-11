@@ -43,3 +43,8 @@ scripts/kickoff.sh # or cp paste for jobs management
 jobs
 watch -n 60 ps
 ```
+
+## Compressing for simple release
+```bash
+make zip
+```
