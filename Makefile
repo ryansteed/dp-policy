@@ -42,7 +42,7 @@ software.zip:
 data.zip:
 	zip -r data.zip \
 		data \
-		-x "*.DS_Store" \
-		-x "data/discrimination/*" \
-		-x "data/shapefiles/*"
-	for i in data/discrimination/*.txt; do zip -r "$$i".zip "$$i"; done
+		-x "*.DS_Store"
+		# -x "data/discrimination/*" \
+		# -x "data/shapefiles/*"
+	# for i in data/discrimination/*.txt; do zip -r "$$i".zip "$$i"; done
