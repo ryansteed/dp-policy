@@ -17,39 +17,76 @@ Why do racial groups have different outcomes? Two possible explanations: distanc
 
 ## Distances from eligibility thresholds
 ```{r}
-experiment = load_experiment("baseline", 1)
+experiment = load_experiment("baseline", 1) %>% mutate(not_hispanic = not_hispanic_or_latino_hispanic_or_latino_and_race_pct)
 experiment
 ```
 ```{r}
 thresholds = data.frame(raw=c(10, 6500, 10), prop=c(0.02, 0.15, 0.05), grant=c("Basic", "Concentration", "Targeted"))
 
-ggplot(experiment, aes(x=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)), y=prop_white)) +
-  geom_point(alpha=0.5, size=0.25) +
-  geom_vline(data=thresholds, aes(xintercept=log(raw), color=grant)) +
+point_plot = geom_point(alpha=0.5, size=0.25, color="#3a3b3c")
+formatting = list(
+  geom_smooth(method="lm", linetype="dashed", color="red"),
+  theme(
+    legend.position = "bottom",
+    legend.box="vertical"
+  ),
+  scale_color_brewer(palette="Dark2"),
   guides(
     color=guide_legend("Eligibility Threshold")
   )
+)
 
-ggplot(experiment, aes(x=log(true_children_eligible/true_children_total), y=prop_white)) +
-  geom_point(alpha=0.5, size=0.25) +
-  geom_vline(data=thresholds, aes(xintercept=log(prop), color=grant)) +
-  guides(
-    color=guide_legend("Eligibility Threshold")
+ggplot(experiment, aes(x=prop_white, y=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)))) +
+  point_plot +
+  geom_hline(data=thresholds, aes(yintercept=log(raw), color=grant)) +
+  formatting +
+  labs(
+    y="Log # of children in poverty",
+    x="% white-only"
   )
+ggsave("plots/race/thresholds_raw.png", dpi=300, width=6, height=5)
+
+ggplot(experiment, aes(x=prop_white, y=log(true_children_eligible/true_children_total))) +
+  point_plot +
+  geom_hline(data=thresholds, aes(yintercept=log(prop), color=grant)) +
+  formatting +
+  labs(
+    y="Log prop. of children in poverty",
+    x="% white-only"
+  )
+ggsave("plots/race/thresholds_prop.png", dpi=300, width=6, height=5)
+
+ggplot(experiment, aes(x=not_hispanic, y=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)))) +
+  point_plot +
+  geom_hline(data=thresholds, aes(yintercept=log(raw), color=grant)) +
+  formatting +
+  labs(
+    y="Log # of children in poverty",
+    x="% non-Hispanic"
+  )
+ggsave("plots/race/thresholds_raw_ethnicity.png", dpi=300, width=6, height=5)
+
+ggplot(experiment, aes(x=not_hispanic, y=log(true_children_eligible/true_children_total))) +
+  point_plot +
+  geom_hline(data=thresholds, aes(yintercept=log(prop), color=grant)) +
+  formatting +
+  labs(
+    y="Log prop. of children in poverty",
+    x="% non-Hispanic"
+  )
+ggsave("plots/race/thresholds_prop_ethnicity.png", dpi=300, width=6, height=5)
 ```
 
 ## Differences in natural variance
 ```{r}
-experiment = load_experiment("baseline", 10)
-experiment
-```
-
-```{r}
-anova = experiment %>%
-  group_by(state_fips_code, district_id) %>%
-  summarise(
-    avg_abs_noise_data = mean(abs(est_children_eligible - true_children_eligible)),
-    avg_abs_noise_dp = mean(abs(dpest_children_eligible - est_children_eligible))
+ggplot(experiment, aes(x=prop_white, y=log(true_pop_total))) +
+  geom_point(alpha=0.5, size=0.25) +
+  geom_smooth(method="lm", linetype="dashed", color="red")
+  # guides(
+  #   color=guide_legend("Eligibility Threshold")
+  # ) +
+  labs(
+    y="Log population",
+    x="% white-only"
   )
-anova
 ```
