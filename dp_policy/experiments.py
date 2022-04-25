@@ -93,6 +93,28 @@ def titlei_grid(
 
     if print_results:
         prefixes = ["est", "dp", "dpest"]
+
+        for e, alloc in results.groupby("epsilon"):
+            if e in print_results:
+                print(f"--- eps={e} ---")
+                data_error = alloc["est_children_eligible"] \
+                    - alloc["true_children_eligible"]
+                dp_error = alloc["dpest_children_eligible"] \
+                    - alloc["est_children_eligible"]
+                s = 0.5
+                plt.scatter(
+                    alloc["true_children_eligible"], data_error,
+                    s, label="data"
+                )
+                plt.scatter(
+                    alloc["true_children_eligible"], dp_error,
+                    s, label="dp"
+                )
+                plt.legend()
+                plt.xlabel("# children in poverty")
+                plt.ylabel("Noise")
+                plt.show()
+
         for prefix in prefixes:
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
