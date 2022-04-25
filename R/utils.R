@@ -48,7 +48,7 @@ clean = function(df) {
       median_income_est = median_household_income_dollars_income_and_benefits_in_2019_inflation_adjusted_dollars_est,
       pop_density = true_pop_total / aland
     ) %>% mutate(
-      # misalloc in terms of true grant total - TODO make sure this matches, normalize before this
+      # misalloc in terms of true grant total
       misalloc_dp = dp_grant_total - true_grant_total,
       misalloc_sampling = est_grant_total - true_grant_total,
       misalloc_dp_sampling = dpest_grant_total - true_grant_total,
@@ -872,4 +872,3 @@ plot_gam = function(viz, plotname) {
   
   check(viz)
 }
-
