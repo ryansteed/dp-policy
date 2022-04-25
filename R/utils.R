@@ -655,7 +655,7 @@ run_regs = function(df, sampling_only, savepath) {
 }
 
 gamtabs_summary = function(gam, ...) {
-  s = summary(gam_mr)
+  s = summary(gam)
   gamtabs(gam, caption=sprintf(
     "R-sq. (adj) = %.4f, Deviance explained = %.2f%%, -REML = %.4e, Scale est. = %.4e, n = %d",
     s$r.sq,
