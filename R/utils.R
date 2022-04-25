@@ -744,7 +744,7 @@ regression_tables = function(experiment_name, sampling_only, trials) {
   gamtabs(gam_mr_interact, label="Demographic GAN with interactions")
   sink()
   print(
-    xtable(anova(gam_mr, gam_mr_interact)),
+    xtable(anova(gam_mr, gam_mr_interact, test="F")),
     file=sprintf("plots/tables/%s_anova_gam_interact.tex", experiment_name)
   )
 }
