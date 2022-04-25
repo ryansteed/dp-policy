@@ -1,0 +1,55 @@
+---
+title: "Exploration"
+author: "Ryan Steed"
+output: html_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r deps}
+source("R/utils.R")
+```
+
+# Explaining disparities
+Why do racial groups have different outcomes? Two possible explanations: distance from eligibility thresholds, and differences in natural variance.
+
+## Distances from eligibility thresholds
+```{r}
+experiment = load_experiment("baseline", 1)
+experiment
+```
+```{r}
+thresholds = data.frame(raw=c(10, 6500, 10), prop=c(0.02, 0.15, 0.05), grant=c("Basic", "Concentration", "Targeted"))
+
+ggplot(experiment, aes(x=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)), y=prop_white)) +
+  geom_point(alpha=0.5, size=0.25) +
+  geom_vline(data=thresholds, aes(xintercept=log(raw), color=grant)) +
+  guides(
+    color=guide_legend("Eligibility Threshold")
+  )
+
+ggplot(experiment, aes(x=log(true_children_eligible/true_children_total), y=prop_white)) +
+  geom_point(alpha=0.5, size=0.25) +
+  geom_vline(data=thresholds, aes(xintercept=log(prop), color=grant)) +
+  guides(
+    color=guide_legend("Eligibility Threshold")
+  )
+```
+
+## Differences in natural variance
+```{r}
+experiment = load_experiment("baseline", 10)
+experiment
+```
+
+```{r}
+anova = experiment %>%
+  group_by(state_fips_code, district_id) %>%
+  summarise(
+    avg_abs_noise_data = mean(abs(est_children_eligible - true_children_eligible)),
+    avg_abs_noise_dp = mean(abs(dpest_children_eligible - est_children_eligible))
+  )
+anova
+```
