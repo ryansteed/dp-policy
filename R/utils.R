@@ -654,7 +654,17 @@ run_regs = function(df, sampling_only, savepath) {
   return(gam_mr)
 }
 
-
+gamtabs_summary = function(gam, ...) {
+  s = summary(gam_mr)
+  gamtabs(gam, caption=sprintf(
+    "R-sq. (adj) = %.4f, Deviance explained = %.2f%%, -REML = %.4e, Scale est. = %.4e, n = %d",
+    s$r.sq,
+    s$dev.expl*100,
+    s$sp.criterion["REML"],
+    s$scale,
+    s$n
+  ), ...)
+}
 
 regression_tables = function(experiment_name, sampling_only, trials) {
   if (missing(trials)) {
@@ -741,17 +751,19 @@ regression_tables = function(experiment_name, sampling_only, trials) {
     data=df_reg
   )
   sink(sprintf("plots/tables/%s_interact.tex", experiment_name))
-  gamtabs(gam_mr_interact, label="Demographic GAN with interactions")
+  gamtabs_summary(gam_mr_interact, label="Demographic GAN with interactions")
   sink()
-  print(
-    xtable(anova(gam_mr, gam_mr_interact, test="F")),
-    file=sprintf("plots/tables/%s_anova_gam_interact.tex", experiment_name)
+  stargazer(
+    anova.gam(gam_mr, gam_mr_interact, test="F"),
+    type="latex",
+    summary=FALSE,
+    out=sprintf("plots/tables/%s_anova_gam_interact.tex", experiment_name)
   )
 }
 
 gam_table = function(gam, savepath) {
   sink(savepath)
-  gamtabs(
+  gamtabs_summary(
     gam,
     label="Demographic GAM",
     snames=c(
