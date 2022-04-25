@@ -115,6 +115,21 @@ def titlei_grid(
                 plt.ylabel("Noise")
                 plt.show()
 
+                plt.scatter(
+                    alloc["true_children_eligible"],
+                    data_error/alloc["true_children_eligible"],
+                    s, label="data"
+                )
+                plt.scatter(
+                    alloc["true_children_eligible"],
+                    dp_error/alloc["true_children_eligible"],
+                    s, label="dp"
+                )
+                plt.legend()
+                plt.xlabel("# children in poverty")
+                plt.ylabel("Noise per child in poverty")
+                plt.show()
+
         for prefix in prefixes:
             print("##", prefix)
             for e, alloc in results.groupby("epsilon"):
