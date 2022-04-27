@@ -502,7 +502,7 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
   return(plt)
 }
 
-plot_ru_by_race = function(comparison, alpha) {
+plot_ru_by_race = function(comparison, marginal, alpha) {
   if (missing(alpha)) {
     alpha = 0.01
   }
@@ -510,17 +510,24 @@ plot_ru_by_race = function(comparison, alpha) {
   
   comparison = comparison %>%
     mutate(
-      dp_moe = qnorm(1-alpha/2) * dp_sampling_benefit_per_child_eligible_std_error,
+      avg = ifelse(rep(marginal, nrow(comparison)), diff_benefit_per_child_eligible_mean, dp_sampling_benefit_per_child_eligible_mean),
+      std_error = ifelse(rep(marginal, nrow(comparison)), diff_benefit_per_child_eligible_std_error, dp_sampling_benefit_per_child_eligible_std_error),
+      moe = qnorm(1-alpha/2) * std_error
     )
+  print(comparison$avg)
   
-  plt = ggplot(comparison, aes(x=treatment, y=dp_sampling_benefit_per_child_eligible_mean)) +
-    geom_errorbar(aes(ymin=dp_sampling_benefit_per_child_eligible_mean - dp_moe, ymax = dp_sampling_benefit_per_child_eligible_mean + dp_moe, color=race), width=0.1) +
+  plt = ggplot(comparison, aes(x=treatment, y=avg)) +
+    geom_errorbar(aes(ymin=avg - moe, ymax = avg + moe, color=race), width=0.1) +
     geom_line(aes(color=race)) +
     geom_point(aes(color=race)) +
     scale_x_continuous(trans='log10') +
     scale_color_brewer(palette="Accent") +
     xlab("Privacy parameter ε") +
-    ylab("Race-weighted misallocation per eligible child") +
+    ylab(ifelse(
+      marginal,
+      "Marginal race-weighted misallocation per eligible child",
+      "Race-weighted misallocation per eligible child"
+    )) +
     labs(
       color = ""
     ) +
@@ -556,8 +563,10 @@ plot_race = function(name, trials, kind, ncol) {
     print("Also plotting R-U curves")
     # for epsilon experiment, disparities are too large to see if we include 0.001
     comparison = comparison %>% filter(treatment > 0.001)
-    plt = plot_ru_by_race(comparison)
+    plt = plot_ru_by_race(comparison, FALSE)
     ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+    plt_marginal = plot_ru_by_race(comparison, TRUE)
+    ggsave(sprintf("plots/race/ru_marginal_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
   }
   
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
