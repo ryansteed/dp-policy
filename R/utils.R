@@ -519,7 +519,7 @@ plot_ru_by_race = function(comparison, alpha) {
     geom_point(aes(color=race)) +
     scale_x_continuous(trans='log10') +
     scale_color_brewer(palette="Accent") +
-    xlab("Epsilon") +
+    xlab("Privacy parameter ε") +
     ylab("Race-weighted misallocation per eligible child") +
     labs(
       color = ""
@@ -554,11 +554,10 @@ plot_race = function(name, trials, kind, ncol) {
   print("Plotting...")
   if (name == "epsilon") {
     print("Also plotting R-U curves")
-    plt = plot_ru_by_race(comparison)
-    ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
-
     # for epsilon experiment, disparities are too large to see if we include 0.001
     comparison = comparison %>% filter(treatment > 0.001)
+    plt = plot_ru_by_race(comparison)
+    ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
   }
   
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
