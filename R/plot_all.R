@@ -5,14 +5,14 @@ trials_appendix = 250
 gam_trials = 100
 
 for (experiment_name in c(
-  "baseline",
-  "hold_harmless",
-  "post_processing",
-  "thresholds",
-  "moving_average_truth=average",
-  "budget",
-  "epsilon",
-  "sampling"
+  # "baseline",
+  # "hold_harmless",
+  # "post_processing",
+  # "thresholds",
+  # "moving_average_truth=average",
+  # "budget",
+  "epsilon"
+  # "sampling"
 )) {
   print("\n")
   print(experiment_name)
