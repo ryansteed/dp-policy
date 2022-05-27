@@ -128,8 +128,31 @@ def district_id_from_name(df, name, state=None):
     return ind[0]
 
 
-def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
+def get_inputs(
+    year,
+    baseline="prelim",
+    avg_lag=0,
+    verbose=True,
+    use_official_children=False
+):
+    """Load the inputs for calculating title i allocations
 
+    Args:
+        year (int): _description_
+        baseline (str, optional): what official dep ed file to use as a
+            baseline. Options are "prelim", "final", and "revfinal." Defaults
+            to "prelim".
+        avg_lag (int, optional): Whether to average, and by how many years.
+            Defaults to 0.
+        verbose (bool, optional): Defaults to True.
+        use_official_children (bool, optional): Whether to use the official
+            # total children from Dep Ed, instead of the SAIPE # of children.
+            # of children in poverty will always be from SAIPE. Designed for
+            validation purposes. Defaults to False.
+
+    Returns:
+        pd.DataFrame: combined dataframe of inputs for use in an allocator.
+    """
     # official ESEA data
     if year < 2020:
         print("[WARN] Using official data for 2020 instead.")
@@ -146,11 +169,10 @@ def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
         'Sort C',
         'State',
         'Resident Pop.',
-        '5-17 Pop.',
         # 'Name'
     ])
     official.columns = [
-        f"official_{c.lower().replace(' ', '_')}" if c != "Name" else c
+        f"official_{c.lower().replace(' ', '_')}" if c != 'Name' else c
         for c in official.columns
     ]
 
@@ -189,6 +211,10 @@ def get_inputs(year, baseline="prelim", avg_lag=0, verbose=True):
     # calculate coefficient of variation
     inputs = official.join(saipe_stacked.drop(columns="Name"), how="inner")\
         .astype({'Name': 'string'})
+
+    if use_official_children:
+        # replace SAIPE # children with official # children
+        inputs["Estimated Population 5-17"] = inputs['official_5-17_pop.']
 
     return inputs
 

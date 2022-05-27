@@ -153,7 +153,8 @@ class Authorizer(Allocator):
         return appropriation
 
     def _normalize(
-        self, grant_type, prefix, appropriation, hold_harmless=None
+        self, grant_type, prefix, appropriation,
+        hold_harmless=None, state_minimum=False
     ):
         # -- DEPRECATED by new official file --
         # get this year's budget
@@ -166,25 +167,106 @@ class Authorizer(Allocator):
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
 
-        # available budget is the full budget minus hold harmless districts
-        remaining_budget = appropriation - self.estimates.loc[
-            hold_harmless, f"{prefix}_grant_{grant_type}"
-        ].sum()
         current_budget = \
             self.estimates[f"{prefix}_grant_{grant_type}"].sum()
-        # redistribute the remaining budget between non-harmless districts
-        self.estimates.loc[
-            ~hold_harmless, f"{prefix}_grant_{grant_type}"
-        ] = \
-            Authorizer.normalize_to_budget(
-                self.estimates.loc[
-                    ~hold_harmless, f"{prefix}_grant_{grant_type}"
-                ], remaining_budget
+
+        # do a round of hold harmless normalization
+        # (to get the alloc instead of auth amounts)
+        self._normalize_segment(
+                np.ones(len(self.estimates)).astype(bool),
+                hold_harmless,
+                grant_type, prefix,
+                appropriation
             )
+
+        if state_minimum:
+            glob_min = \
+                SonnenbergAuthorizer._state_minimum_global(grant_type)
+            formula_children = self.estimates[f"{prefix}_children_eligible"]\
+                .where(
+                    self.estimates[f"{prefix}_eligible_{grant_type}"],
+                    0
+                )
+            state_eligible = formula_children\
+                .groupby("State FIPS Code").transform('sum')
+            # nat'l avg per-pupil payment (???)
+            napp = appropriation \
+                / self.estimates[f"{prefix}_children_total"].sum()
+            eligib_comp = state_eligible * 1.5 * napp
+            if grant_type == "concentration":
+                # for concentration, this amount is at minimum 340000
+                eligib_comp = np.clip(eligib_comp, 340000, None)
+
+            # the state minimum is the smaller of
+            state_minimums = np.minimum(
+                # 1) the global minimum - derived from the official
+                # FY 2021 state allocs
+                np.ones(len(self.estimates)) * glob_min,
+                # and 2) the average of
+                1/2 * (
+                    # a) global minimum and
+                    # b) the state's elibility count * 1.5 * avg SPPE
+                    glob_min + eligib_comp
+                )
+            )
+            # identify LEAs in states under the minimum
+            under_minimum = self.estimates[f"{prefix}_grant_{grant_type}"]\
+                .groupby("State FIPS Code").transform('sum') < state_minimums
+            if self.verbose:
+                print(
+                    "These states meet the state minimum:",
+                    np.unique(
+                        under_minimum[under_minimum].index
+                        .get_level_values("State FIPS Code").values
+                    )
+                )
+
+            # first, normalize all the over-minimum states
+            total_minimum = state_minimums[under_minimum]\
+                .groupby("State FIPS Code").first().sum()
+            self._normalize_segment(
+                ~under_minimum,
+                hold_harmless,
+                grant_type, prefix,
+                appropriation - total_minimum
+            )
+
+            # then normalize the under-minimum states, state-by-state
+            for _, group in self.estimates[under_minimum].groupby(
+                "State FIPS Code"
+            ):
+                minimum = state_minimums[group.index].iloc[0]
+                self._normalize_segment(
+                    self.estimates.index.isin(group.index),
+                    hold_harmless,
+                    grant_type, prefix,
+                    minimum
+                )
+
         if self.verbose:
             print(
                 f"{current_budget} authorized for {grant_type} reduced "
                 f"to {appropriation} allocated."
+            )
+
+    def _normalize_segment(
+        self,
+        segment, hold_harmless,
+        grant_type, prefix,
+        segment_appropriation
+    ):
+        # available budget is the full budget minus hold harmless districts
+        remaining_budget = segment_appropriation - self.estimates.loc[
+                segment & hold_harmless, f"{prefix}_grant_{grant_type}"
+            ].sum()
+        # redistribute the remaining budget between non-harmless districts
+        self.estimates.loc[
+            segment & ~hold_harmless, f"{prefix}_grant_{grant_type}"
+        ] = \
+            Authorizer.normalize_to_budget(
+                self.estimates.loc[
+                    segment & ~hold_harmless, f"{prefix}_grant_{grant_type}"
+                ], remaining_budget
             )
 
     @staticmethod
@@ -204,6 +286,12 @@ class SonnenbergAuthorizer(Authorizer):
         **kwargs
     ):
         self.hold_harmless = kwargs.pop('hold_harmless', False)
+        self.state_minimum = kwargs.pop('state_minimum', False)
+        if self.state_minimum:
+            print(
+                "[WARN] State minimum works using 2021 data. "
+                "Will be wrong for earlier years."
+            )
         self.thresholder = kwargs.pop('thresholder', HardThresholder())
         super().__init__(*args, **kwargs)
 
@@ -211,8 +299,8 @@ class SonnenbergAuthorizer(Authorizer):
         self, **kwargs
     ) -> pd.DataFrame:
         super().allocations(**kwargs)
-        if self.hold_harmless:
-            self._hold_harmless()
+        if self.hold_harmless or self.state_minimum:
+            self._provisions()
         return self.estimates
 
     def grant_types(self):
@@ -354,9 +442,12 @@ class SonnenbergAuthorizer(Authorizer):
 
         self.calc_total()
 
-    def _hold_harmless(self):
+    def _provisions(self):
         if self.verbose:
-            print("Applying hold harmless")
+            if self.hold_harmless:
+                print("Applying hold harmless")
+            if self.state_minimum:
+                print("Applying state minimum")
 
         # load last year's allocs - watch out for endogeneity
         # get this year's budget
@@ -365,17 +456,16 @@ class SonnenbergAuthorizer(Authorizer):
                 self.estimates[f"official_{grant_type}_hold_harmless"]
             appropriation = self._calc_appropriation_total(grant_type)
             for prefix in self.prefixes:
-                harmless_rate = SonnenbergAuthorizer._hold_harmless_rate(
+                # hold harmless
+                self._harmless_rate = SonnenbergAuthorizer._hold_harmless_rate(
                     self.estimates[f"{prefix}_children_eligible"] /
                     self.estimates[f"{prefix}_children_total"]
                 )
-                self._hold_harmless_recursive(
+                self._provisions_recursive(
                     0,
-                    np.zeros(len(self.estimates)).astype(bool),
                     prefix,
                     grant_type,
                     appropriation,
-                    harmless_rate,
                     alloc_previous
                 )
 
@@ -386,55 +476,74 @@ class SonnenbergAuthorizer(Authorizer):
                 for grant_type in self.grant_types()
             ]].sum().sum()
             print(
-                "After hold harmless, appropriation is",
+                "After provision(s), appropriation is",
                 total_approp,
                 "and true allocation is",
                 self.estimates.true_grant_total.sum()
             )
 
-    def _hold_harmless_recursive(
+    def _provisions_recursive(
         self,
         depth,
-        hist_harmless,
         prefix,
         grant_type,
         appropriation,
-        harmless_rate,
         alloc_previous,
+        held_harmless=None,
         max_depth=10
     ):
-        hold_harmless = self._excessive_loss(
-            prefix, grant_type, alloc_previous, harmless_rate
-        )
-        if not hold_harmless.any():
-            return
-        if self.verbose and depth > 0:
-            print(
-                "Hold harmless iter", depth,
-                f"- {hold_harmless.sum()} hold harmless districts remaining"
+        # assume no LEAs in violation of provisions
+        leas_in_violation = np.zeros(len(self.estimates)).astype(bool)
+
+        if self.hold_harmless:
+            if held_harmless is None:
+                held_harmless = np.zeros(len(self.estimates)).astype(bool)
+            # identify LEAs suffering excessive harm
+            hold_harmless = self._excessive_loss(
+                prefix, grant_type, alloc_previous, self._harmless_rate
             )
-        if depth > max_depth:
+            if self.verbose and depth > 0:
+                print(
+                    "Hold harmless iter", depth,
+                    f"- {hold_harmless.sum()} hold harm districts remaining"
+                )
+            # limit losses to the appropriate harmless rate
+            if hold_harmless.any():
+                held_harmless = held_harmless | hold_harmless
+                leas_in_violation = leas_in_violation | hold_harmless
+                self.estimates.loc[
+                    hold_harmless, f"{prefix}_grant_{grant_type}"
+                ] = alloc_previous * self._harmless_rate
+                self._normalize(
+                    grant_type, prefix, appropriation,
+                    hold_harmless=held_harmless,
+                    state_minimum=self.state_minimum
+                )
+        else:
+            self._normalize(
+                grant_type, prefix, appropriation,
+                state_minimum=self.state_minimum
+            )
+
+        # once no LEAs are in violation, finish
+        if not leas_in_violation.any():
+            return
+
+        if depth >= max_depth:
+            if self.hold_harmless:
+                print(f"[WARN]: {hold_harmless.sum()} not held harmless.")
             print(
-                f"[WARN]: {hold_harmless.sum()} not held harmless."
-                f"Could not converge after {max_depth} iterations."
+                f"[WARN] Could not converge after {max_depth} iterations."
             )
             return
-        # limit losses to harmless rate
-        hist_harmless = hold_harmless | hist_harmless
-        self.estimates.loc[hold_harmless, f"{prefix}_grant_{grant_type}"] = \
-            alloc_previous * harmless_rate
-        self._normalize(
-            grant_type, prefix, appropriation,
-            hold_harmless=hist_harmless
-        )
-        return self._hold_harmless_recursive(
+
+        return self._provisions_recursive(
             depth+1,
-            hist_harmless,
             prefix,
             grant_type,
             appropriation,
-            harmless_rate,
             alloc_previous,
+            held_harmless=held_harmless,
             max_depth=max_depth
         )
 
@@ -457,3 +566,15 @@ class SonnenbergAuthorizer(Authorizer):
                 0.95
             )
         )
+
+    @staticmethod
+    def _state_minimum_global(grant_type):
+        # drawing this manually from the FY 2021 state-level data
+        # NOTE: only works (truly) for 2021 data
+        if grant_type == "basic":
+            return 17744098
+        if grant_type == "concentration":
+            return 3378479
+        if grant_type == "targeted":
+            return 15083659
+        raise ValueError(f"Unmatched grant type: {grant_type}")
