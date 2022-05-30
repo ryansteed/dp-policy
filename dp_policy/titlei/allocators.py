@@ -1,23 +1,40 @@
 from dp_policy.titlei.utils import \
-    weighting, get_allocation_data
+    weighting
 from dp_policy.titlei.thresholders import Threshold, HardThresholder
 
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
+
+from typing import Tuple, List
 
 
 class Allocator:
     def __init__(
         self,
-        estimates,
-        prefixes=("true", "est", "dp", "dpest"),
-        congress_cap=0.4,
-        adj_sppe_bounds=[0.32, 0.48],
-        adj_sppe_bounds_efig=[0.34, 0.46],
-        appropriation=None,
-        verbose=False
+        estimates: pd.DataFrame,
+        prefixes: Tuple[str] = ("true", "est", "dp", "dpest"),
+        congress_cap: float = 0.4,
+        adj_sppe_bounds: List[float] = [0.32, 0.48],
+        adj_sppe_bounds_efig: List[float] = [0.34, 0.46],
+        appropriation: float = None,
+        verbose: bool = False
     ):
+        """Class for allocating Title I funds.
+
+        Args:
+            estimates (pd.DataFrame): The poverty estimates, including
+                randomized estimates.
+            prefixes (Tuple[str], optional): Prefixes for different kinds of
+                estimates. Defaults to ("true", "est", "dp", "dpest").
+            congress_cap (float, optional): Congressional cap. Defaults to 0.4.
+            adj_sppe_bounds (List[float], optional): Bounds on adjusted SPPE.
+                Defaults to [0.32, 0.48].
+            adj_sppe_bounds_efig (List[float], optional): Bounds on adjusted
+                SPPE for EFIG grants. Defaults to [0.34, 0.46].
+            appropriation (float, optional): Total congressional appropriation.
+                Defaults to None.
+            verbose (bool, optional): Defaults to False.
+        """
         self.estimates = estimates
         self.prefixes = prefixes
         self.congress_cap = congress_cap
@@ -28,9 +45,20 @@ class Allocator:
 
     def allocations(
         self,
-        normalize=True
+        normalize: bool = False
     ) -> pd.DataFrame:
+        """Compute allocations.
+
+        Args:
+            normalize (bool, optional): Whether to normalize the authorization
+                amounts. Defaults to False.
+
+        Returns:
+            pd.DataFrame: Estimates dataframe with computed allocations added.
+        """
         self.calc_auth()
+        if normalize:
+            self.normalize()
         return self.estimates
 
     def calc_auth(self):
@@ -93,6 +121,9 @@ class AbowdAllocator(Allocator):
 
 
 class Authorizer(Allocator):
+    """An allocator that uses a normalization strategy to convert
+    authorization amounts to allocation amounts.
+    """
     def grant_types(self):
         raise NotImplementedError
 
@@ -128,7 +159,19 @@ class Authorizer(Allocator):
                 )
         return self.estimates
 
-    def _calc_appropriation_total(self, grant_type):
+    def _calc_appropriation_total(
+        self,
+        grant_type: str
+    ) -> float:
+        """Using official figures, calculate appropriation for this grant type.
+
+        Args:
+            grant_type (str): The grant type. One of "basic", "concentration",
+                "targeted".
+
+        Returns:
+            float: The total appropration for this grant type.
+        """
         appropriation = self.estimates[f"official_{grant_type}_alloc"].sum()
         if self.appropriation_total is not None:
             if self.verbose:
@@ -153,17 +196,26 @@ class Authorizer(Allocator):
         return appropriation
 
     def _normalize(
-        self, grant_type, prefix, appropriation,
-        hold_harmless=None, state_minimum=False
+        self,
+        grant_type: str,
+        prefix: str,
+        appropriation: float,
+        hold_harmless: pd.Series = None,
+        state_minimum: bool = False
     ):
-        # -- DEPRECATED by new official file --
-        # get this year's budget
-        # true_allocs = get_allocation_data("../data/titlei-allocations_20")
-        # actual_budget = true_allocs["HistAlloc"].sum()
+        """Normalize funding amounts, honoring special provisions.
 
-        # print(actual_budget)
-        # print(len(true_allocs))
-
+        Args:
+            grant_type (str):  The grant type. One of "basic", "concentration",
+                "targeted".
+            prefix (str): Prefix for estimate. One of
+                ("true", "est", "dp", "dpest").
+            appropriation (float): The total appropriation available.
+            hold_harmless (pd.DataFrame, optional): If provided, which
+                districts are held harmless. Defaults to None.
+            state_minimum (bool, optional): Whether to apply the state minimum.
+                Defaults to False.
+        """
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
 
@@ -251,9 +303,11 @@ class Authorizer(Allocator):
 
     def _normalize_segment(
         self,
-        segment, hold_harmless,
-        grant_type, prefix,
-        segment_appropriation
+        segment: pd.Series,
+        hold_harmless: pd.Series,
+        grant_type: str,
+        prefix: str,
+        segment_appropriation: float
     ):
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
@@ -280,6 +334,9 @@ class Authorizer(Allocator):
 
 
 class SonnenbergAuthorizer(Authorizer):
+    """Authorizer allocator described by Sonnenberg (2007). Official process
+    used by Dep Ed.
+    """
     def __init__(
         self,
         *args,
@@ -324,20 +381,6 @@ class SonnenbergAuthorizer(Authorizer):
             # For basic grants, LEA must have
             # >10 eligible children
             # AND >2% eligible
-
-            # count_eligible = \
-            #     self.estimates[f"{prefix}_children_eligible"] > 10
-            # share_eligible = (
-            #     self.estimates[f"{prefix}_children_eligible"]
-            #     / self.estimates[f"{prefix}_children_total"]
-            # ) > 0.02
-            # self.estimates[f"{prefix}_eligible_basic"] = \
-            #     count_eligible & share_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f"{prefix}_eligible_basic"],
-            #     f"{prefix}_grant_basic"
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f"{prefix}_grant_basic"],
@@ -359,20 +402,6 @@ class SonnenbergAuthorizer(Authorizer):
             # b) 15% of pop. is eligible
             self.estimates[f"{prefix}_grant_concentration"] = \
                 self.estimates[f"{prefix}_grant_basic"]
-
-            # count_eligible = \
-            #     self.estimates[f"{prefix}_children_eligible"] > 6500
-            # prop = self.estimates[f"{prefix}_children_eligible"] \
-            #     / self.estimates[f"{prefix}_children_total"]
-            # prop_eligible = prop > 0.15
-            # self.estimates[f"{prefix}_eligible_concentration"] = \
-            #     self.estimates[f"{prefix}_eligible_basic"] & \
-            #     (count_eligible | prop_eligible)
-            # self.estimates.loc[
-            #     ~self.estimates[f"{prefix}_eligible_concentration"],
-            #     f"{prefix}_grant_concentration"
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f"{prefix}_grant_concentration"],
@@ -403,19 +432,6 @@ class SonnenbergAuthorizer(Authorizer):
             ] = weighted_eligible * adj_sppe
             # for targeted grants, LEAs must:
             # meet basic eligibility AND have >5% eligible
-
-            # count_eligible = \
-            #     self.estimates[f"{prefix}_children_eligible"] > 10
-            # share_eligible = self.estimates[f"{prefix}_children_eligible"] \
-            #     / self.estimates[f"{prefix}_children_total"]
-            # prop_eligible = share_eligible > 0.05
-            # self.estimates[f"{prefix}_eligible_targeted"] = \
-            #     count_eligible & prop_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f"{prefix}_eligible_targeted"],
-            #     f"{prefix}_grant_targeted"
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f"{prefix}_grant_targeted"],

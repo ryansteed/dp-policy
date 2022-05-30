@@ -1,3 +1,4 @@
+from typing import Tuple
 import pandas as pd
 import numpy as np
 import re
@@ -5,10 +6,20 @@ import os
 from math import floor, ceil
 
 import dp_policy.config as config
-from dp_policy.titlei.mechanisms import Sampled
+from dp_policy.titlei.mechanisms import Sampled, Mechanism
+
+from typing import Tuple
 
 
-def get_official_combined(path):
+def get_official_combined(path: str) -> pd.DataFrame:
+    """Load official Dept Ed data.
+
+    Args:
+        path (str): Path of file.
+
+    Returns:
+        pd.DataFrame: Return cleaned dataframe.
+    """
     allocs = get_official(
         path, "Allocations", 10, [
             "Sort C",
@@ -69,7 +80,15 @@ def get_official(path, sheet, header, columns):
     return allocs
 
 
-def get_saipe(path):
+def get_saipe(path: str) -> pd.DataFrame:
+    """Get district-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned district-level data.
+    """
     saipe = pd.read_excel(path, header=2)\
         .set_index(["State FIPS Code", "District ID"])
     saipe["cv"] = saipe.apply(
@@ -79,7 +98,15 @@ def get_saipe(path):
     return saipe
 
 
-def get_county_saipe(path):
+def get_county_saipe(path: str):
+    """Get county-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned county-level data.
+    """
     saipe = pd.read_excel(path, header=3, usecols=[
         "State FIPS Code",
         "County FIPS Code",
@@ -243,7 +270,20 @@ def _average_saipe(saipes):
     return agg.drop(columns='stderr')
 
 
-def average_saipe(year, year_lag, verbose=True):
+def average_saipe(
+    year: int, year_lag: int, verbose=True
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Get SAIPE averaged over `year_lag` years.
+
+    Args:
+        year (int): Most recent year.
+        year_lag (int): Years to average over.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: Averaged SAIPE - district- and
+            county-level.
+    """
     if verbose:
         print(
             "Averaging SAIPEs:",
@@ -263,16 +303,16 @@ def average_saipe(year, year_lag, verbose=True):
     return combined, combined_county
 
 
-def get_acs_data(path, name):
+def get_acs_data(path: str, name: str):
     """Method for loading and formatting ACS data by school district from NCES
     [website](https://nces.ed.gov/programs/edge/TableViewer/acs/2018).
 
     Args:
-        path (str): path to txt file downloaded form the link above
+        path (str): Path to txt file downloaded form the link above
+        name (str): Sheet name.
     """
     data = pd.read_csv(path, sep="|", low_memory=False)
     # strip out NA district ID's
-    # data = data[data["LEAID"] != 'N']
     # separate LEAID into FIPS code and district ID
     data["District ID"], data["State FIPS Code"] = \
         split_leaids(data.LEAID)
@@ -314,6 +354,8 @@ def get_acs_data(path, name):
 
 
 def impute_missing(original, update, verbose=True):
+    """Impute data for missing LEAs from another file.
+    """
     for c in [c for c in original.columns if c not in update.columns]:
         update.loc[:, c] = np.nan
     update_reduced = update.loc[
@@ -334,6 +376,8 @@ def impute_missing(original, update, verbose=True):
 
 
 def get_acs_unified(verbose=False):
+    """Load ACS demographic variables.
+    """
     # get public school children data
     demographics_students = get_acs_data(
         f"{config.root}/data/discrimination/CDP05.txt",
@@ -412,9 +456,17 @@ def get_sppe(path):
         .set_index("State FIPS Code")
 
 
-def median_cv(total_pop):
-    # based on the table given here
-    # https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html
+def median_cv(total_pop: float) -> float:
+    """
+    Based on the table given here:
+    https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html
+
+    Args:
+        total_pop (float): Total population of district.
+
+    Returns:
+        float: Coefficient of variation.
+    """
     if total_pop <= 2500:
         return 0.67
     elif total_pop <= 5000:
@@ -428,38 +480,19 @@ def median_cv(total_pop):
     return 0.15
 
 
-def get_allocation_data(dir: str, header=1):
-    """Fetch true Title I allocations.
-
-    Args:
-        dir (str): directory containing state-level files.
-    """
-    data = []
-    for f in os.listdir(dir):
-        state = pd.read_excel(
-            os.path.join(dir, f),
-            header=header,
-            names=["LEAID", "District", "HistAlloc"],
-            usecols=[0, 1, 2],
-            skipfooter=7,
-            na_values=["No Data", "End of Table", ""]
-        )
-        state["state"] = f
-        data.append(state)
-    df = pd.concat(data)
-    df["District ID"], df["State FIPS Code"] = \
-        split_leaids(df.LEAID)
-    return df.set_index(["State FIPS Code", "District ID"])
-
-
-def weighting(eligible, pop):
-    """
-    Gradated weighting algorithm given in
+def weighting(eligible: float, pop: float) -> float:
+    """Gradated weighting algorithm given in
     [Sonnenberg](https://nces.ed.gov/surveys/annualreports/pdf/titlei20160111.pdf).
 
     Returns weighted eligibility counts.
-    """
 
+    Args:
+        eligible (float): # of eligible children.
+        pop (float): # total children.
+
+    Returns:
+        float: Weighted count.
+    """
     # calculate weighted count based on counts
     wec_counts = 0
     for r, w in {
@@ -496,8 +529,25 @@ def weighting(eligible, pop):
 
 
 def data(
-    inputs, mechanism, sppe, sampling_kwargs={}, verbose=True
-):
+    inputs: pd.DataFrame,
+    mechanism: Mechanism,
+    sppe: pd.DataFrame,
+    sampling_kwargs: dict = {},
+    verbose: bool = True
+) -> pd.DataFrame:
+    """Prepare data needed to compute Title I allocations, including noised
+    poverty estimates and other inputs.
+
+    Args:
+        inputs (pd.DataFrame): Ground truth poverty estimates.
+        mechanism (Mechanism): Randomization mechanism.
+        sppe (pd.DataFrame): State per-pupil expenditure.
+        sampling_kwargs (dict, optional): Sampling parameters. Defaults to {}.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        pd.DataFrame: Combined dataframe of inputs and noised estimates.
+    """
     # ground truth - assume SAIPE 2019 is ground truth
     grants = inputs.rename(columns={
         "Estimated Total Population": "true_pop_total",

@@ -3,6 +3,9 @@ from tqdm.notebook import tqdm
 
 from dp_policy.experiments import titlei_funding as funding
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
+from dp_policy.titlei.mechanisms import Mechanism
+
+from typing import Tuple
 
 COLS_INDEX = ['State FIPS Code', 'District ID']
 COLS_GROUPBY = ['State FIPS Code', 'District ID', 'State Postal Code', 'Name']
@@ -10,9 +13,14 @@ COLS_GRANT = ['basic', 'concentration', 'targeted', 'total']
 
 
 def collect_results(
-    saipe, mech, sppe, num_runs=1,
-    quantiles=(0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
+    saipe: pd.DataFrame,
+    mech: Mechanism,
+    sppe: pd.DataFrame,
+    num_runs: int = 1,
+    quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
+    """Collect bootstrapped results.
+    """
     cols_keep = ["true_grant_{}".format(col) for col in COLS_GRANT] + \
                 ["est_grant_{}".format(col) for col in COLS_GRANT] + \
                 [

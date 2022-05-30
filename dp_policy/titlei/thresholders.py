@@ -4,13 +4,40 @@ import scipy.stats as stats
 from dp_policy.titlei.utils import data
 from dp_policy.titlei.utils import get_inputs
 
+import pandas as pd
+
 
 class Threshold:
-    def __init__(self, t, prop=False) -> None:
+    """Class for eligibility thresholds.
+    """
+    def __init__(
+        self,
+        t: float,
+        prop: bool = False
+    ) -> None:
+        """
+        Args:
+            t (float): The threshold.
+            prop (bool, optional): Whether this is a proportional threshold.
+                Defaults to False.
+        """
         self.t = t
         self.prop_threshold = prop
 
-    def get_mask(self, eligible, total):
+    def get_mask(
+        self,
+        eligible: pd.Series,
+        total: pd.Series
+    ) -> pd.Series:
+        """Decide which LEAs are eligible.
+
+        Args:
+            eligible (pd.Series): Number of eligible children, keyed by LEA.
+            total (pd.Series): Number of total children, keyed by LEA.
+
+        Returns:
+            pd.Series: Booleans indicating which LEAs are eligible.
+        """
         return Threshold._mask(
             self.t,
             eligible, total,
@@ -26,7 +53,14 @@ class Threshold:
 
 
 class MOEThreshold(Threshold):
-    def __init__(self, cv, alpha, *args, **kwargs) -> None:
+    """Thresholder that decreases threshold by the margin of error.
+    """
+    def __init__(self, cv: pd.Series, alpha: float, *args, **kwargs) -> None:
+        """
+        Args:
+            cv (pd.Series): Coefficients of variation, keyed by LEA.
+            alpha (float): Confidence level for MoE.
+        """
         super().__init__(*args, **kwargs)
         self.cv = cv
         self.alpha = alpha
@@ -49,6 +83,8 @@ class MOEThreshold(Threshold):
 
 
 class Thresholder:
+    """Class for implementing thresholds.
+    """
     def process(
         self,
         y,
@@ -62,6 +98,8 @@ class Thresholder:
 
 
 class DummyThresholder(Thresholder):
+    """Doesn't apply the threshold.
+    """
     def process(
         self,
         y,
@@ -72,6 +110,8 @@ class DummyThresholder(Thresholder):
 
 
 class HardThresholder(Thresholder):
+    """Hard threshold (default).
+    """
     def process(
         self,
         y,
@@ -90,7 +130,13 @@ class HardThresholder(Thresholder):
 
 
 class MOEThresholder(HardThresholder):
-    def __init__(self, alpha=0.1) -> None:
+    """MoE thresholder.
+    """
+    def __init__(self, alpha: float = 0.1) -> None:
+        """
+        Args:
+            alpha (float, optional): Confidence level. Defaults to 0.1.
+        """
         super().__init__()
         self.alpha = 0.1
 
@@ -119,7 +165,18 @@ class MOEThresholder(HardThresholder):
 
 
 class PastThresholder(HardThresholder):
-    def __init__(self, year, lag) -> None:
+    """Thresholds based on past data.
+    """
+    def __init__(
+        self,
+        year: int,
+        lag: int
+    ) -> None:
+        """
+        Args:
+            year (int): Current year data.
+            lag (int): How many years back to include.
+        """
         self.prior_estimates = None
         self.year = year
         self.lag = lag
@@ -133,11 +190,9 @@ class PastThresholder(HardThresholder):
 
 
 class RepeatThresholder(PastThresholder):
+    """Thresholds based on repeated eligibility.
+    """
     def set_prior_estimates(self, *data_args, **data_kwargs):
-        # print(
-        #     "Getting priors from years",
-        #     [self.year-i for i in range(1, self.lag+1)]
-        # )
         self.prior_estimates = [
             data(
                 get_inputs(self.year-i, verbose=False),
@@ -172,6 +227,8 @@ class RepeatThresholder(PastThresholder):
 
 
 class AverageThresholder(PastThresholder):
+    """Thresholds based on a moving average.
+    """
     def set_prior_estimates(self, *data_args, **data_kwargs):
         self.prior_estimates = data(
             get_inputs(self.year, avg_lag=self.lag, verbose=False),

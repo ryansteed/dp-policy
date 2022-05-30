@@ -8,8 +8,8 @@ from diffprivlib.accountant import BudgetAccountant
 
 class Mechanism:
     """
-    a class for the different privacy mechanisms we might employ to compute
-    poverty estimates
+    A class for the different privacy mechanisms we employ to compute
+    poverty estimates.
     """
     def __init__(
         self, sensitivity=2.0, round=False, clip=True
@@ -36,6 +36,8 @@ class Mechanism:
 
 
 class GroundTruth(Mechanism):
+    """No randomization.
+    """
     def __init__(self, *args, **kwargs):
         pass
 
@@ -46,11 +48,15 @@ class GroundTruth(Mechanism):
 
 
 class DummyMechanism():
+    """No randomization.
+    """
     def randomise(self, x):
         return x
 
 
 class DiffPriv(Mechanism):
+    """Differentially private mechanisms wrapping `diffprivlib`.
+    """
     def __init__(
         self, epsilon, delta, *args, **kwargs
     ):
@@ -84,10 +90,6 @@ class DiffPriv(Mechanism):
 
 
 class Laplace(DiffPriv):
-    """
-    Following Abowd & Schmutte (2019), return $\\hat{E}_l = E_l + e_l$,
-    where $e_l \\sim Laplace(1/\\epsilon)$.
-    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mechanism = LaplaceMech(
@@ -108,12 +110,23 @@ class Gaussian(DiffPriv):
 
 
 class Sampled(Mechanism):
+    """Mechanism for simulating sampling errors.
+    """
     def __init__(
         self,
         *args,
-        multiplier=1.0, distribution="gaussian",
+        multiplier: float = 1.0,
+        distribution: str = "gaussian",
         **kwargs
     ):
+        """
+        Args:
+            multiplier (float, optional): Scales sampling noise by a constant.
+                Defaults to 1.0.
+            distribution (str, optional): Distribution of sampling noise.
+                Supported options are 'gaussian' and 'laplace'. Defaults to
+                "gaussian".
+        """
         super().__init__(*args, **kwargs)
         # these are fixed, because sampling error
         # is theoretically immutable by algo means.

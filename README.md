@@ -27,12 +27,12 @@ dp_policy run_all
 To sync discrimination files:
 
 ```bash
-rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-acs/results/policy_experiments
+rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-policy/results/policy_experiments
 ```
 
 To sync data files:
 ```bash
-rsync -avz data/* heinz:/home/rsteed/dp-acs/data
+rsync -avz data/* heinz:/home/rsteed/dp-policy/data
 ```
 
 To run R files, first [set the lib path](https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory).

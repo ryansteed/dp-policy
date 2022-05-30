@@ -25,10 +25,11 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/api.py#L1-L40" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/api.py#L1-L54" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">from dp_policy.experiments import Experiment
 import click
+from typing import Dict
 
 
 @click.group(chain=True)
@@ -45,6 +46,13 @@ def run(
     just_join: bool = False,
     **kwargs
 ):
+    &#34;&#34;&#34;Run an experiment and save the results.
+
+    Args:
+        name (str): The experiment name.
+        just_join (bool, optional): Whether to just join existing results to
+            covariates and save the results. Defaults to False.
+    &#34;&#34;&#34;
     print(&#34;--- Running&#34;, name, &#34;---&#34;)
     print(&#34;options:&#34;, kwargs)
     experiment = Experiment.get_experiment(
@@ -60,7 +68,13 @@ def run(
 
 @cli.command(&#39;run_all&#39;)
 @click.option(&#39;--just-join&#39;, is_flag=True)
-def run_all(experiments, **options):
+def run_all(experiments: Dict[str, dict], **options):
+    &#34;&#34;&#34;Run multiple experiments.
+
+    Args:
+        experiments (Dict[str, dict]): Dictionary of experiment names mapped
+            to experiment parameters.
+    &#34;&#34;&#34;
     for name, options in experiments.items():
         run(name, **options)
 

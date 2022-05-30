@@ -1,5 +1,6 @@
 from dp_policy.experiments import Experiment
 import click
+from typing import Dict
 
 
 @click.group(chain=True)
@@ -16,6 +17,13 @@ def run(
     just_join: bool = False,
     **kwargs
 ):
+    """Run an experiment and save the results.
+
+    Args:
+        name (str): The experiment name.
+        just_join (bool, optional): Whether to just join existing results to
+            covariates and save the results. Defaults to False.
+    """
     print("--- Running", name, "---")
     print("options:", kwargs)
     experiment = Experiment.get_experiment(
@@ -31,7 +39,13 @@ def run(
 
 @cli.command('run_all')
 @click.option('--just-join', is_flag=True)
-def run_all(experiments, **options):
+def run_all(experiments: Dict[str, dict], **options):
+    """Run multiple experiments.
+
+    Args:
+        experiments (Dict[str, dict]): Dictionary of experiment names mapped
+            to experiment parameters.
+    """
     for name, options in experiments.items():
         run(name, **options)
 

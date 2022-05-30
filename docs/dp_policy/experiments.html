@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L1-L609" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L1-L682" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -38,23 +38,44 @@ import dp_policy.config as config
 from dp_policy.titlei.evaluation import \
     discrimination_treatments_join, save_treatments, load_treatments, \
     match_true, compare_treatments, misalloc_statistics
-from dp_policy.titlei.mechanisms import Laplace
+from dp_policy.titlei.mechanisms import Mechanism, Laplace
 from dp_policy.titlei.utils import get_inputs, data, get_sppe
-from dp_policy.titlei.allocators import SonnenbergAuthorizer
+from dp_policy.titlei.allocators import Allocator, SonnenbergAuthorizer
 from dp_policy.titlei.thresholders import \
     AverageThresholder, RepeatThresholder, DummyThresholder, MOEThresholder, \
     PastThresholder
 
+from typing import List, Union
+
 
 def titlei_funding(
-    allocator, inputs, mechanism, sppe,
-    normalize=True,
-    allocator_kwargs={}, sampling_kwargs={},
+    allocator: Allocator,
+    inputs: pd.DataFrame,
+    mechanism: Mechanism,
+    sppe: pd.DataFrame,
+    normalize: bool = True,
+    allocator_kwargs: dict = {},
+    sampling_kwargs: dict = {},
     **grants_kwargs
 ):
-    &#34;&#34;&#34;
-    Returns augmented SAIPE dataframe with randomized estimates and
-    true/randomized grant amounts.
+    &#34;&#34;&#34;Allocate Title I funding.
+
+    Args:
+        allocator (Allocator): The allocator to use.
+        inputs (pd.DataFrame): The necessary inputs for the allocator -
+            usually the SAIPE - by district.
+        mechanism (Mechanism): The randomization mechanism to use.
+        sppe (pd.DataFrame): State per-pupil education data.
+        normalize (bool, optional): Whether to normalize the authorization
+            amounts. Defaults to True.
+        allocator_kwargs (dict, optional): Parameters for the allocator.
+            Defaults to {}.
+        sampling_kwargs (dict, optional): Parameters for the sampling
+            mechanism. Defaults to {}.
+
+    Returns:
+        pd.DataFrame: Returns input dataframe with grant allocations under
+            ground truth, sampling, and privacy randomization.
     &#34;&#34;&#34;
     alloc = allocator(
         data(
@@ -68,19 +89,53 @@ def titlei_funding(
 
 
 def titlei_grid(
-    inputs, mech,
-    eps=list(np.logspace(-3, 10, num=10)) + [2.52], delta=[0.0],
-    trials=100,
-    mech_kwargs={},
-    auth=False,
-    allocator_kwargs={},
-    sampling_kwargs={},
-    verbose=True,
-    print_results=[2.52, 0.1],
-    plot_results=False,
-    alpha=0.05,
-    results=None
+    inputs: pd.DataFrame,
+    mech: Mechanism,
+    eps: list = list(np.logspace(-3, 10, num=10)) + [2.52],
+    delta: list = [0.0],
+    trials: int = 100,
+    mech_kwargs: dict = {},
+    auth: bool = False,
+    allocator_kwargs: dict = {},
+    sampling_kwargs: dict = {},
+    verbose: bool = True,
+    print_results: list = [2.52, 0.1],
+    plot_results: bool = False,
+    alpha: float = 0.05,
+    results: pd.DataFrame = None
 ):
+    &#34;&#34;&#34;Run many trials of Title I process under different privacy parameters.
+
+    Args:
+        inputs (pd.DataFrame): The necessary inputs for the allocator -
+            usually the SAIPE - by district.
+        mech (Mechanism): The randomization mechanism to use.
+        eps (list, optional): Values of epsilon to try. Defaults to
+            `list(np.logspace(-3, 10, num=10))+[2.52]`.
+        delta (list, optional): Values of delta to try. Defaults to [0.0].
+        trials (int, optional): Number of trials to run for each parameter
+            combo. Defaults to 100.
+        mech_kwargs (dict, optional): Parameters for the randomization
+            mechanism. Defaults to {}.
+        auth (bool, optional): Whether to use the raw authorization amounts.
+            Defaults to False.
+        allocator_kwargs (dict, optional): Parameters for the allocator.
+            Defaults to {}.
+        sampling_kwargs (dict, optional): Parameters for the sampling
+            mechanism. Defaults to {}.
+        verbose (bool, optional): Defaults to True.
+        print_results (list, optional): Which values of epsilon to print
+            results for. Defaults to [2.52, 0.1].
+        plot_results (bool, optional): Whether to plot results. Defaults to
+            False.
+        alpha (float, optional): Confidence level for confidence bands.
+            Defaults to 0.05.
+        results (pd.DataFrame, optional): Pre-computed results to plot. If
+            provided, will skip grid calculation. Defaults to None.
+
+    Returns:
+        pd.DataFrame: Results grid.
+    &#34;&#34;&#34;
     if results is None:
         allocations = []
         thresholder = allocator_kwargs.get(&#39;thresholder&#39;)
@@ -215,71 +270,36 @@ def titlei_grid(
                 )
                 plt.show()
 
-                # for i in range(len(eps)):
-                #     e = eps[i]
-                #     alloc = allocations[i][allocations[i][
-                #         &#34;State Postal Code&#34;] == &#34;MI&#34;
-                #     ]
-                #     alloc = alloc.sort_values(f&#34;true_grant_{grant_type}&#34;)
-                #     plt.scatter(
-                #         range(len(alloc)),
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;] /
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;].sum(),
-                #         s=2, alpha=0.3, label=f&#34;eps={e}&#34;
-                #     )
-                # plt.scatter(
-                #     range(len(alloc)),
-                #     alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #     sum(alloc[f&#34;true_grant_{grant_type}&#34;]),
-                #     s=2, alpha=0.3, label=&#34;true&#34;
-                # )
-                # ax = plt.gca()
-                # ax.legend()
-                # ax.axes.xaxis.set_ticks([])
-                # ax.set_yscale(&#39;log&#39;)
-                # plt.xlabel(&#34;District (sorted by true alloc)&#34;)
-                # plt.ylabel(&#34;Allocation as % of total&#34;)
-                # plt.title(f&#34;{grant_type} grants for Michigan&#34;)
-                # plt.show()
-
-                # for i in range(len(eps)):
-                #     e = eps[i]
-                #     alloc = allocations[i][allocations[i][
-                #         &#34;State Postal Code&#34;] == &#34;MI&#34;
-                #     ]
-                #     alloc[&#39;err_prop&#39;] = (
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;{prefix}_grant_{grant_type}&#34;]) -
-                #         alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;true_grant_{grant_type}&#34;])
-                #     ) * 1e6
-                #     plt.scatter(
-                #         alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;true_grant_{grant_type}&#34;]),
-                #         alloc.err_prop, s=3, alpha=0.4, label=f&#34;eps={e}&#34;
-                #     )
-                # ax = plt.gca()
-                # ax.legend()
-                # ax.set_xscale(&#39;log&#39;)
-                # ax.set_yscale(&#39;log&#39;)
-                # plt.xlabel(&#34;True allocation as % of total&#34;)
-                # plt.ylabel(&#34;Misallocation per million as % of total&#34;)
-                # plt.title(f&#34;{grant_type} grants for Michigan&#34;)
-                # plt.show()
-
     return results
 
 
 class Experiment:
+    &#34;&#34;&#34;Handles running and setting experiments.
+    &#34;&#34;&#34;
     def __init__(
         self,
-        name,
-        baseline=&#34;cached&#34;,
-        year=2021,
-        trials=1000,
-        eps=[0.1],
-        delta=[0.0]
+        name: str,
+        baseline: Union[str, pd.DataFrame] = &#34;cached&#34;,
+        year: int = 2021,
+        trials: int = 1000,
+        eps: List[float] = [0.1],
+        delta: List[float] = [0.0]
     ):
+        &#34;&#34;&#34;Initialize experiment and set baseline.
+
+        Args:
+            name (str): Experiment name.
+            baseline (Union[str, pd.DataFrame], optional): What baseline
+                (control) results to use. Defaults to &#34;cached&#34;.
+            year (int, optional): What year to get inputs for. Defaults to
+                2021.
+            trials (int, optional): Number of trials to run for each condition.
+                Defaults to 1000.
+            eps (List[float], optional): Values of epsilon to try. Defaults to
+                [0.1].
+            delta (List[float], optional): Values of delta to try. Defaults to
+                [0.0].
+        &#34;&#34;&#34;
         self.name = name
         self.trials = trials
         self.eps = eps
@@ -301,6 +321,9 @@ class Experiment:
             self.baseline = baseline
 
     def _generate_baseline(self):
+        &#34;&#34;&#34;Generate the control condition. Defaults to normal Laplace
+            mechanism with no special allocation parameters.
+        &#34;&#34;&#34;
         self.baseline = titlei_grid(
             self.saipe, Laplace,
             eps=self.eps, delta=self.delta,
@@ -312,22 +335,43 @@ class Experiment:
         discrimination_treatments_join(&#34;baseline&#34;)
 
     def run(self):
+        &#34;&#34;&#34;Run the experiment, save results, and create joined covariate file.
+        &#34;&#34;&#34;
         treatments = self._get_treatments()
         save_treatments(treatments, self.name)
         self.discrimination_join()
 
     def _get_treatments(self):
+        &#34;&#34;&#34;Generate the treatment results.
+        &#34;&#34;&#34;
         raise NotImplementedError
 
     def discrimination_join(self, **join_kwargs):
+        &#34;&#34;&#34;Join the results to demographic covariates and save.
+        &#34;&#34;&#34;
         discrimination_treatments_join(self.name, **join_kwargs)
 
     def plot(self, **kwargs):
+        &#34;&#34;&#34;Print and plot the results, comparing treatments.
+        &#34;&#34;&#34;
         treatments = load_treatments(self.name)
         compare_treatments(treatments, experiment_name=self.name, **kwargs)
 
     @staticmethod
-    def get_experiment(name, *args, **kwargs):
+    def get_experiment(
+        name: str,
+        *args, **kwargs
+    ):
+        &#34;&#34;&#34;Factory class for generating experiment object from name.
+
+        Args:
+            name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
+                &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
+                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+
+        Returns:
+            Experiment: The experiment object.
+        &#34;&#34;&#34;
         experiments = {
             &#39;baseline&#39;: Baseline,
             &#39;hold_harmless&#39;: HoldHarmless,
@@ -345,6 +389,8 @@ class Experiment:
 
 
 class Baseline(Experiment):
+    &#34;&#34;&#34;Baseline condition only.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         return {
             &#39;baseline&#39;: self.baseline
@@ -352,6 +398,8 @@ class Baseline(Experiment):
 
 
 class HoldHarmless(Experiment):
+    &#34;&#34;&#34;Hold harmless and state minimum provisions.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         hold_harmless = titlei_grid(
             self.saipe, Laplace,
@@ -387,6 +435,8 @@ class HoldHarmless(Experiment):
 
 
 class PostProcessing(Experiment):
+    &#34;&#34;&#34;Post-processing variations: none, clipping, and clipping + rounding.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         none = titlei_grid(
             self.saipe, Laplace,
@@ -420,7 +470,22 @@ class PostProcessing(Experiment):
 
 
 class MovingAverage(Experiment):
-    def __init__(self, name, truth=&#34;average&#34;, **kwargs):
+    &#34;&#34;&#34;Moving average inputs, with multiple lag conditions.
+    &#34;&#34;&#34;
+    def __init__(
+        self,
+        name: str,
+        truth: str = &#34;average&#34;,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Args:
+            truth (str, optional): Baseline strategy to use. &#34;average&#34; uses
+                the 5-year average as the baseline. Defaults to &#34;average&#34;.
+
+        Raises:
+            Exception: _description_
+        &#34;&#34;&#34;
         if truth != &#34;average&#34;:
             raise Exception(
                 &#34;Not supporting truth values other than `average`.&#34;
@@ -449,6 +514,8 @@ class MovingAverage(Experiment):
 
 
 class Thresholds(Experiment):
+    &#34;&#34;&#34;Thresholding experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         # hard threshold
         hard = self.baseline
@@ -530,6 +597,8 @@ class Thresholds(Experiment):
 
 
 class Budget(Experiment):
+    &#34;&#34;&#34;Budget experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         if len(self.eps) &gt; 0:
             print(&#34;[WARN] Using first value of epsilon for budget calcs.&#34;)
@@ -588,6 +657,8 @@ class Budget(Experiment):
 
 
 class Epsilon(Experiment):
+    &#34;&#34;&#34;Privacy parameter experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         return {
             e: titlei_grid(
@@ -607,6 +678,8 @@ class Epsilon(Experiment):
 
 
 class Sampling(Experiment):
+    &#34;&#34;&#34;Sampling error experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         gaussian = {
             f&#34;Gaussian ({m})&#34;: titlei_grid(
@@ -646,25 +719,70 @@ class Sampling(Experiment):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dp_policy.experiments.titlei_funding"><code class="name flex">
-<span>def <span class="ident">titlei_funding</span></span>(<span>allocator, inputs, mechanism, sppe, normalize=True, allocator_kwargs={}, sampling_kwargs={}, **grants_kwargs)</span>
+<span>def <span class="ident">titlei_funding</span></span>(<span>allocator: <a title="dp_policy.titlei.allocators.Allocator" href="titlei/allocators.html#dp_policy.titlei.allocators.Allocator">Allocator</a>, inputs: pandas.core.frame.DataFrame, mechanism: <a title="dp_policy.titlei.mechanisms.Mechanism" href="titlei/mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, sppe: pandas.core.frame.DataFrame, normalize: bool = True, allocator_kwargs: dict = {}, sampling_kwargs: dict = {}, **grants_kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns augmented SAIPE dataframe with randomized estimates and
-true/randomized grant amounts.</p></div>
+<div class="desc"><p>Allocate Title I funding.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>allocator</code></strong> :&ensp;<code>Allocator</code></dt>
+<dd>The allocator to use.</dd>
+<dt><strong><code>inputs</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The necessary inputs for the allocator -
+usually the SAIPE - by district.</dd>
+<dt><strong><code>mechanism</code></strong> :&ensp;<code>Mechanism</code></dt>
+<dd>The randomization mechanism to use.</dd>
+<dt><strong><code>sppe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>State per-pupil education data.</dd>
+<dt><strong><code>normalize</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to normalize the authorization
+amounts. Defaults to True.</dd>
+<dt><strong><code>allocator_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Parameters for the allocator.
+Defaults to {}.</dd>
+<dt><strong><code>sampling_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Parameters for the sampling
+mechanism. Defaults to {}.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Returns input dataframe with grant allocations under
+ground truth, sampling, and privacy randomization.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L20-L38" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L22-L59" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_funding(
-    allocator, inputs, mechanism, sppe,
-    normalize=True,
-    allocator_kwargs={}, sampling_kwargs={},
+    allocator: Allocator,
+    inputs: pd.DataFrame,
+    mechanism: Mechanism,
+    sppe: pd.DataFrame,
+    normalize: bool = True,
+    allocator_kwargs: dict = {},
+    sampling_kwargs: dict = {},
     **grants_kwargs
 ):
-    &#34;&#34;&#34;
-    Returns augmented SAIPE dataframe with randomized estimates and
-    true/randomized grant amounts.
+    &#34;&#34;&#34;Allocate Title I funding.
+
+    Args:
+        allocator (Allocator): The allocator to use.
+        inputs (pd.DataFrame): The necessary inputs for the allocator -
+            usually the SAIPE - by district.
+        mechanism (Mechanism): The randomization mechanism to use.
+        sppe (pd.DataFrame): State per-pupil education data.
+        normalize (bool, optional): Whether to normalize the authorization
+            amounts. Defaults to True.
+        allocator_kwargs (dict, optional): Parameters for the allocator.
+            Defaults to {}.
+        sampling_kwargs (dict, optional): Parameters for the sampling
+            mechanism. Defaults to {}.
+
+    Returns:
+        pd.DataFrame: Returns input dataframe with grant allocations under
+            ground truth, sampling, and privacy randomization.
     &#34;&#34;&#34;
     alloc = allocator(
         data(
@@ -678,29 +796,110 @@ true/randomized grant amounts.</p></div>
 </details>
 </dd>
 <dt id="dp_policy.experiments.titlei_grid"><code class="name flex">
-<span>def <span class="ident">titlei_grid</span></span>(<span>inputs, mech, eps=[0.001, 0.027825594022071243, 0.774263682681127, 21.54434690031882, 599.4842503189409, 16681.005372000593, 464158.8833612772, 12915496.650148828, 359381366.3804626, 10000000000.0, 2.52], delta=[0.0], trials=100, mech_kwargs={}, auth=False, allocator_kwargs={}, sampling_kwargs={}, verbose=True, print_results=[2.52, 0.1], plot_results=False, alpha=0.05, results=None)</span>
+<span>def <span class="ident">titlei_grid</span></span>(<span>inputs: pandas.core.frame.DataFrame, mech: <a title="dp_policy.titlei.mechanisms.Mechanism" href="titlei/mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, eps: list = [0.001, 0.027825594022071243, 0.774263682681127, 21.54434690031882, 599.4842503189409, 16681.005372000593, 464158.8833612772, 12915496.650148828, 359381366.3804626, 10000000000.0, 2.52], delta: list = [0.0], trials: int = 100, mech_kwargs: dict = {}, auth: bool = False, allocator_kwargs: dict = {}, sampling_kwargs: dict = {}, verbose: bool = True, print_results: list = [2.52, 0.1], plot_results: bool = False, alpha: float = 0.05, results: pandas.core.frame.DataFrame = None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Run many trials of Title I process under different privacy parameters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inputs</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The necessary inputs for the allocator -
+usually the SAIPE - by district.</dd>
+<dt><strong><code>mech</code></strong> :&ensp;<code>Mechanism</code></dt>
+<dd>The randomization mechanism to use.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+<code>list(np.logspace(-3, 10, num=10))+[2.52]</code>.</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Values of delta to try. Defaults to [0.0].</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each parameter
+combo. Defaults to 100.</dd>
+<dt><strong><code>mech_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Parameters for the randomization
+mechanism. Defaults to {}.</dd>
+<dt><strong><code>auth</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use the raw authorization amounts.
+Defaults to False.</dd>
+<dt><strong><code>allocator_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Parameters for the allocator.
+Defaults to {}.</dd>
+<dt><strong><code>sampling_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Parameters for the sampling
+mechanism. Defaults to {}.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to True.</dd>
+<dt><strong><code>print_results</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Which values of epsilon to print
+results for. Defaults to [2.52, 0.1].</dd>
+<dt><strong><code>plot_results</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to plot results. Defaults to
+False.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Confidence level for confidence bands.
+Defaults to 0.05.</dd>
+<dt><strong><code>results</code></strong> :&ensp;<code>pd.DataFrame</code>, optional</dt>
+<dd>Pre-computed results to plot. If
+provided, will skip grid calculation. Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Results grid.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L41-L241" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L62-L244" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_grid(
-    inputs, mech,
-    eps=list(np.logspace(-3, 10, num=10)) + [2.52], delta=[0.0],
-    trials=100,
-    mech_kwargs={},
-    auth=False,
-    allocator_kwargs={},
-    sampling_kwargs={},
-    verbose=True,
-    print_results=[2.52, 0.1],
-    plot_results=False,
-    alpha=0.05,
-    results=None
+    inputs: pd.DataFrame,
+    mech: Mechanism,
+    eps: list = list(np.logspace(-3, 10, num=10)) + [2.52],
+    delta: list = [0.0],
+    trials: int = 100,
+    mech_kwargs: dict = {},
+    auth: bool = False,
+    allocator_kwargs: dict = {},
+    sampling_kwargs: dict = {},
+    verbose: bool = True,
+    print_results: list = [2.52, 0.1],
+    plot_results: bool = False,
+    alpha: float = 0.05,
+    results: pd.DataFrame = None
 ):
+    &#34;&#34;&#34;Run many trials of Title I process under different privacy parameters.
+
+    Args:
+        inputs (pd.DataFrame): The necessary inputs for the allocator -
+            usually the SAIPE - by district.
+        mech (Mechanism): The randomization mechanism to use.
+        eps (list, optional): Values of epsilon to try. Defaults to
+            `list(np.logspace(-3, 10, num=10))+[2.52]`.
+        delta (list, optional): Values of delta to try. Defaults to [0.0].
+        trials (int, optional): Number of trials to run for each parameter
+            combo. Defaults to 100.
+        mech_kwargs (dict, optional): Parameters for the randomization
+            mechanism. Defaults to {}.
+        auth (bool, optional): Whether to use the raw authorization amounts.
+            Defaults to False.
+        allocator_kwargs (dict, optional): Parameters for the allocator.
+            Defaults to {}.
+        sampling_kwargs (dict, optional): Parameters for the sampling
+            mechanism. Defaults to {}.
+        verbose (bool, optional): Defaults to True.
+        print_results (list, optional): Which values of epsilon to print
+            results for. Defaults to [2.52, 0.1].
+        plot_results (bool, optional): Whether to plot results. Defaults to
+            False.
+        alpha (float, optional): Confidence level for confidence bands.
+            Defaults to 0.05.
+        results (pd.DataFrame, optional): Pre-computed results to plot. If
+            provided, will skip grid calculation. Defaults to None.
+
+    Returns:
+        pd.DataFrame: Results grid.
+    &#34;&#34;&#34;
     if results is None:
         allocations = []
         thresholder = allocator_kwargs.get(&#39;thresholder&#39;)
@@ -835,58 +1034,6 @@ true/randomized grant amounts.</p></div>
                 )
                 plt.show()
 
-                # for i in range(len(eps)):
-                #     e = eps[i]
-                #     alloc = allocations[i][allocations[i][
-                #         &#34;State Postal Code&#34;] == &#34;MI&#34;
-                #     ]
-                #     alloc = alloc.sort_values(f&#34;true_grant_{grant_type}&#34;)
-                #     plt.scatter(
-                #         range(len(alloc)),
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;] /
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;].sum(),
-                #         s=2, alpha=0.3, label=f&#34;eps={e}&#34;
-                #     )
-                # plt.scatter(
-                #     range(len(alloc)),
-                #     alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #     sum(alloc[f&#34;true_grant_{grant_type}&#34;]),
-                #     s=2, alpha=0.3, label=&#34;true&#34;
-                # )
-                # ax = plt.gca()
-                # ax.legend()
-                # ax.axes.xaxis.set_ticks([])
-                # ax.set_yscale(&#39;log&#39;)
-                # plt.xlabel(&#34;District (sorted by true alloc)&#34;)
-                # plt.ylabel(&#34;Allocation as % of total&#34;)
-                # plt.title(f&#34;{grant_type} grants for Michigan&#34;)
-                # plt.show()
-
-                # for i in range(len(eps)):
-                #     e = eps[i]
-                #     alloc = allocations[i][allocations[i][
-                #         &#34;State Postal Code&#34;] == &#34;MI&#34;
-                #     ]
-                #     alloc[&#39;err_prop&#39;] = (
-                #         alloc[f&#34;{prefix}_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;{prefix}_grant_{grant_type}&#34;]) -
-                #         alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;true_grant_{grant_type}&#34;])
-                #     ) * 1e6
-                #     plt.scatter(
-                #         alloc[f&#34;true_grant_{grant_type}&#34;] /
-                #         sum(alloc[f&#34;true_grant_{grant_type}&#34;]),
-                #         alloc.err_prop, s=3, alpha=0.4, label=f&#34;eps={e}&#34;
-                #     )
-                # ax = plt.gca()
-                # ax.legend()
-                # ax.set_xscale(&#39;log&#39;)
-                # ax.set_yscale(&#39;log&#39;)
-                # plt.xlabel(&#34;True allocation as % of total&#34;)
-                # plt.ylabel(&#34;Misallocation per million as % of total&#34;)
-                # plt.title(f&#34;{grant_type} grants for Michigan&#34;)
-                # plt.show()
-
     return results</code></pre>
 </details>
 </dd>
@@ -897,16 +1044,39 @@ true/randomized grant amounts.</p></div>
 <dl>
 <dt id="dp_policy.experiments.Baseline"><code class="flex name class">
 <span>class <span class="ident">Baseline</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Baseline condition only.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L318-L322" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L362-L368" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Baseline(Experiment):
+    &#34;&#34;&#34;Baseline condition only.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         return {
             &#39;baseline&#39;: self.baseline
@@ -916,19 +1086,53 @@ true/randomized grant amounts.</p></div>
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.Budget"><code class="flex name class">
 <span>class <span class="ident">Budget</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Budget experiments.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L503-L558" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L570-L627" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Budget(Experiment):
+    &#34;&#34;&#34;Budget experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         if len(self.eps) &gt; 0:
             print(&#34;[WARN] Using first value of epsilon for budget calcs.&#34;)
@@ -989,19 +1193,53 @@ true/randomized grant amounts.</p></div>
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.Epsilon"><code class="flex name class">
 <span>class <span class="ident">Epsilon</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Privacy parameter experiments.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L561-L577" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L630-L648" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Epsilon(Experiment):
+    &#34;&#34;&#34;Privacy parameter experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         return {
             e: titlei_grid(
@@ -1023,59 +1261,77 @@ true/randomized grant amounts.</p></div>
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
-<h3>Methods</h3>
-<dl>
-<dt id="dp_policy.experiments.Epsilon.discrimination_join"><code class="name flex">
-<span>def <span class="ident">discrimination_join</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L573-L574" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">def discrimination_join(self):
-    return super().discrimination_join(epsilon=None)</code></pre>
-</details>
-</dd>
-<dt id="dp_policy.experiments.Epsilon.plot"><code class="name flex">
-<span>def <span class="ident">plot</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L576-L577" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">def plot(self):
-    return super().plot(epsilon=None)</code></pre>
-</details>
-</dd>
-</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.Experiment"><code class="flex name class">
 <span>class <span class="ident">Experiment</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Handles running and setting experiments.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L244-L315" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L247-L359" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Experiment:
+    &#34;&#34;&#34;Handles running and setting experiments.
+    &#34;&#34;&#34;
     def __init__(
         self,
-        name,
-        baseline=&#34;cached&#34;,
-        year=2021,
-        trials=1000,
-        eps=[0.1],
-        delta=[0.0]
+        name: str,
+        baseline: Union[str, pd.DataFrame] = &#34;cached&#34;,
+        year: int = 2021,
+        trials: int = 1000,
+        eps: List[float] = [0.1],
+        delta: List[float] = [0.0]
     ):
+        &#34;&#34;&#34;Initialize experiment and set baseline.
+
+        Args:
+            name (str): Experiment name.
+            baseline (Union[str, pd.DataFrame], optional): What baseline
+                (control) results to use. Defaults to &#34;cached&#34;.
+            year (int, optional): What year to get inputs for. Defaults to
+                2021.
+            trials (int, optional): Number of trials to run for each condition.
+                Defaults to 1000.
+            eps (List[float], optional): Values of epsilon to try. Defaults to
+                [0.1].
+            delta (List[float], optional): Values of delta to try. Defaults to
+                [0.0].
+        &#34;&#34;&#34;
         self.name = name
         self.trials = trials
         self.eps = eps
@@ -1097,6 +1353,9 @@ true/randomized grant amounts.</p></div>
             self.baseline = baseline
 
     def _generate_baseline(self):
+        &#34;&#34;&#34;Generate the control condition. Defaults to normal Laplace
+            mechanism with no special allocation parameters.
+        &#34;&#34;&#34;
         self.baseline = titlei_grid(
             self.saipe, Laplace,
             eps=self.eps, delta=self.delta,
@@ -1108,22 +1367,43 @@ true/randomized grant amounts.</p></div>
         discrimination_treatments_join(&#34;baseline&#34;)
 
     def run(self):
+        &#34;&#34;&#34;Run the experiment, save results, and create joined covariate file.
+        &#34;&#34;&#34;
         treatments = self._get_treatments()
         save_treatments(treatments, self.name)
         self.discrimination_join()
 
     def _get_treatments(self):
+        &#34;&#34;&#34;Generate the treatment results.
+        &#34;&#34;&#34;
         raise NotImplementedError
 
     def discrimination_join(self, **join_kwargs):
+        &#34;&#34;&#34;Join the results to demographic covariates and save.
+        &#34;&#34;&#34;
         discrimination_treatments_join(self.name, **join_kwargs)
 
     def plot(self, **kwargs):
+        &#34;&#34;&#34;Print and plot the results, comparing treatments.
+        &#34;&#34;&#34;
         treatments = load_treatments(self.name)
         compare_treatments(treatments, experiment_name=self.name, **kwargs)
 
     @staticmethod
-    def get_experiment(name, *args, **kwargs):
+    def get_experiment(
+        name: str,
+        *args, **kwargs
+    ):
+        &#34;&#34;&#34;Factory class for generating experiment object from name.
+
+        Args:
+            name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
+                &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
+                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+
+        Returns:
+            Experiment: The experiment object.
+        &#34;&#34;&#34;
         experiments = {
             &#39;baseline&#39;: Baseline,
             &#39;hold_harmless&#39;: HoldHarmless,
@@ -1153,17 +1433,42 @@ true/randomized grant amounts.</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="dp_policy.experiments.Experiment.get_experiment"><code class="name flex">
-<span>def <span class="ident">get_experiment</span></span>(<span>name, *args, **kwargs)</span>
+<span>def <span class="ident">get_experiment</span></span>(<span>name: str, *args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Factory class for generating experiment object from name.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name to fetch. Options include "baseline",
+"hold_harmless", "post_processing", "thresholds", "epsilon",
+"moving_average", "budget", "sampling".</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></code></dt>
+<dd>The experiment object.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L300-L315" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L331-L359" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
-def get_experiment(name, *args, **kwargs):
+def get_experiment(
+    name: str,
+    *args, **kwargs
+):
+    &#34;&#34;&#34;Factory class for generating experiment object from name.
+
+    Args:
+        name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
+            &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
+            &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+
+    Returns:
+        Experiment: The experiment object.
+    &#34;&#34;&#34;
     experiments = {
         &#39;baseline&#39;: Baseline,
         &#39;hold_harmless&#39;: HoldHarmless,
@@ -1187,13 +1492,15 @@ def get_experiment(name, *args, **kwargs):
 <span>def <span class="ident">discrimination_join</span></span>(<span>self, **join_kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Join the results to demographic covariates and save.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L293-L294" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L320-L323" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_join(self, **join_kwargs):
+    &#34;&#34;&#34;Join the results to demographic covariates and save.
+    &#34;&#34;&#34;
     discrimination_treatments_join(self.name, **join_kwargs)</code></pre>
 </details>
 </dd>
@@ -1201,13 +1508,15 @@ def get_experiment(name, *args, **kwargs):
 <span>def <span class="ident">plot</span></span>(<span>self, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Print and plot the results, comparing treatments.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L296-L298" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L325-L329" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot(self, **kwargs):
+    &#34;&#34;&#34;Print and plot the results, comparing treatments.
+    &#34;&#34;&#34;
     treatments = load_treatments(self.name)
     compare_treatments(treatments, experiment_name=self.name, **kwargs)</code></pre>
 </details>
@@ -1216,13 +1525,15 @@ def get_experiment(name, *args, **kwargs):
 <span>def <span class="ident">run</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Run the experiment, save results, and create joined covariate file.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L285-L288" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L308-L313" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def run(self):
+    &#34;&#34;&#34;Run the experiment, save results, and create joined covariate file.
+    &#34;&#34;&#34;
     treatments = self._get_treatments()
     save_treatments(treatments, self.name)
     self.discrimination_join()</code></pre>
@@ -1232,16 +1543,39 @@ def get_experiment(name, *args, **kwargs):
 </dd>
 <dt id="dp_policy.experiments.HoldHarmless"><code class="flex name class">
 <span>class <span class="ident">HoldHarmless</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Hold harmless and state minimum provisions.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L325-L357" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L371-L405" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class HoldHarmless(Experiment):
+    &#34;&#34;&#34;Hold harmless and state minimum provisions.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         hold_harmless = titlei_grid(
             self.saipe, Laplace,
@@ -1279,20 +1613,57 @@ def get_experiment(name, *args, **kwargs):
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.MovingAverage"><code class="flex name class">
 <span>class <span class="ident">MovingAverage</span></span>
-<span>(</span><span>name, truth='average', **kwargs)</span>
+<span>(</span><span>name: str, truth: str = 'average', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Moving average inputs, with multiple lag conditions.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>truth</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Baseline strategy to use. "average" uses
+the 5-year average as the baseline. Defaults to "average".</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>Exception</code></dt>
+<dd><em>description</em></dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L393-L419" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L443-L484" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class MovingAverage(Experiment):
-    def __init__(self, name, truth=&#34;average&#34;, **kwargs):
+    &#34;&#34;&#34;Moving average inputs, with multiple lag conditions.
+    &#34;&#34;&#34;
+    def __init__(
+        self,
+        name: str,
+        truth: str = &#34;average&#34;,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Args:
+            truth (str, optional): Baseline strategy to use. &#34;average&#34; uses
+                the 5-year average as the baseline. Defaults to &#34;average&#34;.
+
+        Raises:
+            Exception: _description_
+        &#34;&#34;&#34;
         if truth != &#34;average&#34;:
             raise Exception(
                 &#34;Not supporting truth values other than `average`.&#34;
@@ -1323,19 +1694,53 @@ def get_experiment(name, *args, **kwargs):
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.PostProcessing"><code class="flex name class">
 <span>class <span class="ident">PostProcessing</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Post-processing variations: none, clipping, and clipping + rounding.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L360-L390" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L408-L440" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class PostProcessing(Experiment):
+    &#34;&#34;&#34;Post-processing variations: none, clipping, and clipping + rounding.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         none = titlei_grid(
             self.saipe, Laplace,
@@ -1371,19 +1776,53 @@ def get_experiment(name, *args, **kwargs):
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.Sampling"><code class="flex name class">
 <span>class <span class="ident">Sampling</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Sampling error experiments.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L580-L609" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L651-L682" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Sampling(Experiment):
+    &#34;&#34;&#34;Sampling error experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         gaussian = {
             f&#34;Gaussian ({m})&#34;: titlei_grid(
@@ -1418,19 +1857,53 @@ def get_experiment(name, *args, **kwargs):
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="dp_policy.experiments.Thresholds"><code class="flex name class">
 <span>class <span class="ident">Thresholds</span></span>
-<span>(</span><span>name, baseline='cached', year=2021, trials=1000, eps=[0.1], delta=[0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Thresholding experiments.</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/experiments.py#L422-L500" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/experiments.py#L487-L567" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Thresholds(Experiment):
+    &#34;&#34;&#34;Thresholding experiments.
+    &#34;&#34;&#34;
     def _get_treatments(self):
         # hard threshold
         hard = self.baseline
@@ -1514,6 +1987,17 @@ def get_experiment(name, *args, **kwargs):
 <ul class="hlist">
 <li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
 </ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 </dl>
 </section>
@@ -1545,10 +2029,6 @@ def get_experiment(name, *args, **kwargs):
 </li>
 <li>
 <h4><code><a title="dp_policy.experiments.Epsilon" href="#dp_policy.experiments.Epsilon">Epsilon</a></code></h4>
-<ul class="">
-<li><code><a title="dp_policy.experiments.Epsilon.discrimination_join" href="#dp_policy.experiments.Epsilon.discrimination_join">discrimination_join</a></code></li>
-<li><code><a title="dp_policy.experiments.Epsilon.plot" href="#dp_policy.experiments.Epsilon.plot">plot</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></code></h4>

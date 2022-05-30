@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L1-L741" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L1-L847" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -40,8 +40,12 @@ import pickle
 from dp_policy.titlei.utils import get_acs_unified
 import dp_policy.config as config
 
+from typing import Dict, Callable
+
 
 def get_geography():
+    &#34;&#34;&#34;Load shapefiles for LEAs.
+    &#34;&#34;&#34;
     geo = gpd.read_file(os.path.join(
         config.root,
         &#34;data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp&#34;
@@ -63,7 +67,22 @@ def get_geography():
     return geo
 
 
-def discrimination_join(results, save_path=None, verbose=False):
+def discrimination_join(
+    results: pd.DataFrame,
+    save_path: str = None,
+    verbose: bool = False
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results to demographic covariates.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+        save_path (str, optional): Where to save the joined dataframe.
+            Defaults to None.
+        verbose (bool, optional): Defaults to False.
+
+    Returns:
+        pd.DataFrame: Joined dataframe.
+    &#34;&#34;&#34;
     acs = get_acs_unified(verbose)
 
     variables = [
@@ -107,7 +126,6 @@ def discrimination_join(results, save_path=None, verbose=False):
         &#39;Renter-occupied (HOUSING TENURE) - pct&#39;,
         &#39;Average household size of renter-occupied unit (HOUSING TENURE) - est&#39;
     ]
-
     # look in these columns for &#39;-&#39; and replace with nan according to ACS docs
     # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
     # otherwise convert to numeric
@@ -145,23 +163,33 @@ def discrimination_join(results, save_path=None, verbose=False):
                 &#34;State FIPS Code&#34;, &#34;District ID&#34;
             ]))
         )
-        # print(results[results.index.difference(to_join.index)])
         print(grants.shape)
 
     if save_path:
         print(&#34;Saving to feather...&#34;)
         grants.reset_index().to_feather(f&#34;{save_path}.feather&#34;)
         print(&#34;... saved.&#34;)
-        # grants.to_csv(f&#34;{save_path}.csv&#34;)
     return grants
 
 
 def discrimination_treatments_join(
-    treatments_name,
-    exclude=[],
-    epsilon=0.1,
-    delta=0.0
-):
+    treatments_name: dict,
+    exclude: list = [],
+    epsilon: float = 0.1,
+    delta: float = 0.0
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results to demographic covariates.
+
+    Args:
+        treatments_name (dict): Treatment results keyed by treatment name.
+        exclude (list, optional): Treatments to exclude. Defaults to [].
+        epsilon (float, optional): Epsilon to use (one allowed). Defaults to
+            0.1.
+        delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
+
+    Returns:
+        _type_: Combined dataframe for all treatments.
+    &#34;&#34;&#34;
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
     treatments = {
@@ -201,7 +229,15 @@ def discrimination_treatments_join(
     return discrimination_joined
 
 
-def geo_join(results):
+def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results wwith shapefiles.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+
+    Returns:
+        pd.DataFrame: Results joined with LEA shapefile and geographic data.
+    &#34;&#34;&#34;
     # NOTE: only accepts &#34;State FIPS Code&#34;, &#34;District ID&#34;, &#34;trial&#34; in index
     results = results.copy()
     results[&#34;error&#34;] = results.est_grant_total - results.true_grant_total
@@ -213,7 +249,7 @@ def geo_join(results):
         results.error_dp / results[&#39;true_children_total&#39;]
     results[&#34;error_dp_per_child_eligible&#34;] = \
         results.error_dp / results[&#39;true_children_eligible&#39;]
-    # geo.join()
+
     results[&#34;percent_eligible&#34;] = \
         results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
     results[&#34;switched_eligibility&#34;] = \
@@ -335,15 +371,35 @@ def geo_join(results):
 
 
 def plot_treatments(
-    treatments, x_func, plot_method, plot_kwargs,
-    filename=None,
-    xlab=None,
-    ylab=&#34;Smoothed density&#34;,
-    grant=&#34;total&#34;,
-    epsilon=None,
-    delta=None,
-    mean_line=False
+    treatments: Dict[str, pd.DataFrame],
+    x_func: Callable,
+    plot_method: Callable,
+    plot_kwargs: dict,
+    filename: str = None,
+    xlab: str = None,
+    ylab: str = &#34;Smoothed density&#34;,
+    grant: str = &#34;total&#34;,
+    epsilon: float = None,
+    delta: float = None,
+    mean_line: bool = False
 ):
+    &#34;&#34;&#34;Plot treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment name.
+        x_func (Callable): Function to transform dataframe before plotting.
+        plot_method (Callable): Function for plotting.
+        plot_kwargs (dict): Parameters for plotting function.
+        filename (str, optional): Filename of plot. Defaults to None.
+        xlab (str, optional): X label for plot. Defaults to None.
+        ylab (str, optional): Y label for plot. Defaults to &#34;Smoothed density&#34;.
+        grant (str, optional): Grant type to plot. Defaults to &#34;total&#34;.
+        epsilon (float, optional): Epsilon to plot. Defaults to None.
+        delta (float, optional): Delta to plot. Defaults to None.
+        mean_line (bool, optional): Whether to include mean line. Defaults to
+            False.
+    &#34;&#34;&#34;
     palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
         df = df_raw.loc[pd.IndexSlice[
@@ -353,16 +409,11 @@ def plot_treatments(
             :,
             :
         ], :].copy()
-        # print(df.shape)
-        # print(np.unique(df.index.get_level_values(level=&#34;epsilon&#34;)))
+
         df.loc[:, &#34;misalloc&#34;] = \
             df[f&#34;dpest_grant_{grant}&#34;] - df[f&#34;true_grant_{grant}&#34;]
         df.loc[:, &#34;misalloc_sq&#34;] = np.power(df[&#34;misalloc&#34;], 2)
         if grant == &#34;total&#34;:
-            # try:
-            #     print(~df.true_eligible_basic.astype(bool))
-            # except:
-            #     print(&#34;Failed&#34;, df.true_eligible_basic)
             df[&#34;lost_eligibility&#34;] = \
                 (
                     df[&#34;dpest_eligible_basic&#34;].astype(bool) &amp;
@@ -391,7 +442,6 @@ def plot_treatments(
                 x.mean(), color=palette[i],
                 linestyle=&#39;dashed&#39;
             )
-
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.legend(loc=&#39;upper right&#39;)
@@ -410,11 +460,40 @@ def cube(x):
 
 
 def heatmap(
-    data, label=None, title=None, transform=&#39;cube&#39;, theme=&#34;seismic_r&#34;,
-    y=&#34;error_dp_per_child&#34;, vcenter=0, file=None,
-    figsize=(10, 5), bar_location=&#39;bottom&#39;, min=None, max=None, dpi=300,
-    alpha=0.1
+    data: pd.DataFrame,
+    label: str = None,
+    title: str = None,
+    transform: str = &#39;cube&#39;,
+    theme: str = &#34;seismic_r&#34;,
+    y: str = &#34;error_dp_per_child&#34;,
+    vcenter: int = 0,
+    file: str = None,
+    figsize: tuple = (10, 5),
+    bar_location: str = &#39;bottom&#39;,
+    min: int = None,
+    max: int = None,
+    dpi: int = 300,
+    alpha: float = 0.1
 ):
+    &#34;&#34;&#34;Plot heatmap of results.
+
+    Args:
+        data (pd.DataFrame): Dataframe to plot from.
+        label (str, optional): Label for colorbar. Defaults to None.
+        title (str, optional): Title for plot. Defaults to None.
+        transform (str, optional): Transformation for data. Defaults to &#39;cube&#39;.
+        theme (str, optional): Theme for colorbar. Defaults to &#34;seismic_r&#34;.
+        y (str, optional): Column to plot. Defaults to &#34;error_dp_per_child&#34;.
+        vcenter (int, optional): Center of colorbar. Defaults to 0.
+        file (str, optional): Filename. Defaults to None.
+        figsize (tuple, optional): Figure size. Defaults to (10, 5).
+        bar_location (str, optional): Where to place the colorbar. Defaults to
+            &#39;bottom&#39;.
+        min (int, optional): Minimum for colorbar. Defaults to None.
+        max (int, optional): Maximum for colorbar. Defaults to None.
+        dpi (int, optional): Figure DPI. Defaults to 300.
+        alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
+    &#34;&#34;&#34;
     data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
     sig = ~(
         ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
@@ -489,7 +568,7 @@ def heatmap(
         plt.show()
 
 
-def save_treatments(treatments, experiment_name):
+def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
     # minify treatments
     treatments = {
         treatment: df.loc[:, [
@@ -514,7 +593,7 @@ def save_treatments(treatments, experiment_name):
     )
 
 
-def load_treatments(experiment_name):
+def load_treatments(experiment_name) -&gt; Dict[str, pd.DataFrame]:
     return pickle.load(
         open(
             f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
@@ -524,10 +603,24 @@ def load_treatments(experiment_name):
 
 
 def compare_treatments(
-  treatments,
-  epsilon=0.1, delta=0.0, mapvar=&#34;error_per_child&#34;,
-  experiment_name=None
+  treatments: Dict[str, pd.DataFrame],
+  epsilon: float = 0.1,
+  delta: float = 0.0,
+  mapvar: str = &#34;error_per_child&#34;,
+  experiment_name: str = None
 ):
+    &#34;&#34;&#34;Compare treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment names.
+        epsilon (float, optional): Epsilon to use. Defaults to 0.1.
+        delta (float, optional): Delta to use. Defaults to 0.0.
+        mapvar (str, optional): Which variable to plot. Defaults to
+            &#34;error_per_child&#34;.
+        experiment_name (str, optional): Name of the experiment. Defaults to
+            None.
+    &#34;&#34;&#34;
     if epsilon is None:
         print(
             &#34;[WARN] Epsilon is none &#34;
@@ -666,13 +759,26 @@ def compare_treatments(
         )
 
 
-def match_true(df_true, dfs_to_match):
+def match_true(
+    df_true: pd.DataFrame,
+    dfs_to_match: pd.DataFrame
+):
+    &#34;&#34;&#34;Equalize result baselines (columns with &#34;true&#34;).
+
+    Args:
+        df_true (pd.DataFrame): Dataframe with ground truth.
+        dfs_to_match (pd.DataFrame): Dataframes to equalize to `df_true`.
+    &#34;&#34;&#34;
     for c in (c for c in df_true.columns if &#34;true&#34; in c):
         for df in dfs_to_match:
             df.loc[:, c] = df_true.loc[:, c]
 
 
-def misalloc_statistics(error, allocations=None, grant_type=None):
+def misalloc_statistics(
+    error: pd.Series,
+    allocations: pd.DataFrame = None,
+    grant_type: str = None
+):
     err_grouped = error.groupby(
         [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
     )
@@ -778,20 +884,50 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dp_policy.titlei.evaluation.compare_treatments"><code class="name flex">
-<span>def <span class="ident">compare_treatments</span></span>(<span>treatments, epsilon=0.1, delta=0.0, mapvar='error_per_child', experiment_name=None)</span>
+<span>def <span class="ident">compare_treatments</span></span>(<span>treatments: Dict[str, pandas.core.frame.DataFrame], epsilon: float = 0.1, delta: float = 0.0, mapvar: str = 'error_per_child', experiment_name: str = None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Compare treatment results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>treatments</code></strong> :&ensp;<code>Dict[str, pd.DataFrame]</code></dt>
+<dd>Treatment results mapped by
+treatment names.</dd>
+<dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Epsilon to use. Defaults to 0.1.</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Delta to use. Defaults to 0.0.</dd>
+<dt><strong><code>mapvar</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Which variable to plot. Defaults to
+"error_per_child".</dd>
+<dt><strong><code>experiment_name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Name of the experiment. Defaults to
+None.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L497-L637" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L576-L730" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def compare_treatments(
-  treatments,
-  epsilon=0.1, delta=0.0, mapvar=&#34;error_per_child&#34;,
-  experiment_name=None
+  treatments: Dict[str, pd.DataFrame],
+  epsilon: float = 0.1,
+  delta: float = 0.0,
+  mapvar: str = &#34;error_per_child&#34;,
+  experiment_name: str = None
 ):
+    &#34;&#34;&#34;Compare treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment names.
+        epsilon (float, optional): Epsilon to use. Defaults to 0.1.
+        delta (float, optional): Delta to use. Defaults to 0.0.
+        mapvar (str, optional): Which variable to plot. Defaults to
+            &#34;error_per_child&#34;.
+        experiment_name (str, optional): Name of the experiment. Defaults to
+            None.
+    &#34;&#34;&#34;
     if epsilon is None:
         print(
             &#34;[WARN] Epsilon is none &#34;
@@ -938,23 +1074,53 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L379-L380" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L429-L430" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def cube(x):
     return np.sign(x)*np.power(np.abs(x), 1/3)</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.discrimination_join"><code class="name flex">
-<span>def <span class="ident">discrimination_join</span></span>(<span>results, save_path=None, verbose=False)</span>
+<span>def <span class="ident">discrimination_join</span></span>(<span>results: pandas.core.frame.DataFrame, save_path: str = None, verbose: bool = False) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Join results to demographic covariates.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>results</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Results, keyed by LEA.</dd>
+<dt><strong><code>save_path</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Where to save the joined dataframe.
+Defaults to None.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Joined dataframe.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L37-L127" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L41-L143" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def discrimination_join(results, save_path=None, verbose=False):
+<pre><code class="python">def discrimination_join(
+    results: pd.DataFrame,
+    save_path: str = None,
+    verbose: bool = False
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results to demographic covariates.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+        save_path (str, optional): Where to save the joined dataframe.
+            Defaults to None.
+        verbose (bool, optional): Defaults to False.
+
+    Returns:
+        pd.DataFrame: Joined dataframe.
+    &#34;&#34;&#34;
     acs = get_acs_unified(verbose)
 
     variables = [
@@ -998,7 +1164,6 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
         &#39;Renter-occupied (HOUSING TENURE) - pct&#39;,
         &#39;Average household size of renter-occupied unit (HOUSING TENURE) - est&#39;
     ]
-
     # look in these columns for &#39;-&#39; and replace with nan according to ACS docs
     # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
     # otherwise convert to numeric
@@ -1036,33 +1201,60 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
                 &#34;State FIPS Code&#34;, &#34;District ID&#34;
             ]))
         )
-        # print(results[results.index.difference(to_join.index)])
         print(grants.shape)
 
     if save_path:
         print(&#34;Saving to feather...&#34;)
         grants.reset_index().to_feather(f&#34;{save_path}.feather&#34;)
         print(&#34;... saved.&#34;)
-        # grants.to_csv(f&#34;{save_path}.csv&#34;)
     return grants</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.discrimination_treatments_join"><code class="name flex">
-<span>def <span class="ident">discrimination_treatments_join</span></span>(<span>treatments_name, exclude=[], epsilon=0.1, delta=0.0)</span>
+<span>def <span class="ident">discrimination_treatments_join</span></span>(<span>treatments_name: dict, exclude: list = [], epsilon: float = 0.1, delta: float = 0.0) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Join results to demographic covariates.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>treatments_name</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Treatment results keyed by treatment name.</dd>
+<dt><strong><code>exclude</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Treatments to exclude. Defaults to [].</dd>
+<dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Epsilon to use (one allowed). Defaults to
+0.1.</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Delta to use (one allowed). Defaults to 0.0.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>_type_</code></dt>
+<dd>Combined dataframe for all treatments.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L130-L172" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L146-L200" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_treatments_join(
-    treatments_name,
-    exclude=[],
-    epsilon=0.1,
-    delta=0.0
-):
+    treatments_name: dict,
+    exclude: list = [],
+    epsilon: float = 0.1,
+    delta: float = 0.0
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results to demographic covariates.
+
+    Args:
+        treatments_name (dict): Treatment results keyed by treatment name.
+        exclude (list, optional): Treatments to exclude. Defaults to [].
+        epsilon (float, optional): Epsilon to use (one allowed). Defaults to
+            0.1.
+        delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
+
+    Returns:
+        _type_: Combined dataframe for all treatments.
+    &#34;&#34;&#34;
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
     treatments = {
@@ -1103,16 +1295,34 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.geo_join"><code class="name flex">
-<span>def <span class="ident">geo_join</span></span>(<span>results)</span>
+<span>def <span class="ident">geo_join</span></span>(<span>results: pandas.core.frame.DataFrame) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Join results wwith shapefiles.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>results</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Results, keyed by LEA.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Results joined with LEA shapefile and geographic data.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L175-L305" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L203-L341" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def geo_join(results):
+<pre><code class="python">def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Join results wwith shapefiles.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+
+    Returns:
+        pd.DataFrame: Results joined with LEA shapefile and geographic data.
+    &#34;&#34;&#34;
     # NOTE: only accepts &#34;State FIPS Code&#34;, &#34;District ID&#34;, &#34;trial&#34; in index
     results = results.copy()
     results[&#34;error&#34;] = results.est_grant_total - results.true_grant_total
@@ -1124,7 +1334,7 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
         results.error_dp / results[&#39;true_children_total&#39;]
     results[&#34;error_dp_per_child_eligible&#34;] = \
         results.error_dp / results[&#39;true_children_eligible&#39;]
-    # geo.join()
+
     results[&#34;percent_eligible&#34;] = \
         results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
     results[&#34;switched_eligibility&#34;] = \
@@ -1249,13 +1459,15 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 <span>def <span class="ident">get_geography</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Load shapefiles for LEAs.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L15-L34" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L17-L38" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def get_geography():
+    &#34;&#34;&#34;Load shapefiles for LEAs.
+    &#34;&#34;&#34;
     geo = gpd.read_file(os.path.join(
         config.root,
         &#34;data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp&#34;
@@ -1278,21 +1490,82 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.heatmap"><code class="name flex">
-<span>def <span class="ident">heatmap</span></span>(<span>data, label=None, title=None, transform='cube', theme='seismic_r', y='error_dp_per_child', vcenter=0, file=None, figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300, alpha=0.1)</span>
+<span>def <span class="ident">heatmap</span></span>(<span>data: pandas.core.frame.DataFrame, label: str = None, title: str = None, transform: str = 'cube', theme: str = 'seismic_r', y: str = 'error_dp_per_child', vcenter: int = 0, file: str = None, figsize: tuple = (10, 5), bar_location: str = 'bottom', min: int = None, max: int = None, dpi: int = 300, alpha: float = 0.1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Plot heatmap of results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe to plot from.</dd>
+<dt><strong><code>label</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Label for colorbar. Defaults to None.</dd>
+<dt><strong><code>title</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Title for plot. Defaults to None.</dd>
+<dt><strong><code>transform</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Transformation for data. Defaults to 'cube'.</dd>
+<dt><strong><code>theme</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Theme for colorbar. Defaults to "seismic_r".</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Column to plot. Defaults to "error_dp_per_child".</dd>
+<dt><strong><code>vcenter</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Center of colorbar. Defaults to 0.</dd>
+<dt><strong><code>file</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Filename. Defaults to None.</dd>
+<dt><strong><code>figsize</code></strong> :&ensp;<code>tuple</code>, optional</dt>
+<dd>Figure size. Defaults to (10, 5).</dd>
+<dt><strong><code>bar_location</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Where to place the colorbar. Defaults to
+'bottom'.</dd>
+<dt><strong><code>min</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Minimum for colorbar. Defaults to None.</dd>
+<dt><strong><code>max</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Maximum for colorbar. Defaults to None.</dd>
+<dt><strong><code>dpi</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Figure DPI. Defaults to 300.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Confidence level for t-test. Defaults to 0.1.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L383-L460" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L433-L539" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def heatmap(
-    data, label=None, title=None, transform=&#39;cube&#39;, theme=&#34;seismic_r&#34;,
-    y=&#34;error_dp_per_child&#34;, vcenter=0, file=None,
-    figsize=(10, 5), bar_location=&#39;bottom&#39;, min=None, max=None, dpi=300,
-    alpha=0.1
+    data: pd.DataFrame,
+    label: str = None,
+    title: str = None,
+    transform: str = &#39;cube&#39;,
+    theme: str = &#34;seismic_r&#34;,
+    y: str = &#34;error_dp_per_child&#34;,
+    vcenter: int = 0,
+    file: str = None,
+    figsize: tuple = (10, 5),
+    bar_location: str = &#39;bottom&#39;,
+    min: int = None,
+    max: int = None,
+    dpi: int = 300,
+    alpha: float = 0.1
 ):
+    &#34;&#34;&#34;Plot heatmap of results.
+
+    Args:
+        data (pd.DataFrame): Dataframe to plot from.
+        label (str, optional): Label for colorbar. Defaults to None.
+        title (str, optional): Title for plot. Defaults to None.
+        transform (str, optional): Transformation for data. Defaults to &#39;cube&#39;.
+        theme (str, optional): Theme for colorbar. Defaults to &#34;seismic_r&#34;.
+        y (str, optional): Column to plot. Defaults to &#34;error_dp_per_child&#34;.
+        vcenter (int, optional): Center of colorbar. Defaults to 0.
+        file (str, optional): Filename. Defaults to None.
+        figsize (tuple, optional): Figure size. Defaults to (10, 5).
+        bar_location (str, optional): Where to place the colorbar. Defaults to
+            &#39;bottom&#39;.
+        min (int, optional): Minimum for colorbar. Defaults to None.
+        max (int, optional): Maximum for colorbar. Defaults to None.
+        dpi (int, optional): Figure DPI. Defaults to 300.
+        alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
+    &#34;&#34;&#34;
     data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
     sig = ~(
         ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
@@ -1368,16 +1641,16 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.load_treatments"><code class="name flex">
-<span>def <span class="ident">load_treatments</span></span>(<span>experiment_name)</span>
+<span>def <span class="ident">load_treatments</span></span>(<span>experiment_name) ‑> Dict[str, pandas.core.frame.DataFrame]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L488-L494" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L567-L573" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def load_treatments(experiment_name):
+<pre><code class="python">def load_treatments(experiment_name) -&gt; Dict[str, pd.DataFrame]:
     return pickle.load(
         open(
             f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
@@ -1387,32 +1660,52 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.match_true"><code class="name flex">
-<span>def <span class="ident">match_true</span></span>(<span>df_true, dfs_to_match)</span>
+<span>def <span class="ident">match_true</span></span>(<span>df_true: pandas.core.frame.DataFrame, dfs_to_match: pandas.core.frame.DataFrame)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Equalize result baselines (columns with "true").</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df_true</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframe with ground truth.</dd>
+<dt><strong><code>dfs_to_match</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Dataframes to equalize to <code>df_true</code>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L640-L643" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L733-L745" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def match_true(df_true, dfs_to_match):
+<pre><code class="python">def match_true(
+    df_true: pd.DataFrame,
+    dfs_to_match: pd.DataFrame
+):
+    &#34;&#34;&#34;Equalize result baselines (columns with &#34;true&#34;).
+
+    Args:
+        df_true (pd.DataFrame): Dataframe with ground truth.
+        dfs_to_match (pd.DataFrame): Dataframes to equalize to `df_true`.
+    &#34;&#34;&#34;
     for c in (c for c in df_true.columns if &#34;true&#34; in c):
         for df in dfs_to_match:
             df.loc[:, c] = df_true.loc[:, c]</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.misalloc_statistics"><code class="name flex">
-<span>def <span class="ident">misalloc_statistics</span></span>(<span>error, allocations=None, grant_type=None)</span>
+<span>def <span class="ident">misalloc_statistics</span></span>(<span>error: pandas.core.series.Series, allocations: pandas.core.frame.DataFrame = None, grant_type: str = None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L646-L741" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L748-L847" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def misalloc_statistics(error, allocations=None, grant_type=None):
+<pre><code class="python">def misalloc_statistics(
+    error: pd.Series,
+    allocations: pd.DataFrame = None,
+    grant_type: str = None
+):
     err_grouped = error.groupby(
         [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
     )
@@ -1511,25 +1804,72 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.plot_treatments"><code class="name flex">
-<span>def <span class="ident">plot_treatments</span></span>(<span>treatments, x_func, plot_method, plot_kwargs, filename=None, xlab=None, ylab='Smoothed density', grant='total', epsilon=None, delta=None, mean_line=False)</span>
+<span>def <span class="ident">plot_treatments</span></span>(<span>treatments: Dict[str, pandas.core.frame.DataFrame], x_func: Callable, plot_method: Callable, plot_kwargs: dict, filename: str = None, xlab: str = None, ylab: str = 'Smoothed density', grant: str = 'total', epsilon: float = None, delta: float = None, mean_line: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Plot treatment results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>treatments</code></strong> :&ensp;<code>Dict[str, pd.DataFrame]</code></dt>
+<dd>Treatment results mapped by
+treatment name.</dd>
+<dt><strong><code>x_func</code></strong> :&ensp;<code>Callable</code></dt>
+<dd>Function to transform dataframe before plotting.</dd>
+<dt><strong><code>plot_method</code></strong> :&ensp;<code>Callable</code></dt>
+<dd>Function for plotting.</dd>
+<dt><strong><code>plot_kwargs</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Parameters for plotting function.</dd>
+<dt><strong><code>filename</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Filename of plot. Defaults to None.</dd>
+<dt><strong><code>xlab</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>X label for plot. Defaults to None.</dd>
+<dt><strong><code>ylab</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Y label for plot. Defaults to "Smoothed density".</dd>
+<dt><strong><code>grant</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Grant type to plot. Defaults to "total".</dd>
+<dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Epsilon to plot. Defaults to None.</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Delta to plot. Defaults to None.</dd>
+<dt><strong><code>mean_line</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to include mean line. Defaults to
+False.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L308-L376" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L344-L426" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot_treatments(
-    treatments, x_func, plot_method, plot_kwargs,
-    filename=None,
-    xlab=None,
-    ylab=&#34;Smoothed density&#34;,
-    grant=&#34;total&#34;,
-    epsilon=None,
-    delta=None,
-    mean_line=False
+    treatments: Dict[str, pd.DataFrame],
+    x_func: Callable,
+    plot_method: Callable,
+    plot_kwargs: dict,
+    filename: str = None,
+    xlab: str = None,
+    ylab: str = &#34;Smoothed density&#34;,
+    grant: str = &#34;total&#34;,
+    epsilon: float = None,
+    delta: float = None,
+    mean_line: bool = False
 ):
+    &#34;&#34;&#34;Plot treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment name.
+        x_func (Callable): Function to transform dataframe before plotting.
+        plot_method (Callable): Function for plotting.
+        plot_kwargs (dict): Parameters for plotting function.
+        filename (str, optional): Filename of plot. Defaults to None.
+        xlab (str, optional): X label for plot. Defaults to None.
+        ylab (str, optional): Y label for plot. Defaults to &#34;Smoothed density&#34;.
+        grant (str, optional): Grant type to plot. Defaults to &#34;total&#34;.
+        epsilon (float, optional): Epsilon to plot. Defaults to None.
+        delta (float, optional): Delta to plot. Defaults to None.
+        mean_line (bool, optional): Whether to include mean line. Defaults to
+            False.
+    &#34;&#34;&#34;
     palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
         df = df_raw.loc[pd.IndexSlice[
@@ -1539,16 +1879,11 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
             :,
             :
         ], :].copy()
-        # print(df.shape)
-        # print(np.unique(df.index.get_level_values(level=&#34;epsilon&#34;)))
+
         df.loc[:, &#34;misalloc&#34;] = \
             df[f&#34;dpest_grant_{grant}&#34;] - df[f&#34;true_grant_{grant}&#34;]
         df.loc[:, &#34;misalloc_sq&#34;] = np.power(df[&#34;misalloc&#34;], 2)
         if grant == &#34;total&#34;:
-            # try:
-            #     print(~df.true_eligible_basic.astype(bool))
-            # except:
-            #     print(&#34;Failed&#34;, df.true_eligible_basic)
             df[&#34;lost_eligibility&#34;] = \
                 (
                     df[&#34;dpest_eligible_basic&#34;].astype(bool) &amp;
@@ -1577,7 +1912,6 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
                 x.mean(), color=palette[i],
                 linestyle=&#39;dashed&#39;
             )
-
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.legend(loc=&#39;upper right&#39;)
@@ -1592,16 +1926,16 @@ def misalloc_statistics(error, allocations=None, grant_type=None):
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.save_treatments"><code class="name flex">
-<span>def <span class="ident">save_treatments</span></span>(<span>treatments, experiment_name)</span>
+<span>def <span class="ident">save_treatments</span></span>(<span>treatments: Dict[str, pandas.core.frame.DataFrame], experiment_name: str)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L463-L485" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/evaluation.py#L542-L564" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def save_treatments(treatments, experiment_name):
+<pre><code class="python">def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
     # minify treatments
     treatments = {
         treatment: df.loc[:, [

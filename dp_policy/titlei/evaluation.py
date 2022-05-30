@@ -11,8 +11,12 @@ import pickle
 from dp_policy.titlei.utils import get_acs_unified
 import dp_policy.config as config
 
+from typing import Dict, Callable
+
 
 def get_geography():
+    """Load shapefiles for LEAs.
+    """
     geo = gpd.read_file(os.path.join(
         config.root,
         "data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp"
@@ -34,7 +38,22 @@ def get_geography():
     return geo
 
 
-def discrimination_join(results, save_path=None, verbose=False):
+def discrimination_join(
+    results: pd.DataFrame,
+    save_path: str = None,
+    verbose: bool = False
+) -> pd.DataFrame:
+    """Join results to demographic covariates.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+        save_path (str, optional): Where to save the joined dataframe.
+            Defaults to None.
+        verbose (bool, optional): Defaults to False.
+
+    Returns:
+        pd.DataFrame: Joined dataframe.
+    """
     acs = get_acs_unified(verbose)
 
     variables = [
@@ -78,7 +97,6 @@ def discrimination_join(results, save_path=None, verbose=False):
         'Renter-occupied (HOUSING TENURE) - pct',
         'Average household size of renter-occupied unit (HOUSING TENURE) - est'
     ]
-
     # look in these columns for '-' and replace with nan according to ACS docs
     # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
     # otherwise convert to numeric
@@ -116,23 +134,33 @@ def discrimination_join(results, save_path=None, verbose=False):
                 "State FIPS Code", "District ID"
             ]))
         )
-        # print(results[results.index.difference(to_join.index)])
         print(grants.shape)
 
     if save_path:
         print("Saving to feather...")
         grants.reset_index().to_feather(f"{save_path}.feather")
         print("... saved.")
-        # grants.to_csv(f"{save_path}.csv")
     return grants
 
 
 def discrimination_treatments_join(
-    treatments_name,
-    exclude=[],
-    epsilon=0.1,
-    delta=0.0
-):
+    treatments_name: dict,
+    exclude: list = [],
+    epsilon: float = 0.1,
+    delta: float = 0.0
+) -> pd.DataFrame:
+    """Join results to demographic covariates.
+
+    Args:
+        treatments_name (dict): Treatment results keyed by treatment name.
+        exclude (list, optional): Treatments to exclude. Defaults to [].
+        epsilon (float, optional): Epsilon to use (one allowed). Defaults to
+            0.1.
+        delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
+
+    Returns:
+        _type_: Combined dataframe for all treatments.
+    """
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
     treatments = {
@@ -172,7 +200,15 @@ def discrimination_treatments_join(
     return discrimination_joined
 
 
-def geo_join(results):
+def geo_join(results: pd.DataFrame) -> pd.DataFrame:
+    """Join results wwith shapefiles.
+
+    Args:
+        results (pd.DataFrame): Results, keyed by LEA.
+
+    Returns:
+        pd.DataFrame: Results joined with LEA shapefile and geographic data.
+    """
     # NOTE: only accepts "State FIPS Code", "District ID", "trial" in index
     results = results.copy()
     results["error"] = results.est_grant_total - results.true_grant_total
@@ -184,7 +220,7 @@ def geo_join(results):
         results.error_dp / results['true_children_total']
     results["error_dp_per_child_eligible"] = \
         results.error_dp / results['true_children_eligible']
-    # geo.join()
+
     results["percent_eligible"] = \
         results["true_children_eligible"] / results["true_children_total"]
     results["switched_eligibility"] = \
@@ -306,15 +342,35 @@ def geo_join(results):
 
 
 def plot_treatments(
-    treatments, x_func, plot_method, plot_kwargs,
-    filename=None,
-    xlab=None,
-    ylab="Smoothed density",
-    grant="total",
-    epsilon=None,
-    delta=None,
-    mean_line=False
+    treatments: Dict[str, pd.DataFrame],
+    x_func: Callable,
+    plot_method: Callable,
+    plot_kwargs: dict,
+    filename: str = None,
+    xlab: str = None,
+    ylab: str = "Smoothed density",
+    grant: str = "total",
+    epsilon: float = None,
+    delta: float = None,
+    mean_line: bool = False
 ):
+    """Plot treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment name.
+        x_func (Callable): Function to transform dataframe before plotting.
+        plot_method (Callable): Function for plotting.
+        plot_kwargs (dict): Parameters for plotting function.
+        filename (str, optional): Filename of plot. Defaults to None.
+        xlab (str, optional): X label for plot. Defaults to None.
+        ylab (str, optional): Y label for plot. Defaults to "Smoothed density".
+        grant (str, optional): Grant type to plot. Defaults to "total".
+        epsilon (float, optional): Epsilon to plot. Defaults to None.
+        delta (float, optional): Delta to plot. Defaults to None.
+        mean_line (bool, optional): Whether to include mean line. Defaults to
+            False.
+    """
     palette = sns.color_palette(n_colors=len(treatments))
     for i, (treatment, df_raw) in enumerate(treatments.items()):
         df = df_raw.loc[pd.IndexSlice[
@@ -324,16 +380,11 @@ def plot_treatments(
             :,
             :
         ], :].copy()
-        # print(df.shape)
-        # print(np.unique(df.index.get_level_values(level="epsilon")))
+
         df.loc[:, "misalloc"] = \
             df[f"dpest_grant_{grant}"] - df[f"true_grant_{grant}"]
         df.loc[:, "misalloc_sq"] = np.power(df["misalloc"], 2)
         if grant == "total":
-            # try:
-            #     print(~df.true_eligible_basic.astype(bool))
-            # except:
-            #     print("Failed", df.true_eligible_basic)
             df["lost_eligibility"] = \
                 (
                     df["dpest_eligible_basic"].astype(bool) &
@@ -362,7 +413,6 @@ def plot_treatments(
                 x.mean(), color=palette[i],
                 linestyle='dashed'
             )
-
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.legend(loc='upper right')
@@ -381,11 +431,40 @@ def cube(x):
 
 
 def heatmap(
-    data, label=None, title=None, transform='cube', theme="seismic_r",
-    y="error_dp_per_child", vcenter=0, file=None,
-    figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300,
-    alpha=0.1
+    data: pd.DataFrame,
+    label: str = None,
+    title: str = None,
+    transform: str = 'cube',
+    theme: str = "seismic_r",
+    y: str = "error_dp_per_child",
+    vcenter: int = 0,
+    file: str = None,
+    figsize: tuple = (10, 5),
+    bar_location: str = 'bottom',
+    min: int = None,
+    max: int = None,
+    dpi: int = 300,
+    alpha: float = 0.1
 ):
+    """Plot heatmap of results.
+
+    Args:
+        data (pd.DataFrame): Dataframe to plot from.
+        label (str, optional): Label for colorbar. Defaults to None.
+        title (str, optional): Title for plot. Defaults to None.
+        transform (str, optional): Transformation for data. Defaults to 'cube'.
+        theme (str, optional): Theme for colorbar. Defaults to "seismic_r".
+        y (str, optional): Column to plot. Defaults to "error_dp_per_child".
+        vcenter (int, optional): Center of colorbar. Defaults to 0.
+        file (str, optional): Filename. Defaults to None.
+        figsize (tuple, optional): Figure size. Defaults to (10, 5).
+        bar_location (str, optional): Where to place the colorbar. Defaults to
+            'bottom'.
+        min (int, optional): Minimum for colorbar. Defaults to None.
+        max (int, optional): Maximum for colorbar. Defaults to None.
+        dpi (int, optional): Figure DPI. Defaults to 300.
+        alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
+    """
     data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * stats.norm.ppf(1 - alpha / 2)
     sig = ~(
         ((data[y] + data[f"{y}_moe"]) >= 0) &
@@ -460,7 +539,7 @@ def heatmap(
         plt.show()
 
 
-def save_treatments(treatments, experiment_name):
+def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
     # minify treatments
     treatments = {
         treatment: df.loc[:, [
@@ -485,7 +564,7 @@ def save_treatments(treatments, experiment_name):
     )
 
 
-def load_treatments(experiment_name):
+def load_treatments(experiment_name) -> Dict[str, pd.DataFrame]:
     return pickle.load(
         open(
             f"{config.root}/results/policy_experiments/{experiment_name}.pkl",
@@ -495,10 +574,24 @@ def load_treatments(experiment_name):
 
 
 def compare_treatments(
-  treatments,
-  epsilon=0.1, delta=0.0, mapvar="error_per_child",
-  experiment_name=None
+  treatments: Dict[str, pd.DataFrame],
+  epsilon: float = 0.1,
+  delta: float = 0.0,
+  mapvar: str = "error_per_child",
+  experiment_name: str = None
 ):
+    """Compare treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Treatment results mapped by
+            treatment names.
+        epsilon (float, optional): Epsilon to use. Defaults to 0.1.
+        delta (float, optional): Delta to use. Defaults to 0.0.
+        mapvar (str, optional): Which variable to plot. Defaults to
+            "error_per_child".
+        experiment_name (str, optional): Name of the experiment. Defaults to
+            None.
+    """
     if epsilon is None:
         print(
             "[WARN] Epsilon is none "
@@ -637,13 +730,26 @@ def compare_treatments(
         )
 
 
-def match_true(df_true, dfs_to_match):
+def match_true(
+    df_true: pd.DataFrame,
+    dfs_to_match: pd.DataFrame
+):
+    """Equalize result baselines (columns with "true").
+
+    Args:
+        df_true (pd.DataFrame): Dataframe with ground truth.
+        dfs_to_match (pd.DataFrame): Dataframes to equalize to `df_true`.
+    """
     for c in (c for c in df_true.columns if "true" in c):
         for df in dfs_to_match:
             df.loc[:, c] = df_true.loc[:, c]
 
 
-def misalloc_statistics(error, allocations=None, grant_type=None):
+def misalloc_statistics(
+    error: pd.Series,
+    allocations: pd.DataFrame = None,
+    grant_type: str = None
+):
     err_grouped = error.groupby(
         ["State FIPS Code", "District ID"]
     )
