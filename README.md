@@ -48,3 +48,13 @@ watch -n 60 ps
 ```bash
 make zip
 ```
+
+# Documentation
+Documentation for the `dp-policy` API is published at [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy).
+
+To generate the documentation, use pdoc3:
+
+```bash
+pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
+git subtree push --prefix docs/dp-policy origin gh-pages
+```

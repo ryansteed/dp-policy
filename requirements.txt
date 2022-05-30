@@ -1,3 +1,6 @@
 cmake
 jupyterlab
 pycodestyle
+pysal
+esda
+pdoc3
