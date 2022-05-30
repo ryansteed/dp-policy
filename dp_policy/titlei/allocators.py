@@ -287,13 +287,13 @@ class SonnenbergAuthorizer(Authorizer):
     ):
         self.hold_harmless = kwargs.pop('hold_harmless', False)
         self.state_minimum = kwargs.pop('state_minimum', False)
-        if self.state_minimum:
+        self.thresholder = kwargs.pop('thresholder', HardThresholder())
+        super().__init__(*args, **kwargs)
+        if self.state_minimum and self.verbose:
             print(
                 "[WARN] State minimum works using 2021 data. "
                 "Will be wrong for earlier years."
             )
-        self.thresholder = kwargs.pop('thresholder', HardThresholder())
-        super().__init__(*args, **kwargs)
 
     def allocations(
         self, **kwargs
