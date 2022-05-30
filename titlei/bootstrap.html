@@ -25,13 +25,16 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/bootstrap.py#L1-L55" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/bootstrap.py#L1-L63" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import pandas as pd
 from tqdm.notebook import tqdm
 
 from dp_policy.experiments import titlei_funding as funding
 from dp_policy.titlei.allocators import SonnenbergAuthorizer
+from dp_policy.titlei.mechanisms import Mechanism
+
+from typing import Tuple
 
 COLS_INDEX = [&#39;State FIPS Code&#39;, &#39;District ID&#39;]
 COLS_GROUPBY = [&#39;State FIPS Code&#39;, &#39;District ID&#39;, &#39;State Postal Code&#39;, &#39;Name&#39;]
@@ -39,9 +42,14 @@ COLS_GRANT = [&#39;basic&#39;, &#39;concentration&#39;, &#39;targeted&#39;, &#39
 
 
 def collect_results(
-    saipe, mech, sppe, num_runs=1,
-    quantiles=(0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
+    saipe: pd.DataFrame,
+    mech: Mechanism,
+    sppe: pd.DataFrame,
+    num_runs: int = 1,
+    quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
+    &#34;&#34;&#34;Collect bootstrapped results.
+    &#34;&#34;&#34;
     cols_keep = [&#34;true_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
                 [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
                 [
@@ -92,19 +100,24 @@ def collect_results(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dp_policy.titlei.bootstrap.collect_results"><code class="name flex">
-<span>def <span class="ident">collect_results</span></span>(<span>saipe, mech, sppe, num_runs=1, quantiles=(0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95))</span>
+<span>def <span class="ident">collect_results</span></span>(<span>saipe: pandas.core.frame.DataFrame, mech: <a title="dp_policy.titlei.mechanisms.Mechanism" href="mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, sppe: pandas.core.frame.DataFrame, num_runs: int = 1, quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95))</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Collect bootstrapped results.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/bootstrap.py#L12-L55" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/bootstrap.py#L15-L63" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def collect_results(
-    saipe, mech, sppe, num_runs=1,
-    quantiles=(0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
+    saipe: pd.DataFrame,
+    mech: Mechanism,
+    sppe: pd.DataFrame,
+    num_runs: int = 1,
+    quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
+    &#34;&#34;&#34;Collect bootstrapped results.
+    &#34;&#34;&#34;
     cols_keep = [&#34;true_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
                 [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
                 [

@@ -25,28 +25,45 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L1-L580" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L1-L596" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">from dp_policy.titlei.utils import \
-    weighting, get_allocation_data
+    weighting
 from dp_policy.titlei.thresholders import Threshold, HardThresholder
 
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
+
+from typing import Tuple, List
 
 
 class Allocator:
     def __init__(
         self,
-        estimates,
-        prefixes=(&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;),
-        congress_cap=0.4,
-        adj_sppe_bounds=[0.32, 0.48],
-        adj_sppe_bounds_efig=[0.34, 0.46],
-        appropriation=None,
-        verbose=False
+        estimates: pd.DataFrame,
+        prefixes: Tuple[str] = (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;),
+        congress_cap: float = 0.4,
+        adj_sppe_bounds: List[float] = [0.32, 0.48],
+        adj_sppe_bounds_efig: List[float] = [0.34, 0.46],
+        appropriation: float = None,
+        verbose: bool = False
     ):
+        &#34;&#34;&#34;Class for allocating Title I funds.
+
+        Args:
+            estimates (pd.DataFrame): The poverty estimates, including
+                randomized estimates.
+            prefixes (Tuple[str], optional): Prefixes for different kinds of
+                estimates. Defaults to (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;).
+            congress_cap (float, optional): Congressional cap. Defaults to 0.4.
+            adj_sppe_bounds (List[float], optional): Bounds on adjusted SPPE.
+                Defaults to [0.32, 0.48].
+            adj_sppe_bounds_efig (List[float], optional): Bounds on adjusted
+                SPPE for EFIG grants. Defaults to [0.34, 0.46].
+            appropriation (float, optional): Total congressional appropriation.
+                Defaults to None.
+            verbose (bool, optional): Defaults to False.
+        &#34;&#34;&#34;
         self.estimates = estimates
         self.prefixes = prefixes
         self.congress_cap = congress_cap
@@ -57,9 +74,20 @@ class Allocator:
 
     def allocations(
         self,
-        normalize=True
+        normalize: bool = False
     ) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Compute allocations.
+
+        Args:
+            normalize (bool, optional): Whether to normalize the authorization
+                amounts. Defaults to False.
+
+        Returns:
+            pd.DataFrame: Estimates dataframe with computed allocations added.
+        &#34;&#34;&#34;
         self.calc_auth()
+        if normalize:
+            self.normalize()
         return self.estimates
 
     def calc_auth(self):
@@ -122,6 +150,9 @@ class AbowdAllocator(Allocator):
 
 
 class Authorizer(Allocator):
+    &#34;&#34;&#34;An allocator that uses a normalization strategy to convert
+    authorization amounts to allocation amounts.
+    &#34;&#34;&#34;
     def grant_types(self):
         raise NotImplementedError
 
@@ -157,7 +188,19 @@ class Authorizer(Allocator):
                 )
         return self.estimates
 
-    def _calc_appropriation_total(self, grant_type):
+    def _calc_appropriation_total(
+        self,
+        grant_type: str
+    ) -&gt; float:
+        &#34;&#34;&#34;Using official figures, calculate appropriation for this grant type.
+
+        Args:
+            grant_type (str): The grant type. One of &#34;basic&#34;, &#34;concentration&#34;,
+                &#34;targeted&#34;.
+
+        Returns:
+            float: The total appropration for this grant type.
+        &#34;&#34;&#34;
         appropriation = self.estimates[f&#34;official_{grant_type}_alloc&#34;].sum()
         if self.appropriation_total is not None:
             if self.verbose:
@@ -182,17 +225,26 @@ class Authorizer(Allocator):
         return appropriation
 
     def _normalize(
-        self, grant_type, prefix, appropriation,
-        hold_harmless=None, state_minimum=False
+        self,
+        grant_type: str,
+        prefix: str,
+        appropriation: float,
+        hold_harmless: pd.Series = None,
+        state_minimum: bool = False
     ):
-        # -- DEPRECATED by new official file --
-        # get this year&#39;s budget
-        # true_allocs = get_allocation_data(&#34;../data/titlei-allocations_20&#34;)
-        # actual_budget = true_allocs[&#34;HistAlloc&#34;].sum()
+        &#34;&#34;&#34;Normalize funding amounts, honoring special provisions.
 
-        # print(actual_budget)
-        # print(len(true_allocs))
-
+        Args:
+            grant_type (str):  The grant type. One of &#34;basic&#34;, &#34;concentration&#34;,
+                &#34;targeted&#34;.
+            prefix (str): Prefix for estimate. One of
+                (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;).
+            appropriation (float): The total appropriation available.
+            hold_harmless (pd.DataFrame, optional): If provided, which
+                districts are held harmless. Defaults to None.
+            state_minimum (bool, optional): Whether to apply the state minimum.
+                Defaults to False.
+        &#34;&#34;&#34;
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
 
@@ -280,9 +332,11 @@ class Authorizer(Allocator):
 
     def _normalize_segment(
         self,
-        segment, hold_harmless,
-        grant_type, prefix,
-        segment_appropriation
+        segment: pd.Series,
+        hold_harmless: pd.Series,
+        grant_type: str,
+        prefix: str,
+        segment_appropriation: float
     ):
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
@@ -309,6 +363,9 @@ class Authorizer(Allocator):
 
 
 class SonnenbergAuthorizer(Authorizer):
+    &#34;&#34;&#34;Authorizer allocator described by Sonnenberg (2007). Official process
+    used by Dep Ed.
+    &#34;&#34;&#34;
     def __init__(
         self,
         *args,
@@ -353,20 +410,6 @@ class SonnenbergAuthorizer(Authorizer):
             # For basic grants, LEA must have
             # &gt;10 eligible children
             # AND &gt;2% eligible
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 10
-            # share_eligible = (
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;]
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # ) &gt; 0.02
-            # self.estimates[f&#34;{prefix}_eligible_basic&#34;] = \
-            #     count_eligible &amp; share_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_basic&#34;],
-            #     f&#34;{prefix}_grant_basic&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_basic&#34;],
@@ -388,20 +431,6 @@ class SonnenbergAuthorizer(Authorizer):
             # b) 15% of pop. is eligible
             self.estimates[f&#34;{prefix}_grant_concentration&#34;] = \
                 self.estimates[f&#34;{prefix}_grant_basic&#34;]
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 6500
-            # prop = self.estimates[f&#34;{prefix}_children_eligible&#34;] \
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # prop_eligible = prop &gt; 0.15
-            # self.estimates[f&#34;{prefix}_eligible_concentration&#34;] = \
-            #     self.estimates[f&#34;{prefix}_eligible_basic&#34;] &amp; \
-            #     (count_eligible | prop_eligible)
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_concentration&#34;],
-            #     f&#34;{prefix}_grant_concentration&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_concentration&#34;],
@@ -432,19 +461,6 @@ class SonnenbergAuthorizer(Authorizer):
             ] = weighted_eligible * adj_sppe
             # for targeted grants, LEAs must:
             # meet basic eligibility AND have &gt;5% eligible
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 10
-            # share_eligible = self.estimates[f&#34;{prefix}_children_eligible&#34;] \
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # prop_eligible = share_eligible &gt; 0.05
-            # self.estimates[f&#34;{prefix}_eligible_targeted&#34;] = \
-            #     count_eligible &amp; prop_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_targeted&#34;],
-            #     f&#34;{prefix}_grant_targeted&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_targeted&#34;],
@@ -620,14 +636,37 @@ class SonnenbergAuthorizer(Authorizer):
 <dl>
 <dt id="dp_policy.titlei.allocators.AbowdAllocator"><code class="flex name class">
 <span>class <span class="ident">AbowdAllocator</span></span>
-<span>(</span><span>estimates, prefixes=('true', 'est', 'dp', 'dpest'), congress_cap=0.4, adj_sppe_bounds=[0.32, 0.48], adj_sppe_bounds_efig=[0.34, 0.46], appropriation=None, verbose=False)</span>
+<span>(</span><span>estimates: pandas.core.frame.DataFrame, prefixes: Tuple[str] = ('true', 'est', 'dp', 'dpest'), congress_cap: float = 0.4, adj_sppe_bounds: List[float] = [0.32, 0.48], adj_sppe_bounds_efig: List[float] = [0.34, 0.46], appropriation: float = None, verbose: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>As described in <a href="https://arxiv.org/pdf/1808.06303.pdf">https://arxiv.org/pdf/1808.06303.pdf</a></p></div>
+<div class="desc"><p>As described in <a href="https://arxiv.org/pdf/1808.06303.pdf">https://arxiv.org/pdf/1808.06303.pdf</a></p>
+<p>Class for allocating Title I funds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>estimates</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The poverty estimates, including
+randomized estimates.</dd>
+<dt><strong><code>prefixes</code></strong> :&ensp;<code>Tuple[str]</code>, optional</dt>
+<dd>Prefixes for different kinds of
+estimates. Defaults to ("true", "est", "dp", "dpest").</dd>
+<dt><strong><code>congress_cap</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Congressional cap. Defaults to 0.4.</dd>
+<dt><strong><code>adj_sppe_bounds</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted SPPE.
+Defaults to [0.32, 0.48].</dd>
+<dt><strong><code>adj_sppe_bounds_efig</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted
+SPPE for EFIG grants. Defaults to [0.34, 0.46].</dd>
+<dt><strong><code>appropriation</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Total congressional appropriation.
+Defaults to None.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to False.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L75-L92" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L103-L120" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class AbowdAllocator(Allocator):
     &#34;&#34;&#34;
@@ -662,7 +701,7 @@ class SonnenbergAuthorizer(Authorizer):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L79-L82" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L107-L110" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     return (
@@ -676,6 +715,7 @@ class SonnenbergAuthorizer(Authorizer):
 <li><code><b><a title="dp_policy.titlei.allocators.Allocator" href="#dp_policy.titlei.allocators.Allocator">Allocator</a></b></code>:
 <ul class="hlist">
 <li><code><a title="dp_policy.titlei.allocators.Allocator.adj_sppe" href="#dp_policy.titlei.allocators.Allocator.adj_sppe">adj_sppe</a></code></li>
+<li><code><a title="dp_policy.titlei.allocators.Allocator.allocations" href="#dp_policy.titlei.allocators.Allocator.allocations">allocations</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Allocator.calc_auth" href="#dp_policy.titlei.allocators.Allocator.calc_auth">calc_auth</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Allocator.normalize" href="#dp_policy.titlei.allocators.Allocator.normalize">normalize</a></code></li>
 </ul>
@@ -684,26 +724,64 @@ class SonnenbergAuthorizer(Authorizer):
 </dd>
 <dt id="dp_policy.titlei.allocators.Allocator"><code class="flex name class">
 <span>class <span class="ident">Allocator</span></span>
-<span>(</span><span>estimates, prefixes=('true', 'est', 'dp', 'dpest'), congress_cap=0.4, adj_sppe_bounds=[0.32, 0.48], adj_sppe_bounds_efig=[0.34, 0.46], appropriation=None, verbose=False)</span>
+<span>(</span><span>estimates: pandas.core.frame.DataFrame, prefixes: Tuple[str] = ('true', 'est', 'dp', 'dpest'), congress_cap: float = 0.4, adj_sppe_bounds: List[float] = [0.32, 0.48], adj_sppe_bounds_efig: List[float] = [0.34, 0.46], appropriation: float = None, verbose: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Class for allocating Title I funds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>estimates</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The poverty estimates, including
+randomized estimates.</dd>
+<dt><strong><code>prefixes</code></strong> :&ensp;<code>Tuple[str]</code>, optional</dt>
+<dd>Prefixes for different kinds of
+estimates. Defaults to ("true", "est", "dp", "dpest").</dd>
+<dt><strong><code>congress_cap</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Congressional cap. Defaults to 0.4.</dd>
+<dt><strong><code>adj_sppe_bounds</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted SPPE.
+Defaults to [0.32, 0.48].</dd>
+<dt><strong><code>adj_sppe_bounds_efig</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted
+SPPE for EFIG grants. Defaults to [0.34, 0.46].</dd>
+<dt><strong><code>appropriation</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Total congressional appropriation.
+Defaults to None.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to False.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L10-L72" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L11-L100" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Allocator:
     def __init__(
         self,
-        estimates,
-        prefixes=(&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;),
-        congress_cap=0.4,
-        adj_sppe_bounds=[0.32, 0.48],
-        adj_sppe_bounds_efig=[0.34, 0.46],
-        appropriation=None,
-        verbose=False
+        estimates: pd.DataFrame,
+        prefixes: Tuple[str] = (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;),
+        congress_cap: float = 0.4,
+        adj_sppe_bounds: List[float] = [0.32, 0.48],
+        adj_sppe_bounds_efig: List[float] = [0.34, 0.46],
+        appropriation: float = None,
+        verbose: bool = False
     ):
+        &#34;&#34;&#34;Class for allocating Title I funds.
+
+        Args:
+            estimates (pd.DataFrame): The poverty estimates, including
+                randomized estimates.
+            prefixes (Tuple[str], optional): Prefixes for different kinds of
+                estimates. Defaults to (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;).
+            congress_cap (float, optional): Congressional cap. Defaults to 0.4.
+            adj_sppe_bounds (List[float], optional): Bounds on adjusted SPPE.
+                Defaults to [0.32, 0.48].
+            adj_sppe_bounds_efig (List[float], optional): Bounds on adjusted
+                SPPE for EFIG grants. Defaults to [0.34, 0.46].
+            appropriation (float, optional): Total congressional appropriation.
+                Defaults to None.
+            verbose (bool, optional): Defaults to False.
+        &#34;&#34;&#34;
         self.estimates = estimates
         self.prefixes = prefixes
         self.congress_cap = congress_cap
@@ -714,9 +792,20 @@ class SonnenbergAuthorizer(Authorizer):
 
     def allocations(
         self,
-        normalize=True
+        normalize: bool = False
     ) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Compute allocations.
+
+        Args:
+            normalize (bool, optional): Whether to normalize the authorization
+                amounts. Defaults to False.
+
+        Returns:
+            pd.DataFrame: Estimates dataframe with computed allocations added.
+        &#34;&#34;&#34;
         self.calc_auth()
+        if normalize:
+            self.normalize()
         return self.estimates
 
     def calc_auth(self):
@@ -772,7 +861,7 @@ class SonnenbergAuthorizer(Authorizer):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L51-L72" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L79-L100" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def adj_sppe(self):
     &#34;&#34;&#34;Calculate adjusted SPPE using Sonnenberg, 2016 pg. 18 algorithm.
@@ -799,20 +888,42 @@ class SonnenbergAuthorizer(Authorizer):
 </details>
 </dd>
 <dt id="dp_policy.titlei.allocators.Allocator.allocations"><code class="name flex">
-<span>def <span class="ident">allocations</span></span>(<span>self, normalize=True) ‑> pandas.core.frame.DataFrame</span>
+<span>def <span class="ident">allocations</span></span>(<span>self, normalize: bool = False) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Compute allocations.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>normalize</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to normalize the authorization
+amounts. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Estimates dataframe with computed allocations added.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L29-L34" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L46-L62" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def allocations(
     self,
-    normalize=True
+    normalize: bool = False
 ) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Compute allocations.
+
+    Args:
+        normalize (bool, optional): Whether to normalize the authorization
+            amounts. Defaults to False.
+
+    Returns:
+        pd.DataFrame: Estimates dataframe with computed allocations added.
+    &#34;&#34;&#34;
     self.calc_auth()
+    if normalize:
+        self.normalize()
     return self.estimates</code></pre>
 </details>
 </dd>
@@ -827,7 +938,7 @@ pd.DataFrame: current estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L36-L45" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L64-L73" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def calc_auth(self):
     &#34;&#34;&#34;
@@ -849,7 +960,7 @@ pd.DataFrame: current estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L47-L49" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L75-L77" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def normalize(self):
     &#34;&#34;&#34;Normalize authorization amounts to allocation amounts.
@@ -860,16 +971,43 @@ pd.DataFrame: current estimates</p></div>
 </dd>
 <dt id="dp_policy.titlei.allocators.Authorizer"><code class="flex name class">
 <span>class <span class="ident">Authorizer</span></span>
-<span>(</span><span>estimates, prefixes=('true', 'est', 'dp', 'dpest'), congress_cap=0.4, adj_sppe_bounds=[0.32, 0.48], adj_sppe_bounds_efig=[0.34, 0.46], appropriation=None, verbose=False)</span>
+<span>(</span><span>estimates: pandas.core.frame.DataFrame, prefixes: Tuple[str] = ('true', 'est', 'dp', 'dpest'), congress_cap: float = 0.4, adj_sppe_bounds: List[float] = [0.32, 0.48], adj_sppe_bounds_efig: List[float] = [0.34, 0.46], appropriation: float = None, verbose: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>An allocator that uses a normalization strategy to convert
+authorization amounts to allocation amounts.</p>
+<p>Class for allocating Title I funds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>estimates</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The poverty estimates, including
+randomized estimates.</dd>
+<dt><strong><code>prefixes</code></strong> :&ensp;<code>Tuple[str]</code>, optional</dt>
+<dd>Prefixes for different kinds of
+estimates. Defaults to ("true", "est", "dp", "dpest").</dd>
+<dt><strong><code>congress_cap</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Congressional cap. Defaults to 0.4.</dd>
+<dt><strong><code>adj_sppe_bounds</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted SPPE.
+Defaults to [0.32, 0.48].</dd>
+<dt><strong><code>adj_sppe_bounds_efig</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted
+SPPE for EFIG grants. Defaults to [0.34, 0.46].</dd>
+<dt><strong><code>appropriation</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Total congressional appropriation.
+Defaults to None.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to False.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L95-L279" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L123-L333" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Authorizer(Allocator):
+    &#34;&#34;&#34;An allocator that uses a normalization strategy to convert
+    authorization amounts to allocation amounts.
+    &#34;&#34;&#34;
     def grant_types(self):
         raise NotImplementedError
 
@@ -905,7 +1043,19 @@ pd.DataFrame: current estimates</p></div>
                 )
         return self.estimates
 
-    def _calc_appropriation_total(self, grant_type):
+    def _calc_appropriation_total(
+        self,
+        grant_type: str
+    ) -&gt; float:
+        &#34;&#34;&#34;Using official figures, calculate appropriation for this grant type.
+
+        Args:
+            grant_type (str): The grant type. One of &#34;basic&#34;, &#34;concentration&#34;,
+                &#34;targeted&#34;.
+
+        Returns:
+            float: The total appropration for this grant type.
+        &#34;&#34;&#34;
         appropriation = self.estimates[f&#34;official_{grant_type}_alloc&#34;].sum()
         if self.appropriation_total is not None:
             if self.verbose:
@@ -930,17 +1080,26 @@ pd.DataFrame: current estimates</p></div>
         return appropriation
 
     def _normalize(
-        self, grant_type, prefix, appropriation,
-        hold_harmless=None, state_minimum=False
+        self,
+        grant_type: str,
+        prefix: str,
+        appropriation: float,
+        hold_harmless: pd.Series = None,
+        state_minimum: bool = False
     ):
-        # -- DEPRECATED by new official file --
-        # get this year&#39;s budget
-        # true_allocs = get_allocation_data(&#34;../data/titlei-allocations_20&#34;)
-        # actual_budget = true_allocs[&#34;HistAlloc&#34;].sum()
+        &#34;&#34;&#34;Normalize funding amounts, honoring special provisions.
 
-        # print(actual_budget)
-        # print(len(true_allocs))
-
+        Args:
+            grant_type (str):  The grant type. One of &#34;basic&#34;, &#34;concentration&#34;,
+                &#34;targeted&#34;.
+            prefix (str): Prefix for estimate. One of
+                (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;).
+            appropriation (float): The total appropriation available.
+            hold_harmless (pd.DataFrame, optional): If provided, which
+                districts are held harmless. Defaults to None.
+            state_minimum (bool, optional): Whether to apply the state minimum.
+                Defaults to False.
+        &#34;&#34;&#34;
         if hold_harmless is None:
             hold_harmless = np.zeros(len(self.estimates)).astype(bool)
 
@@ -1028,9 +1187,11 @@ pd.DataFrame: current estimates</p></div>
 
     def _normalize_segment(
         self,
-        segment, hold_harmless,
-        grant_type, prefix,
-        segment_appropriation
+        segment: pd.Series,
+        hold_harmless: pd.Series,
+        grant_type: str,
+        prefix: str,
+        segment_appropriation: float
     ):
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
@@ -1078,7 +1239,7 @@ pd.DataFrame: current estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L272-L279" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L326-L333" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
 def normalize_to_budget(authorizations, total_budget):
@@ -1093,41 +1254,6 @@ def normalize_to_budget(authorizations, total_budget):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="dp_policy.titlei.allocators.Authorizer.allocations"><code class="name flex">
-<span>def <span class="ident">allocations</span></span>(<span>self, normalize=True, **kwargs) ‑> pandas.core.frame.DataFrame</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L107-L129" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">def allocations(
-    self, normalize=True, **kwargs
-) -&gt; pd.DataFrame:
-    super().allocations(**kwargs)
-    if normalize:
-        for grant_type in self.grant_types():
-            for prefix in self.prefixes:
-                appropriation = \
-                    self._calc_appropriation_total(grant_type)
-                self._normalize(grant_type, prefix, appropriation)
-        self.calc_total()
-        if self.verbose:
-            total_approp = self.estimates[[
-                f&#34;official_{grant_type}_alloc&#34;
-                for grant_type in self.grant_types()
-            ]].sum().sum()
-            print(
-                &#34;After normalization, appropriation is&#34;,
-                total_approp,
-                &#34;and true allocation is&#34;,
-                self.estimates.true_grant_total.sum()
-            )
-    return self.estimates</code></pre>
-</details>
-</dd>
 <dt id="dp_policy.titlei.allocators.Authorizer.calc_total"><code class="name flex">
 <span>def <span class="ident">calc_total</span></span>(<span>self)</span>
 </code></dt>
@@ -1136,7 +1262,7 @@ def normalize_to_budget(authorizations, total_budget):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L99-L105" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L130-L136" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def calc_total(self):
     for prefix in self.prefixes:
@@ -1155,7 +1281,7 @@ def normalize_to_budget(authorizations, total_budget):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L96-L97" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L127-L128" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     raise NotImplementedError</code></pre>
@@ -1167,6 +1293,7 @@ def normalize_to_budget(authorizations, total_budget):
 <li><code><b><a title="dp_policy.titlei.allocators.Allocator" href="#dp_policy.titlei.allocators.Allocator">Allocator</a></b></code>:
 <ul class="hlist">
 <li><code><a title="dp_policy.titlei.allocators.Allocator.adj_sppe" href="#dp_policy.titlei.allocators.Allocator.adj_sppe">adj_sppe</a></code></li>
+<li><code><a title="dp_policy.titlei.allocators.Allocator.allocations" href="#dp_policy.titlei.allocators.Allocator.allocations">allocations</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Allocator.calc_auth" href="#dp_policy.titlei.allocators.Allocator.calc_auth">calc_auth</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Allocator.normalize" href="#dp_policy.titlei.allocators.Allocator.normalize">normalize</a></code></li>
 </ul>
@@ -1178,13 +1305,40 @@ def normalize_to_budget(authorizations, total_budget):
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Authorizer allocator described by Sonnenberg (2007). Official process
+used by Dep Ed.</p>
+<p>Class for allocating Title I funds.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>estimates</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>The poverty estimates, including
+randomized estimates.</dd>
+<dt><strong><code>prefixes</code></strong> :&ensp;<code>Tuple[str]</code>, optional</dt>
+<dd>Prefixes for different kinds of
+estimates. Defaults to ("true", "est", "dp", "dpest").</dd>
+<dt><strong><code>congress_cap</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Congressional cap. Defaults to 0.4.</dd>
+<dt><strong><code>adj_sppe_bounds</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted SPPE.
+Defaults to [0.32, 0.48].</dd>
+<dt><strong><code>adj_sppe_bounds_efig</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Bounds on adjusted
+SPPE for EFIG grants. Defaults to [0.34, 0.46].</dd>
+<dt><strong><code>appropriation</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Total congressional appropriation.
+Defaults to None.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to False.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L282-L580" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L336-L596" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class SonnenbergAuthorizer(Authorizer):
+    &#34;&#34;&#34;Authorizer allocator described by Sonnenberg (2007). Official process
+    used by Dep Ed.
+    &#34;&#34;&#34;
     def __init__(
         self,
         *args,
@@ -1229,20 +1383,6 @@ def normalize_to_budget(authorizations, total_budget):
             # For basic grants, LEA must have
             # &gt;10 eligible children
             # AND &gt;2% eligible
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 10
-            # share_eligible = (
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;]
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # ) &gt; 0.02
-            # self.estimates[f&#34;{prefix}_eligible_basic&#34;] = \
-            #     count_eligible &amp; share_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_basic&#34;],
-            #     f&#34;{prefix}_grant_basic&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_basic&#34;],
@@ -1264,20 +1404,6 @@ def normalize_to_budget(authorizations, total_budget):
             # b) 15% of pop. is eligible
             self.estimates[f&#34;{prefix}_grant_concentration&#34;] = \
                 self.estimates[f&#34;{prefix}_grant_basic&#34;]
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 6500
-            # prop = self.estimates[f&#34;{prefix}_children_eligible&#34;] \
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # prop_eligible = prop &gt; 0.15
-            # self.estimates[f&#34;{prefix}_eligible_concentration&#34;] = \
-            #     self.estimates[f&#34;{prefix}_eligible_basic&#34;] &amp; \
-            #     (count_eligible | prop_eligible)
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_concentration&#34;],
-            #     f&#34;{prefix}_grant_concentration&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_concentration&#34;],
@@ -1308,19 +1434,6 @@ def normalize_to_budget(authorizations, total_budget):
             ] = weighted_eligible * adj_sppe
             # for targeted grants, LEAs must:
             # meet basic eligibility AND have &gt;5% eligible
-
-            # count_eligible = \
-            #     self.estimates[f&#34;{prefix}_children_eligible&#34;] &gt; 10
-            # share_eligible = self.estimates[f&#34;{prefix}_children_eligible&#34;] \
-            #     / self.estimates[f&#34;{prefix}_children_total&#34;]
-            # prop_eligible = share_eligible &gt; 0.05
-            # self.estimates[f&#34;{prefix}_eligible_targeted&#34;] = \
-            #     count_eligible &amp; prop_eligible
-            # self.estimates.loc[
-            #     ~self.estimates[f&#34;{prefix}_eligible_targeted&#34;],
-            #     f&#34;{prefix}_grant_targeted&#34;
-            # ] = 0.0
-
             grants, eligible = \
                 self.thresholder.process(
                     self.estimates[f&#34;{prefix}_grant_targeted&#34;],
@@ -1491,25 +1604,6 @@ def normalize_to_budget(authorizations, total_budget):
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="dp_policy.titlei.allocators.SonnenbergAuthorizer.allocations"><code class="name flex">
-<span>def <span class="ident">allocations</span></span>(<span>self, **kwargs) ‑> pandas.core.frame.DataFrame</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L298-L304" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">def allocations(
-    self, **kwargs
-) -&gt; pd.DataFrame:
-    super().allocations(**kwargs)
-    if self.hold_harmless or self.state_minimum:
-        self._provisions()
-    return self.estimates</code></pre>
-</details>
-</dd>
 <dt id="dp_policy.titlei.allocators.SonnenbergAuthorizer.grant_types"><code class="name flex">
 <span>def <span class="ident">grant_types</span></span>(<span>self)</span>
 </code></dt>
@@ -1518,7 +1612,7 @@ def normalize_to_budget(authorizations, total_budget):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/allocators.py#L306-L311" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/allocators.py#L363-L368" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     return (
@@ -1534,6 +1628,7 @@ def normalize_to_budget(authorizations, total_budget):
 <li><code><b><a title="dp_policy.titlei.allocators.Authorizer" href="#dp_policy.titlei.allocators.Authorizer">Authorizer</a></b></code>:
 <ul class="hlist">
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.adj_sppe" href="#dp_policy.titlei.allocators.Allocator.adj_sppe">adj_sppe</a></code></li>
+<li><code><a title="dp_policy.titlei.allocators.Authorizer.allocations" href="#dp_policy.titlei.allocators.Allocator.allocations">allocations</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.calc_auth" href="#dp_policy.titlei.allocators.Allocator.calc_auth">calc_auth</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.normalize" href="#dp_policy.titlei.allocators.Allocator.normalize">normalize</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.normalize_to_budget" href="#dp_policy.titlei.allocators.Authorizer.normalize_to_budget">normalize_to_budget</a></code></li>
@@ -1575,7 +1670,6 @@ def normalize_to_budget(authorizations, total_budget):
 <li>
 <h4><code><a title="dp_policy.titlei.allocators.Authorizer" href="#dp_policy.titlei.allocators.Authorizer">Authorizer</a></code></h4>
 <ul class="">
-<li><code><a title="dp_policy.titlei.allocators.Authorizer.allocations" href="#dp_policy.titlei.allocators.Authorizer.allocations">allocations</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.calc_total" href="#dp_policy.titlei.allocators.Authorizer.calc_total">calc_total</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.grant_types" href="#dp_policy.titlei.allocators.Authorizer.grant_types">grant_types</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.Authorizer.normalize_to_budget" href="#dp_policy.titlei.allocators.Authorizer.normalize_to_budget">normalize_to_budget</a></code></li>
@@ -1584,7 +1678,6 @@ def normalize_to_budget(authorizations, total_budget):
 <li>
 <h4><code><a title="dp_policy.titlei.allocators.SonnenbergAuthorizer" href="#dp_policy.titlei.allocators.SonnenbergAuthorizer">SonnenbergAuthorizer</a></code></h4>
 <ul class="">
-<li><code><a title="dp_policy.titlei.allocators.SonnenbergAuthorizer.allocations" href="#dp_policy.titlei.allocators.SonnenbergAuthorizer.allocations">allocations</a></code></li>
 <li><code><a title="dp_policy.titlei.allocators.SonnenbergAuthorizer.grant_types" href="#dp_policy.titlei.allocators.SonnenbergAuthorizer.grant_types">grant_types</a></code></li>
 </ul>
 </li>

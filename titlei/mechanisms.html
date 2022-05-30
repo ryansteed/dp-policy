@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L1-L152" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L1-L165" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import pandas as pd
 from typing import Tuple
@@ -37,8 +37,8 @@ from diffprivlib.accountant import BudgetAccountant
 
 class Mechanism:
     &#34;&#34;&#34;
-    a class for the different privacy mechanisms we might employ to compute
-    poverty estimates
+    A class for the different privacy mechanisms we employ to compute
+    poverty estimates.
     &#34;&#34;&#34;
     def __init__(
         self, sensitivity=2.0, round=False, clip=True
@@ -65,6 +65,8 @@ class Mechanism:
 
 
 class GroundTruth(Mechanism):
+    &#34;&#34;&#34;No randomization.
+    &#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         pass
 
@@ -75,11 +77,15 @@ class GroundTruth(Mechanism):
 
 
 class DummyMechanism():
+    &#34;&#34;&#34;No randomization.
+    &#34;&#34;&#34;
     def randomise(self, x):
         return x
 
 
 class DiffPriv(Mechanism):
+    &#34;&#34;&#34;Differentially private mechanisms wrapping `diffprivlib`.
+    &#34;&#34;&#34;
     def __init__(
         self, epsilon, delta, *args, **kwargs
     ):
@@ -113,10 +119,6 @@ class DiffPriv(Mechanism):
 
 
 class Laplace(DiffPriv):
-    &#34;&#34;&#34;
-    Following Abowd &amp; Schmutte (2019), return $\\hat{E}_l = E_l + e_l$,
-    where $e_l \\sim Laplace(1/\\epsilon)$.
-    &#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mechanism = LaplaceMech(
@@ -137,12 +139,23 @@ class Gaussian(DiffPriv):
 
 
 class Sampled(Mechanism):
+    &#34;&#34;&#34;Mechanism for simulating sampling errors.
+    &#34;&#34;&#34;
     def __init__(
         self,
         *args,
-        multiplier=1.0, distribution=&#34;gaussian&#34;,
+        multiplier: float = 1.0,
+        distribution: str = &#34;gaussian&#34;,
         **kwargs
     ):
+        &#34;&#34;&#34;
+        Args:
+            multiplier (float, optional): Scales sampling noise by a constant.
+                Defaults to 1.0.
+            distribution (str, optional): Distribution of sampling noise.
+                Supported options are &#39;gaussian&#39; and &#39;laplace&#39;. Defaults to
+                &#34;gaussian&#34;.
+        &#34;&#34;&#34;
         super().__init__(*args, **kwargs)
         # these are fixed, because sampling error
         # is theoretically immutable by algo means.
@@ -195,14 +208,15 @@ class Sampled(Mechanism):
 <span>(</span><span>epsilon, delta, *args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>a class for the different privacy mechanisms we might employ to compute
-poverty estimates</p></div>
+<div class="desc"><p>Differentially private mechanisms wrapping <code>diffprivlib</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L53-L83" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L57-L89" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class DiffPriv(Mechanism):
+    &#34;&#34;&#34;Differentially private mechanisms wrapping `diffprivlib`.
+    &#34;&#34;&#34;
     def __init__(
         self, epsilon, delta, *args, **kwargs
     ):
@@ -256,13 +270,15 @@ poverty estimates</p></div>
 <span>class <span class="ident">DummyMechanism</span></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>No randomization.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L48-L50" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L50-L54" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class DummyMechanism():
+    &#34;&#34;&#34;No randomization.
+    &#34;&#34;&#34;
     def randomise(self, x):
         return x</code></pre>
 </details>
@@ -276,7 +292,7 @@ poverty estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L49-L50" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L53-L54" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def randomise(self, x):
     return x</code></pre>
@@ -289,12 +305,11 @@ poverty estimates</p></div>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>a class for the different privacy mechanisms we might employ to compute
-poverty estimates</p></div>
+<div class="desc"><p>Differentially private mechanisms wrapping <code>diffprivlib</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L100-L107" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L102-L109" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Gaussian(DiffPriv):
     def __init__(self, *args, **kwargs):
@@ -324,14 +339,15 @@ poverty estimates</p></div>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>a class for the different privacy mechanisms we might employ to compute
-poverty estimates</p></div>
+<div class="desc"><p>No randomization.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L38-L45" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L38-L47" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class GroundTruth(Mechanism):
+    &#34;&#34;&#34;No randomization.
+    &#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         pass
 
@@ -358,18 +374,13 @@ poverty estimates</p></div>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Following Abowd &amp; Schmutte (2019), return $\hat{E}_l = E_l + e_l$,
-where $e_l \sim Laplace(1/\epsilon)$.</p></div>
+<div class="desc"><p>Differentially private mechanisms wrapping <code>diffprivlib</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L86-L97" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L92-L99" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Laplace(DiffPriv):
-    &#34;&#34;&#34;
-    Following Abowd &amp; Schmutte (2019), return $\\hat{E}_l = E_l + e_l$,
-    where $e_l \\sim Laplace(1/\\epsilon)$.
-    &#34;&#34;&#34;
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mechanism = LaplaceMech(
@@ -397,17 +408,17 @@ where $e_l \sim Laplace(1/\epsilon)$.</p></div>
 <span>(</span><span>sensitivity=2.0, round=False, clip=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>a class for the different privacy mechanisms we might employ to compute
-poverty estimates</p></div>
+<div class="desc"><p>A class for the different privacy mechanisms we employ to compute
+poverty estimates.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L9-L35" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L9-L35" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Mechanism:
     &#34;&#34;&#34;
-    a class for the different privacy mechanisms we might employ to compute
-    poverty estimates
+    A class for the different privacy mechanisms we employ to compute
+    poverty estimates.
     &#34;&#34;&#34;
     def __init__(
         self, sensitivity=2.0, round=False, clip=True
@@ -448,7 +459,7 @@ poverty estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L30-L35" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L30-L35" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def post_processing(self, count):
     if self.round:
@@ -467,7 +478,7 @@ population indexed by district ID.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L21-L28" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L21-L28" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def poverty_estimates(
     self, pop_total, children_total, children_poverty
@@ -483,23 +494,43 @@ population indexed by district ID.</p></div>
 </dd>
 <dt id="dp_policy.titlei.mechanisms.Sampled"><code class="flex name class">
 <span>class <span class="ident">Sampled</span></span>
-<span>(</span><span>*args, multiplier=1.0, distribution='gaussian', **kwargs)</span>
+<span>(</span><span>*args, multiplier: float = 1.0, distribution: str = 'gaussian', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>a class for the different privacy mechanisms we might employ to compute
-poverty estimates</p></div>
+<div class="desc"><p>Mechanism for simulating sampling errors.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>multiplier</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Scales sampling noise by a constant.
+Defaults to 1.0.</dd>
+<dt><strong><code>distribution</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Distribution of sampling noise.
+Supported options are 'gaussian' and 'laplace'. Defaults to
+"gaussian".</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/mechanisms.py#L110-L152" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/mechanisms.py#L112-L165" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Sampled(Mechanism):
+    &#34;&#34;&#34;Mechanism for simulating sampling errors.
+    &#34;&#34;&#34;
     def __init__(
         self,
         *args,
-        multiplier=1.0, distribution=&#34;gaussian&#34;,
+        multiplier: float = 1.0,
+        distribution: str = &#34;gaussian&#34;,
         **kwargs
     ):
+        &#34;&#34;&#34;
+        Args:
+            multiplier (float, optional): Scales sampling noise by a constant.
+                Defaults to 1.0.
+            distribution (str, optional): Distribution of sampling noise.
+                Supported options are &#39;gaussian&#39; and &#39;laplace&#39;. Defaults to
+                &#34;gaussian&#34;.
+        &#34;&#34;&#34;
         super().__init__(*args, **kwargs)
         # these are fixed, because sampling error
         # is theoretically immutable by algo means.
