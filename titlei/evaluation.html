@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>dp_policy.titlei.evaluation API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>dp_policy.titlei.evaluation</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L1-L741" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">import os
+import pandas as pd
+import geopandas as gpd
+import numpy as np
+import scipy.stats as stats
+import matplotlib.pyplot as plt
+import matplotlib.colors as pltc
+import seaborn as sns
+import pickle
+
+from dp_policy.titlei.utils import get_acs_unified
+import dp_policy.config as config
+
+
+def get_geography():
+    geo = gpd.read_file(os.path.join(
+        config.root,
+        &#34;data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp&#34;
+    ))
+    geo.STATEFP = geo.STATEFP.astype(int)
+    geo[&#34;District ID&#34;] = np.where(
+        geo.UNSDLEA.notna(),
+        geo.UNSDLEA,
+        np.where(
+            geo.SCSDLEA.notna(),
+            geo.SCSDLEA,
+            geo.ELSDLEA
+        )
+    )
+    geo[&#34;District ID&#34;] = geo[&#34;District ID&#34;].astype(int)
+    geo = geo.rename(columns={
+        &#34;STATEFP&#34;: &#34;State FIPS Code&#34;
+    }).set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    return geo
+
+
+def discrimination_join(results, save_path=None, verbose=False):
+    acs = get_acs_unified(verbose)
+
+    variables = [
+        &#39;Total population (RACE) - est&#39;,
+    ]
+    # add race variables
+    variables += [
+        r for r in acs.columns
+        if r.endswith(&#34;(RACE) - pct&#34;)
+        and &#34;and&#34; not in r
+        and &#34;races&#34; not in r
+        and not r.startswith(&#34;One race&#34;)
+    ] + [&#34;Two or more races (RACE) - pct&#34;]
+    # add ethnicity variables
+    hisp = [
+        r for r in acs.columns
+        if r.endswith(&#34;(HISPANIC OR LATINO AND RACE) - pct&#34;)
+    ]
+    variables += hisp[1:6]
+    # add income variables
+    variables += [
+        r for r in acs.columns
+        if r.startswith(&#34;Median household income (dollars) (&#34;)
+    ]
+    # add rural/urban - need a 3rd data source
+    # add immigrant status
+    variables += [
+        # &#34;Foreign born (PLACE OF BIRTH) - est&#34;,
+        &#34;Foreign born (PLACE OF BIRTH) - pct&#34;,
+        # &#34;Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - est&#34;,
+        &#34;Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - pct&#34;
+    ]
+    # add language isolation
+    variables += [
+        # &#39;Language other than English (LANGUAGE SPOKEN AT HOME) - est&#39;,
+        &#39;Language other than English (LANGUAGE SPOKEN AT HOME) - pct&#39;
+    ]
+    # add renters vs. homeowners (housing security)
+    variables += [
+        # &#39;Renter-occupied (HOUSING TENURE) - est&#39;,
+        &#39;Renter-occupied (HOUSING TENURE) - pct&#39;,
+        &#39;Average household size of renter-occupied unit (HOUSING TENURE) - est&#39;
+    ]
+
+    # look in these columns for &#39;-&#39; and replace with nan according to ACS docs
+    # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
+    # otherwise convert to numeric
+    acs_vars = acs[variables]\
+        .replace([&#39;-&#39;, &#34;**&#34;, &#34;***&#34;, &#34;(X)&#34;, &#34;N&#34;, &#34;null&#34;], np.nan)\
+        .replace(&#39;250,000+&#39;, 250000)\
+        .apply(pd.to_numeric, errors=&#39;raise&#39;)
+
+    if verbose:
+        print(variables)
+        print(acs_vars.shape)
+        print(results.shape)
+
+    # adding geographic area
+    geo = get_geography()
+
+    to_join = acs_vars.join(geo[&#34;ALAND&#34;], how=&#34;inner&#34;)
+    if verbose:
+        print(&#34;ACS&#34;, acs_vars.shape)
+        print(&#34;Geo joined ACS&#34;, to_join.shape)
+        print(
+            to_join[
+                to_join[&#34;Total population (RACE) - est&#34;].isna()
+            ].groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).groups.keys()
+        )
+
+    print(&#34;Joining ACS/geo variables...&#34;)
+    grants = results.join(to_join, how=&#34;inner&#34;)
+    if verbose:
+        print(
+            &#34;missing some districts in ACS/geo:&#34;,
+            len(results.groupby([
+                &#34;State FIPS Code&#34;, &#34;District ID&#34;
+            ])) - len(grants.groupby([
+                &#34;State FIPS Code&#34;, &#34;District ID&#34;
+            ]))
+        )
+        # print(results[results.index.difference(to_join.index)])
+        print(grants.shape)
+
+    if save_path:
+        print(&#34;Saving to feather...&#34;)
+        grants.reset_index().to_feather(f&#34;{save_path}.feather&#34;)
+        print(&#34;... saved.&#34;)
+        # grants.to_csv(f&#34;{save_path}.csv&#34;)
+    return grants
+
+
+def discrimination_treatments_join(
+    treatments_name,
+    exclude=[],
+    epsilon=0.1,
+    delta=0.0
+):
+    # output a concatenated DF with a new index column indicating which
+    # treatment was applied
+    treatments = {
+        treatment: df.loc[(
+            slice(None),
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            slice(None),
+            slice(None)
+        ), [
+            c for c in df.columns
+            if c.endswith(&#34;- pct&#34;)
+            or c.endswith(&#34;- est&#34;)
+            or c.startswith(&#34;true&#34;)
+            or c.endswith(&#34;grant_total&#34;)
+            or c in [
+                &#34;ALAND&#34;
+            ]
+        ]]
+        for treatment, df in load_treatments(treatments_name).items()
+        if treatment not in exclude
+    }
+    print(&#34;Saving&#34;, treatments.keys())
+    joined = pd.concat(
+        treatments,
+        names=[&#39;treatment&#39;]
+    )
+    print(&#34;Concatenated has {} rows and {} treatments&#34;.format(
+        len(joined),
+        len(treatments)
+    ))
+    discrimination_joined = discrimination_join(
+        joined,
+        save_path=f&#34;{config.root}/results/policy_experiments/&#34;
+        f&#34;{treatments_name}_discrimination_laplace&#34;
+    )
+    return discrimination_joined
+
+
+def geo_join(results):
+    # NOTE: only accepts &#34;State FIPS Code&#34;, &#34;District ID&#34;, &#34;trial&#34; in index
+    results = results.copy()
+    results[&#34;error&#34;] = results.est_grant_total - results.true_grant_total
+    results[&#34;error_per_child&#34;] = results.error / results[&#39;true_children_total&#39;]
+    results[&#34;error_per_child_eligible&#34;] = \
+        results.error / results[&#39;true_children_eligible&#39;]
+    results[&#34;error_dp&#34;] = results.dpest_grant_total - results.true_grant_total
+    results[&#34;error_dp_per_child&#34;] = \
+        results.error_dp / results[&#39;true_children_total&#39;]
+    results[&#34;error_dp_per_child_eligible&#34;] = \
+        results.error_dp / results[&#39;true_children_eligible&#39;]
+    # geo.join()
+    results[&#34;percent_eligible&#34;] = \
+        results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
+    results[&#34;switched_eligibility&#34;] = \
+        ~(
+            (results.est_eligible_targeted == results.true_eligible_targeted)
+            &amp; (results.est_eligible_basic == results.true_eligible_basic)
+            &amp; (
+                results.est_eligible_concentration ==
+                results.true_eligible_concentration
+            )
+        )
+    results[&#34;became_eligible&#34;] = \
+        (
+            results.est_eligible_targeted.astype(bool)
+            &amp; ~results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            results.est_eligible_basic.astype(bool)
+            &amp; ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.est_eligible_concentration.astype(bool)
+            &amp; ~results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;became_ineligible&#34;] = \
+        (
+            ~results.est_eligible_targeted.astype(bool)
+            &amp; results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            ~results.est_eligible_basic.astype(bool)
+            &amp; results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.est_eligible_concentration.astype(bool)
+            &amp; results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;switched_eligibility_dp&#34;] = \
+        ~(
+            (results.dpest_eligible_targeted == results.true_eligible_targeted)
+            &amp; (results.dpest_eligible_basic == results.true_eligible_basic)
+            &amp; (
+                results.dpest_eligible_concentration ==
+                results.true_eligible_concentration
+            )
+        )
+    results[&#34;became_eligible_dp&#34;] = \
+        (
+            results.dpest_eligible_targeted.astype(bool)
+            &amp; ~results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            results.dpest_eligible_basic.astype(bool)
+            &amp; ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.dpest_eligible_concentration.astype(bool)
+            &amp; ~results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;became_ineligible_dp&#34;] = \
+        (
+            ~results.dpest_eligible_targeted.astype(bool)
+            &amp; results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            ~results.dpest_eligible_basic.astype(bool)
+            &amp; results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.dpest_eligible_concentration.astype(bool)
+            &amp; results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;dp_marginal&#34;] = \
+        results[&#34;error_dp_per_child_eligible&#34;] -\
+        results[&#34;error_per_child_eligible&#34;]
+
+    geo = get_geography()
+    joined = geo.join(
+        results[[
+            &#34;error&#34;,
+            &#34;error_per_child&#34;,
+            &#34;error_per_child_eligible&#34;,
+            &#34;error_dp&#34;,
+            &#34;error_dp_per_child&#34;,
+            &#34;error_dp_per_child_eligible&#34;,
+            &#34;true_children_eligible&#34;,
+            &#34;true_pop_total&#34;,
+            &#34;percent_eligible&#34;,
+            &#34;true_grant_total&#34;,
+            &#34;switched_eligibility&#34;,
+            &#34;became_eligible&#34;,
+            &#34;became_ineligible&#34;,
+            &#34;switched_eligibility_dp&#34;,
+            &#34;became_eligible_dp&#34;,
+            &#34;became_ineligible_dp&#34;,
+            &#34;dp_marginal&#34;
+        ]]
+        .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;]),
+        how=&#34;inner&#34;
+    )
+    joined.columns = [
+        col if isinstance(col, str) else &#39;_&#39;.join([
+            c for c in col if c != &#39;mean&#39;
+        ]).rstrip(&#39;_&#39;)
+        for col in joined.columns.values
+    ]
+    for col in [
+        &#34;error_per_child&#34;,
+        &#34;error_per_child_eligible&#34;,
+        &#34;error_dp_per_child&#34;,
+        &#34;error_dp_per_child_eligible&#34;
+    ]:
+        joined.loc[
+            np.isinf(joined[col]), col
+        ] = np.nan
+
+    return joined
+
+
+def plot_treatments(
+    treatments, x_func, plot_method, plot_kwargs,
+    filename=None,
+    xlab=None,
+    ylab=&#34;Smoothed density&#34;,
+    grant=&#34;total&#34;,
+    epsilon=None,
+    delta=None,
+    mean_line=False
+):
+    palette = sns.color_palette(n_colors=len(treatments))
+    for i, (treatment, df_raw) in enumerate(treatments.items()):
+        df = df_raw.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        # print(df.shape)
+        # print(np.unique(df.index.get_level_values(level=&#34;epsilon&#34;)))
+        df.loc[:, &#34;misalloc&#34;] = \
+            df[f&#34;dpest_grant_{grant}&#34;] - df[f&#34;true_grant_{grant}&#34;]
+        df.loc[:, &#34;misalloc_sq&#34;] = np.power(df[&#34;misalloc&#34;], 2)
+        if grant == &#34;total&#34;:
+            # try:
+            #     print(~df.true_eligible_basic.astype(bool))
+            # except:
+            #     print(&#34;Failed&#34;, df.true_eligible_basic)
+            df[&#34;lost_eligibility&#34;] = \
+                (
+                    df[&#34;dpest_eligible_basic&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_basic&#34;].astype(bool)
+                ) |\
+                (
+                    df[&#34;dpest_eligible_concentration&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_concentration&#34;].astype(bool)
+                ) |\
+                (
+                    df[&#34;dpest_eligible_targeted&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_targeted&#34;].astype(bool)
+                )
+        else:
+            df[&#34;lost_eligibility&#34;] = \
+                ~df[&#34;dpest_eligible_{}&#34;.format(grant)].astype(bool) \
+                &amp; df[&#34;true_eligible_{}&#34;.format(grant)].astype(bool)
+        plot_kwargs.update({
+            &#39;label&#39;: treatment,
+            &#39;color&#39;: palette[i]
+        })
+        x = x_func(df)
+        plot_method(x, **plot_kwargs)
+        if mean_line:
+            plt.axvline(
+                x.mean(), color=palette[i],
+                linestyle=&#39;dashed&#39;
+            )
+
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.legend(loc=&#39;upper right&#39;)
+    if filename:
+        plt.savefig(
+            f&#34;{config.root}/plots/bootstrap/{filename}.png&#34;,
+            dpi=100,
+            bbox_inches=&#39;tight&#39;
+        )
+    plt.show()
+    plt.close()
+
+
+def cube(x):
+    return np.sign(x)*np.power(np.abs(x), 1/3)
+
+
+def heatmap(
+    data, label=None, title=None, transform=&#39;cube&#39;, theme=&#34;seismic_r&#34;,
+    y=&#34;error_dp_per_child&#34;, vcenter=0, file=None,
+    figsize=(10, 5), bar_location=&#39;bottom&#39;, min=None, max=None, dpi=300,
+    alpha=0.1
+):
+    data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
+    sig = ~(
+        ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
+        ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
+    )
+    print(
+        &#34;All but&#34;,
+        len(data)-sig.sum(),
+        f&#34;are significantly different from zero at {alpha}&#34;
+    )
+
+    fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
+
+    for key in [y, f&#34;{y}_moe&#34;]:
+        if transform == &#39;cube&#39;:
+            data.loc[:, key] = cube(data[key])
+        if transform == &#39;log&#39;:
+            data.loc[:, key] = np.where(data[key] == 0, 0, np.log(data[key]))
+        if transform == &#39;sqrt&#39;:
+            data.loc[:, key] = np.sign(data[key]) * np.sqrt(np.abs(data[key]))
+
+    # Create colorbar as a legend
+    if min is None:
+        min = data[y].min()
+    if max is None:
+        max = data[y].max()
+
+    bound = np.max(np.abs([min, max]))
+
+    if vcenter is not None and transform != &#39;log&#39;:
+        norm = pltc.TwoSlopeNorm(vcenter=0, vmin=-bound, vmax=bound)
+    else:
+        norm = pltc.Normalize(vmin=min, vmax=max)
+    sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
+
+    print(
+        f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
+        data[f&#34;{y}_moe&#34;].abs().max()
+    )
+    data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
+    data.plot(
+        column=f&#34;{y}_sig&#34;,
+        cmap=theme,
+        norm=norm,
+        ax=ax,
+        linewidth=0.05,
+        edgecolor=&#39;0.1&#39;,
+        missing_kwds=dict(
+            hatch=&#39;///&#39;,
+            edgecolor=(0, 0, 0, 0.25),
+            facecolor=&#39;none&#39;,
+            label=f&#34;Not significant (p &lt; {alpha})&#34;
+        )
+    )
+    cb = fig.colorbar(
+        sm,
+        location=bar_location,
+        shrink=0.5, pad=0.05, aspect=30
+    )
+    cb.set_label(label)
+    if title is not None:
+        plt.title(title)
+    plt.axis(&#39;off&#39;)
+    plt.tight_layout()
+    if file is not None:
+        plt.savefig(
+            f&#34;{config.root}/plots/geo/{file}&#34;,
+            dpi=dpi, bbox_inches=&#39;tight&#39;
+        )
+        plt.close()
+    else:
+        plt.show()
+
+
+def save_treatments(treatments, experiment_name):
+    # minify treatments
+    treatments = {
+        treatment: df.loc[:, [
+            c for c in df.columns
+            if c.endswith(&#34;- pct&#34;)
+            or c.endswith(&#34;- est&#34;)
+            or c.startswith(&#34;true&#34;)
+            or &#34;eligible&#34; in c
+            or &#34;grant&#34; in c
+            or c in [
+                &#34;ALAND&#34;
+            ]
+        ]]
+        for treatment, df in treatments.items()
+    }
+    pickle.dump(
+        treatments,
+        open(
+            f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
+            &#39;wb&#39;
+        )
+    )
+
+
+def load_treatments(experiment_name):
+    return pickle.load(
+        open(
+            f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
+            &#39;rb&#39;
+        )
+    )
+
+
+def compare_treatments(
+  treatments,
+  epsilon=0.1, delta=0.0, mapvar=&#34;error_per_child&#34;,
+  experiment_name=None
+):
+    if epsilon is None:
+        print(
+            &#34;[WARN] Epsilon is none &#34;
+            &#34;- only use this if there is only one eps value in the df.&#34;
+        )
+    else:
+        print(&#34;Comparing at eps=&#34;, epsilon)
+    for treatment, df in treatments.items():
+        df = df.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        treatments[treatment] = df
+        print(len(df))
+        print(&#34;\n#&#34;, treatment)
+        print(&#34;True budget:&#34;, df[f&#34;true_grant_total&#34;].sum())
+        print(&#34;DP est budget:&#34;,  df[f&#34;dpest_grant_total&#34;].sum())
+        df[&#34;became_ineligible&#34;] = \
+            (
+                ~df.dpest_eligible_targeted.astype(bool)
+                &amp; df.true_eligible_targeted.astype(bool)
+            )\
+            | (
+                ~df.dpest_eligible_basic.astype(bool)
+                &amp; df.true_eligible_basic.astype(bool)
+            )\
+            | (
+                ~df.dpest_eligible_concentration.astype(bool)
+                &amp; df.true_eligible_concentration.astype(bool)
+            )
+        print(
+            &#34;Avg prop. districts erroneously ineligible:&#34;,
+            df.became_ineligible.groupby(&#34;trial&#34;).sum().mean()
+        )
+
+        print(&#34;# est&#34;)
+        misalloc_statistics(
+            df.est_grant_total - df.true_grant_total
+        )
+
+        print(&#34;# dpest&#34;)
+        misalloc_statistics(
+            df.dpest_grant_total - df.true_grant_total
+        )
+
+        print(&#34;# marginal&#34;)
+        misalloc_statistics(
+            df.dpest_grant_total - df.est_grant_total
+        )
+
+    # compare bias
+    plot_treatments(
+        treatments,
+        lambda df: np.sqrt(df.groupby(&#39;trial&#39;)[&#34;misalloc&#34;].mean()),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        epsilon=epsilon,
+        delta=delta,
+        xlab=f&#34;Mean misalloc (per trial)&#34;,
+        mean_line=True
+    )
+
+    # compare RMSE - mean and hist
+    plot_treatments(
+        treatments,
+        lambda df: np.sqrt(df.groupby(&#39;trial&#39;)[&#34;misalloc_sq&#34;].mean()),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        filename=f&#34;{experiment_name}_rmse&#34;,
+        epsilon=epsilon,
+        delta=delta,
+        xlab=f&#34;RMSE (per trial)&#34;,
+        mean_line=True
+    )
+
+    # compare likelihood of ineligibility
+    plot_treatments(
+        treatments,
+        lambda df:
+            df.groupby([&#39;State FIPS Code&#39;, &#39;District ID&#39;])[&#34;lost_eligibility&#34;]
+            .mean(),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        # filename=f&#34;likelihood_ineligible_total&#34;,
+        xlab=f&#34;Likelihood of losing eligibility&#34;,
+        epsilon=epsilon,
+        delta=delta,
+        mean_line=True
+    )
+
+    # compare nationwide map
+    print(&#34;Plotting&#34;, mapvar)
+    ymins = []
+    ymaxs = []
+    treatments_geo = {
+        treatment:
+            geo_join(
+                df.loc[pd.IndexSlice[
+                    :,
+                    delta if delta is not None else slice(None),
+                    epsilon if epsilon is not None else slice(None),
+                    :,
+                    :
+                ]]
+            )
+        for treatment, df in treatments.items()
+    }
+    for treatment, df in treatments_geo.items():
+        err = cube(df.loc[[
+            f for f in df.index.get_level_values(&#34;State FIPS Code&#34;).unique()
+            if f not in [2, 15]
+        ]][&#34;error_per_child&#34;])
+        ymins.append(err.min())
+        ymaxs.append(err.max())
+    ymin = np.min(ymins)
+    ymax = np.max(ymaxs)
+    for treatment, df in treatments_geo.items():
+        heatmap(
+            df.loc[[
+                f
+                for f in df.index.get_level_values(&#34;State FIPS Code&#34;).unique()
+                if f not in [2, 15]
+            ]],
+            y=&#34;error_per_child_eligible&#34;,
+            label=&#34;Misallocation per eligible child (cube root)&#34;,
+            title=treatment,
+            file=f&#34;{experiment_name}_{treatment}.png&#34;,
+            figsize=(15, 10),
+            bar_location=&#39;right&#39;,
+            min=ymin,
+            max=ymax,
+            dpi=50
+        )
+
+
+def match_true(df_true, dfs_to_match):
+    for c in (c for c in df_true.columns if &#34;true&#34; in c):
+        for df in dfs_to_match:
+            df.loc[:, c] = df_true.loc[:, c]
+
+
+def misalloc_statistics(error, allocations=None, grant_type=None):
+    err_grouped = error.groupby(
+        [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
+    )
+    exp_error = err_grouped.mean()
+    print(f&#34;# rows: {len(error)}&#34;)
+    print(f&#34;Max error: {np.abs(error).max()}&#34;)
+
+    print(&#34;-- RMSE --&#34;)
+    print(f&#34;RMSE:&#34;, np.sqrt(np.mean(error**2)))
+    print(
+        &#34;Avg. RMSE&#34;,
+        np.mean(
+            np.sqrt((error**2).groupby(&#39;trial&#39;).mean())
+        )
+    )
+    print(
+        f&#34;RMSE in exp. error:&#34;,
+        np.sqrt(np.mean(exp_error**2))
+    )
+
+    print(&#34;-- Losses --&#34;)
+    print(
+        &#34;Avg. (per trial) # of districts losing $$:&#34;,
+        (error &lt; 0).groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Avg. total losses:&#34;,
+        error[
+            error &lt; 0
+        ].abs().groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Std. total losses:&#34;,
+        error[
+            error &lt; 0
+        ].abs().groupby(&#34;trial&#34;).sum().std()
+    )
+    print(
+        &#34;Total exp losses:&#34;,
+        exp_error[exp_error &lt; 0].abs().sum()
+    )
+    print(
+        &#34;Average exp loss&#34;,
+        exp_error[exp_error &lt; 0].abs().mean()
+    )
+    lowerr = error.groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).quantile(0.05)
+    print(
+        &#34;Total 5% quantile losses:&#34;,
+        lowerr[lowerr &lt; 0].abs().sum()
+    )
+    print(
+        &#34;Avg. 5% quantile loss:&#34;,
+        lowerr[lowerr &lt; 0].mean()
+    )
+
+    print(&#34;-- Misalloc --&#34;)
+    print(
+        f&#34;Avg. total abs misalloc:&#34;,
+        error.abs().groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Total exp abs misalloc:&#34;,
+        exp_error.abs().sum()
+    )
+
+    if allocations is not None:
+        print(&#34;-- Other stats --&#34;)
+        print(
+            &#34;Avg total true alloc:&#34;,
+            allocations[f&#34;true_grant_{grant_type}&#34;]
+            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+            .first().abs().sum()
+        )
+        small_district = allocations[&#34;true_pop_total&#34;]\
+            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])\
+            .first() &lt; 20000
+        print(
+            &#34;# small districts:&#34;,
+            small_district.sum()
+        )
+        print(
+            &#34;Total exp misalloc to large districts:&#34;,
+            exp_error[~small_district].abs().sum()
+        )
+        print(
+            &#34;Total exp misalloc to small districts:&#34;,
+            exp_error[small_district].abs().sum()
+        )
+        if grant_type is not None:
+            print(&#34;Average true alloc: {}&#34;.format(
+                allocations[f&#34;true_grant_{grant_type}&#34;].mean()
+            ))
+            print(&#34;Max true alloc: {}&#34;.format(
+                allocations[f&#34;true_grant_{grant_type}&#34;].max()
+            ))</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dp_policy.titlei.evaluation.compare_treatments"><code class="name flex">
+<span>def <span class="ident">compare_treatments</span></span>(<span>treatments, epsilon=0.1, delta=0.0, mapvar='error_per_child', experiment_name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L497-L637" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def compare_treatments(
+  treatments,
+  epsilon=0.1, delta=0.0, mapvar=&#34;error_per_child&#34;,
+  experiment_name=None
+):
+    if epsilon is None:
+        print(
+            &#34;[WARN] Epsilon is none &#34;
+            &#34;- only use this if there is only one eps value in the df.&#34;
+        )
+    else:
+        print(&#34;Comparing at eps=&#34;, epsilon)
+    for treatment, df in treatments.items():
+        df = df.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        treatments[treatment] = df
+        print(len(df))
+        print(&#34;\n#&#34;, treatment)
+        print(&#34;True budget:&#34;, df[f&#34;true_grant_total&#34;].sum())
+        print(&#34;DP est budget:&#34;,  df[f&#34;dpest_grant_total&#34;].sum())
+        df[&#34;became_ineligible&#34;] = \
+            (
+                ~df.dpest_eligible_targeted.astype(bool)
+                &amp; df.true_eligible_targeted.astype(bool)
+            )\
+            | (
+                ~df.dpest_eligible_basic.astype(bool)
+                &amp; df.true_eligible_basic.astype(bool)
+            )\
+            | (
+                ~df.dpest_eligible_concentration.astype(bool)
+                &amp; df.true_eligible_concentration.astype(bool)
+            )
+        print(
+            &#34;Avg prop. districts erroneously ineligible:&#34;,
+            df.became_ineligible.groupby(&#34;trial&#34;).sum().mean()
+        )
+
+        print(&#34;# est&#34;)
+        misalloc_statistics(
+            df.est_grant_total - df.true_grant_total
+        )
+
+        print(&#34;# dpest&#34;)
+        misalloc_statistics(
+            df.dpest_grant_total - df.true_grant_total
+        )
+
+        print(&#34;# marginal&#34;)
+        misalloc_statistics(
+            df.dpest_grant_total - df.est_grant_total
+        )
+
+    # compare bias
+    plot_treatments(
+        treatments,
+        lambda df: np.sqrt(df.groupby(&#39;trial&#39;)[&#34;misalloc&#34;].mean()),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        epsilon=epsilon,
+        delta=delta,
+        xlab=f&#34;Mean misalloc (per trial)&#34;,
+        mean_line=True
+    )
+
+    # compare RMSE - mean and hist
+    plot_treatments(
+        treatments,
+        lambda df: np.sqrt(df.groupby(&#39;trial&#39;)[&#34;misalloc_sq&#34;].mean()),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        filename=f&#34;{experiment_name}_rmse&#34;,
+        epsilon=epsilon,
+        delta=delta,
+        xlab=f&#34;RMSE (per trial)&#34;,
+        mean_line=True
+    )
+
+    # compare likelihood of ineligibility
+    plot_treatments(
+        treatments,
+        lambda df:
+            df.groupby([&#39;State FIPS Code&#39;, &#39;District ID&#39;])[&#34;lost_eligibility&#34;]
+            .mean(),
+        sns.kdeplot,
+        dict(bw_method=0.5, fill=True),
+        # filename=f&#34;likelihood_ineligible_total&#34;,
+        xlab=f&#34;Likelihood of losing eligibility&#34;,
+        epsilon=epsilon,
+        delta=delta,
+        mean_line=True
+    )
+
+    # compare nationwide map
+    print(&#34;Plotting&#34;, mapvar)
+    ymins = []
+    ymaxs = []
+    treatments_geo = {
+        treatment:
+            geo_join(
+                df.loc[pd.IndexSlice[
+                    :,
+                    delta if delta is not None else slice(None),
+                    epsilon if epsilon is not None else slice(None),
+                    :,
+                    :
+                ]]
+            )
+        for treatment, df in treatments.items()
+    }
+    for treatment, df in treatments_geo.items():
+        err = cube(df.loc[[
+            f for f in df.index.get_level_values(&#34;State FIPS Code&#34;).unique()
+            if f not in [2, 15]
+        ]][&#34;error_per_child&#34;])
+        ymins.append(err.min())
+        ymaxs.append(err.max())
+    ymin = np.min(ymins)
+    ymax = np.max(ymaxs)
+    for treatment, df in treatments_geo.items():
+        heatmap(
+            df.loc[[
+                f
+                for f in df.index.get_level_values(&#34;State FIPS Code&#34;).unique()
+                if f not in [2, 15]
+            ]],
+            y=&#34;error_per_child_eligible&#34;,
+            label=&#34;Misallocation per eligible child (cube root)&#34;,
+            title=treatment,
+            file=f&#34;{experiment_name}_{treatment}.png&#34;,
+            figsize=(15, 10),
+            bar_location=&#39;right&#39;,
+            min=ymin,
+            max=ymax,
+            dpi=50
+        )</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.cube"><code class="name flex">
+<span>def <span class="ident">cube</span></span>(<span>x)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L379-L380" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def cube(x):
+    return np.sign(x)*np.power(np.abs(x), 1/3)</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.discrimination_join"><code class="name flex">
+<span>def <span class="ident">discrimination_join</span></span>(<span>results, save_path=None, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L37-L127" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def discrimination_join(results, save_path=None, verbose=False):
+    acs = get_acs_unified(verbose)
+
+    variables = [
+        &#39;Total population (RACE) - est&#39;,
+    ]
+    # add race variables
+    variables += [
+        r for r in acs.columns
+        if r.endswith(&#34;(RACE) - pct&#34;)
+        and &#34;and&#34; not in r
+        and &#34;races&#34; not in r
+        and not r.startswith(&#34;One race&#34;)
+    ] + [&#34;Two or more races (RACE) - pct&#34;]
+    # add ethnicity variables
+    hisp = [
+        r for r in acs.columns
+        if r.endswith(&#34;(HISPANIC OR LATINO AND RACE) - pct&#34;)
+    ]
+    variables += hisp[1:6]
+    # add income variables
+    variables += [
+        r for r in acs.columns
+        if r.startswith(&#34;Median household income (dollars) (&#34;)
+    ]
+    # add rural/urban - need a 3rd data source
+    # add immigrant status
+    variables += [
+        # &#34;Foreign born (PLACE OF BIRTH) - est&#34;,
+        &#34;Foreign born (PLACE OF BIRTH) - pct&#34;,
+        # &#34;Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - est&#34;,
+        &#34;Not a U.S. citizen (U.S. CITIZENSHIP STATUS) - pct&#34;
+    ]
+    # add language isolation
+    variables += [
+        # &#39;Language other than English (LANGUAGE SPOKEN AT HOME) - est&#39;,
+        &#39;Language other than English (LANGUAGE SPOKEN AT HOME) - pct&#39;
+    ]
+    # add renters vs. homeowners (housing security)
+    variables += [
+        # &#39;Renter-occupied (HOUSING TENURE) - est&#39;,
+        &#39;Renter-occupied (HOUSING TENURE) - pct&#39;,
+        &#39;Average household size of renter-occupied unit (HOUSING TENURE) - est&#39;
+    ]
+
+    # look in these columns for &#39;-&#39; and replace with nan according to ACS docs
+    # https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
+    # otherwise convert to numeric
+    acs_vars = acs[variables]\
+        .replace([&#39;-&#39;, &#34;**&#34;, &#34;***&#34;, &#34;(X)&#34;, &#34;N&#34;, &#34;null&#34;], np.nan)\
+        .replace(&#39;250,000+&#39;, 250000)\
+        .apply(pd.to_numeric, errors=&#39;raise&#39;)
+
+    if verbose:
+        print(variables)
+        print(acs_vars.shape)
+        print(results.shape)
+
+    # adding geographic area
+    geo = get_geography()
+
+    to_join = acs_vars.join(geo[&#34;ALAND&#34;], how=&#34;inner&#34;)
+    if verbose:
+        print(&#34;ACS&#34;, acs_vars.shape)
+        print(&#34;Geo joined ACS&#34;, to_join.shape)
+        print(
+            to_join[
+                to_join[&#34;Total population (RACE) - est&#34;].isna()
+            ].groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).groups.keys()
+        )
+
+    print(&#34;Joining ACS/geo variables...&#34;)
+    grants = results.join(to_join, how=&#34;inner&#34;)
+    if verbose:
+        print(
+            &#34;missing some districts in ACS/geo:&#34;,
+            len(results.groupby([
+                &#34;State FIPS Code&#34;, &#34;District ID&#34;
+            ])) - len(grants.groupby([
+                &#34;State FIPS Code&#34;, &#34;District ID&#34;
+            ]))
+        )
+        # print(results[results.index.difference(to_join.index)])
+        print(grants.shape)
+
+    if save_path:
+        print(&#34;Saving to feather...&#34;)
+        grants.reset_index().to_feather(f&#34;{save_path}.feather&#34;)
+        print(&#34;... saved.&#34;)
+        # grants.to_csv(f&#34;{save_path}.csv&#34;)
+    return grants</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.discrimination_treatments_join"><code class="name flex">
+<span>def <span class="ident">discrimination_treatments_join</span></span>(<span>treatments_name, exclude=[], epsilon=0.1, delta=0.0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L130-L172" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def discrimination_treatments_join(
+    treatments_name,
+    exclude=[],
+    epsilon=0.1,
+    delta=0.0
+):
+    # output a concatenated DF with a new index column indicating which
+    # treatment was applied
+    treatments = {
+        treatment: df.loc[(
+            slice(None),
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            slice(None),
+            slice(None)
+        ), [
+            c for c in df.columns
+            if c.endswith(&#34;- pct&#34;)
+            or c.endswith(&#34;- est&#34;)
+            or c.startswith(&#34;true&#34;)
+            or c.endswith(&#34;grant_total&#34;)
+            or c in [
+                &#34;ALAND&#34;
+            ]
+        ]]
+        for treatment, df in load_treatments(treatments_name).items()
+        if treatment not in exclude
+    }
+    print(&#34;Saving&#34;, treatments.keys())
+    joined = pd.concat(
+        treatments,
+        names=[&#39;treatment&#39;]
+    )
+    print(&#34;Concatenated has {} rows and {} treatments&#34;.format(
+        len(joined),
+        len(treatments)
+    ))
+    discrimination_joined = discrimination_join(
+        joined,
+        save_path=f&#34;{config.root}/results/policy_experiments/&#34;
+        f&#34;{treatments_name}_discrimination_laplace&#34;
+    )
+    return discrimination_joined</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.geo_join"><code class="name flex">
+<span>def <span class="ident">geo_join</span></span>(<span>results)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L175-L305" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def geo_join(results):
+    # NOTE: only accepts &#34;State FIPS Code&#34;, &#34;District ID&#34;, &#34;trial&#34; in index
+    results = results.copy()
+    results[&#34;error&#34;] = results.est_grant_total - results.true_grant_total
+    results[&#34;error_per_child&#34;] = results.error / results[&#39;true_children_total&#39;]
+    results[&#34;error_per_child_eligible&#34;] = \
+        results.error / results[&#39;true_children_eligible&#39;]
+    results[&#34;error_dp&#34;] = results.dpest_grant_total - results.true_grant_total
+    results[&#34;error_dp_per_child&#34;] = \
+        results.error_dp / results[&#39;true_children_total&#39;]
+    results[&#34;error_dp_per_child_eligible&#34;] = \
+        results.error_dp / results[&#39;true_children_eligible&#39;]
+    # geo.join()
+    results[&#34;percent_eligible&#34;] = \
+        results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
+    results[&#34;switched_eligibility&#34;] = \
+        ~(
+            (results.est_eligible_targeted == results.true_eligible_targeted)
+            &amp; (results.est_eligible_basic == results.true_eligible_basic)
+            &amp; (
+                results.est_eligible_concentration ==
+                results.true_eligible_concentration
+            )
+        )
+    results[&#34;became_eligible&#34;] = \
+        (
+            results.est_eligible_targeted.astype(bool)
+            &amp; ~results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            results.est_eligible_basic.astype(bool)
+            &amp; ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.est_eligible_concentration.astype(bool)
+            &amp; ~results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;became_ineligible&#34;] = \
+        (
+            ~results.est_eligible_targeted.astype(bool)
+            &amp; results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            ~results.est_eligible_basic.astype(bool)
+            &amp; results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.est_eligible_concentration.astype(bool)
+            &amp; results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;switched_eligibility_dp&#34;] = \
+        ~(
+            (results.dpest_eligible_targeted == results.true_eligible_targeted)
+            &amp; (results.dpest_eligible_basic == results.true_eligible_basic)
+            &amp; (
+                results.dpest_eligible_concentration ==
+                results.true_eligible_concentration
+            )
+        )
+    results[&#34;became_eligible_dp&#34;] = \
+        (
+            results.dpest_eligible_targeted.astype(bool)
+            &amp; ~results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            results.dpest_eligible_basic.astype(bool)
+            &amp; ~results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            results.dpest_eligible_concentration.astype(bool)
+            &amp; ~results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;became_ineligible_dp&#34;] = \
+        (
+            ~results.dpest_eligible_targeted.astype(bool)
+            &amp; results.true_eligible_targeted.astype(bool)
+        ) \
+        | (
+            ~results.dpest_eligible_basic.astype(bool)
+            &amp; results.true_eligible_basic.astype(bool)
+        ) \
+        | (
+            ~results.dpest_eligible_concentration.astype(bool)
+            &amp; results.true_eligible_concentration.astype(bool)
+        )
+    results[&#34;dp_marginal&#34;] = \
+        results[&#34;error_dp_per_child_eligible&#34;] -\
+        results[&#34;error_per_child_eligible&#34;]
+
+    geo = get_geography()
+    joined = geo.join(
+        results[[
+            &#34;error&#34;,
+            &#34;error_per_child&#34;,
+            &#34;error_per_child_eligible&#34;,
+            &#34;error_dp&#34;,
+            &#34;error_dp_per_child&#34;,
+            &#34;error_dp_per_child_eligible&#34;,
+            &#34;true_children_eligible&#34;,
+            &#34;true_pop_total&#34;,
+            &#34;percent_eligible&#34;,
+            &#34;true_grant_total&#34;,
+            &#34;switched_eligibility&#34;,
+            &#34;became_eligible&#34;,
+            &#34;became_ineligible&#34;,
+            &#34;switched_eligibility_dp&#34;,
+            &#34;became_eligible_dp&#34;,
+            &#34;became_ineligible_dp&#34;,
+            &#34;dp_marginal&#34;
+        ]]
+        .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;]),
+        how=&#34;inner&#34;
+    )
+    joined.columns = [
+        col if isinstance(col, str) else &#39;_&#39;.join([
+            c for c in col if c != &#39;mean&#39;
+        ]).rstrip(&#39;_&#39;)
+        for col in joined.columns.values
+    ]
+    for col in [
+        &#34;error_per_child&#34;,
+        &#34;error_per_child_eligible&#34;,
+        &#34;error_dp_per_child&#34;,
+        &#34;error_dp_per_child_eligible&#34;
+    ]:
+        joined.loc[
+            np.isinf(joined[col]), col
+        ] = np.nan
+
+    return joined</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.get_geography"><code class="name flex">
+<span>def <span class="ident">get_geography</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L15-L34" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_geography():
+    geo = gpd.read_file(os.path.join(
+        config.root,
+        &#34;data/shapefiles/school_districts_19/schooldistrict_sy1819_tl19.shp&#34;
+    ))
+    geo.STATEFP = geo.STATEFP.astype(int)
+    geo[&#34;District ID&#34;] = np.where(
+        geo.UNSDLEA.notna(),
+        geo.UNSDLEA,
+        np.where(
+            geo.SCSDLEA.notna(),
+            geo.SCSDLEA,
+            geo.ELSDLEA
+        )
+    )
+    geo[&#34;District ID&#34;] = geo[&#34;District ID&#34;].astype(int)
+    geo = geo.rename(columns={
+        &#34;STATEFP&#34;: &#34;State FIPS Code&#34;
+    }).set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    return geo</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.heatmap"><code class="name flex">
+<span>def <span class="ident">heatmap</span></span>(<span>data, label=None, title=None, transform='cube', theme='seismic_r', y='error_dp_per_child', vcenter=0, file=None, figsize=(10, 5), bar_location='bottom', min=None, max=None, dpi=300, alpha=0.1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L383-L460" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def heatmap(
+    data, label=None, title=None, transform=&#39;cube&#39;, theme=&#34;seismic_r&#34;,
+    y=&#34;error_dp_per_child&#34;, vcenter=0, file=None,
+    figsize=(10, 5), bar_location=&#39;bottom&#39;, min=None, max=None, dpi=300,
+    alpha=0.1
+):
+    data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
+    sig = ~(
+        ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
+        ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
+    )
+    print(
+        &#34;All but&#34;,
+        len(data)-sig.sum(),
+        f&#34;are significantly different from zero at {alpha}&#34;
+    )
+
+    fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
+
+    for key in [y, f&#34;{y}_moe&#34;]:
+        if transform == &#39;cube&#39;:
+            data.loc[:, key] = cube(data[key])
+        if transform == &#39;log&#39;:
+            data.loc[:, key] = np.where(data[key] == 0, 0, np.log(data[key]))
+        if transform == &#39;sqrt&#39;:
+            data.loc[:, key] = np.sign(data[key]) * np.sqrt(np.abs(data[key]))
+
+    # Create colorbar as a legend
+    if min is None:
+        min = data[y].min()
+    if max is None:
+        max = data[y].max()
+
+    bound = np.max(np.abs([min, max]))
+
+    if vcenter is not None and transform != &#39;log&#39;:
+        norm = pltc.TwoSlopeNorm(vcenter=0, vmin=-bound, vmax=bound)
+    else:
+        norm = pltc.Normalize(vmin=min, vmax=max)
+    sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
+
+    print(
+        f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
+        data[f&#34;{y}_moe&#34;].abs().max()
+    )
+    data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
+    data.plot(
+        column=f&#34;{y}_sig&#34;,
+        cmap=theme,
+        norm=norm,
+        ax=ax,
+        linewidth=0.05,
+        edgecolor=&#39;0.1&#39;,
+        missing_kwds=dict(
+            hatch=&#39;///&#39;,
+            edgecolor=(0, 0, 0, 0.25),
+            facecolor=&#39;none&#39;,
+            label=f&#34;Not significant (p &lt; {alpha})&#34;
+        )
+    )
+    cb = fig.colorbar(
+        sm,
+        location=bar_location,
+        shrink=0.5, pad=0.05, aspect=30
+    )
+    cb.set_label(label)
+    if title is not None:
+        plt.title(title)
+    plt.axis(&#39;off&#39;)
+    plt.tight_layout()
+    if file is not None:
+        plt.savefig(
+            f&#34;{config.root}/plots/geo/{file}&#34;,
+            dpi=dpi, bbox_inches=&#39;tight&#39;
+        )
+        plt.close()
+    else:
+        plt.show()</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.load_treatments"><code class="name flex">
+<span>def <span class="ident">load_treatments</span></span>(<span>experiment_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L488-L494" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def load_treatments(experiment_name):
+    return pickle.load(
+        open(
+            f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
+            &#39;rb&#39;
+        )
+    )</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.match_true"><code class="name flex">
+<span>def <span class="ident">match_true</span></span>(<span>df_true, dfs_to_match)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L640-L643" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def match_true(df_true, dfs_to_match):
+    for c in (c for c in df_true.columns if &#34;true&#34; in c):
+        for df in dfs_to_match:
+            df.loc[:, c] = df_true.loc[:, c]</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.misalloc_statistics"><code class="name flex">
+<span>def <span class="ident">misalloc_statistics</span></span>(<span>error, allocations=None, grant_type=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L646-L741" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def misalloc_statistics(error, allocations=None, grant_type=None):
+    err_grouped = error.groupby(
+        [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
+    )
+    exp_error = err_grouped.mean()
+    print(f&#34;# rows: {len(error)}&#34;)
+    print(f&#34;Max error: {np.abs(error).max()}&#34;)
+
+    print(&#34;-- RMSE --&#34;)
+    print(f&#34;RMSE:&#34;, np.sqrt(np.mean(error**2)))
+    print(
+        &#34;Avg. RMSE&#34;,
+        np.mean(
+            np.sqrt((error**2).groupby(&#39;trial&#39;).mean())
+        )
+    )
+    print(
+        f&#34;RMSE in exp. error:&#34;,
+        np.sqrt(np.mean(exp_error**2))
+    )
+
+    print(&#34;-- Losses --&#34;)
+    print(
+        &#34;Avg. (per trial) # of districts losing $$:&#34;,
+        (error &lt; 0).groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Avg. total losses:&#34;,
+        error[
+            error &lt; 0
+        ].abs().groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Std. total losses:&#34;,
+        error[
+            error &lt; 0
+        ].abs().groupby(&#34;trial&#34;).sum().std()
+    )
+    print(
+        &#34;Total exp losses:&#34;,
+        exp_error[exp_error &lt; 0].abs().sum()
+    )
+    print(
+        &#34;Average exp loss&#34;,
+        exp_error[exp_error &lt; 0].abs().mean()
+    )
+    lowerr = error.groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).quantile(0.05)
+    print(
+        &#34;Total 5% quantile losses:&#34;,
+        lowerr[lowerr &lt; 0].abs().sum()
+    )
+    print(
+        &#34;Avg. 5% quantile loss:&#34;,
+        lowerr[lowerr &lt; 0].mean()
+    )
+
+    print(&#34;-- Misalloc --&#34;)
+    print(
+        f&#34;Avg. total abs misalloc:&#34;,
+        error.abs().groupby(&#34;trial&#34;).sum().mean()
+    )
+    print(
+        f&#34;Total exp abs misalloc:&#34;,
+        exp_error.abs().sum()
+    )
+
+    if allocations is not None:
+        print(&#34;-- Other stats --&#34;)
+        print(
+            &#34;Avg total true alloc:&#34;,
+            allocations[f&#34;true_grant_{grant_type}&#34;]
+            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+            .first().abs().sum()
+        )
+        small_district = allocations[&#34;true_pop_total&#34;]\
+            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])\
+            .first() &lt; 20000
+        print(
+            &#34;# small districts:&#34;,
+            small_district.sum()
+        )
+        print(
+            &#34;Total exp misalloc to large districts:&#34;,
+            exp_error[~small_district].abs().sum()
+        )
+        print(
+            &#34;Total exp misalloc to small districts:&#34;,
+            exp_error[small_district].abs().sum()
+        )
+        if grant_type is not None:
+            print(&#34;Average true alloc: {}&#34;.format(
+                allocations[f&#34;true_grant_{grant_type}&#34;].mean()
+            ))
+            print(&#34;Max true alloc: {}&#34;.format(
+                allocations[f&#34;true_grant_{grant_type}&#34;].max()
+            ))</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.plot_treatments"><code class="name flex">
+<span>def <span class="ident">plot_treatments</span></span>(<span>treatments, x_func, plot_method, plot_kwargs, filename=None, xlab=None, ylab='Smoothed density', grant='total', epsilon=None, delta=None, mean_line=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L308-L376" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def plot_treatments(
+    treatments, x_func, plot_method, plot_kwargs,
+    filename=None,
+    xlab=None,
+    ylab=&#34;Smoothed density&#34;,
+    grant=&#34;total&#34;,
+    epsilon=None,
+    delta=None,
+    mean_line=False
+):
+    palette = sns.color_palette(n_colors=len(treatments))
+    for i, (treatment, df_raw) in enumerate(treatments.items()):
+        df = df_raw.loc[pd.IndexSlice[
+            :,
+            delta if delta is not None else slice(None),
+            epsilon if epsilon is not None else slice(None),
+            :,
+            :
+        ], :].copy()
+        # print(df.shape)
+        # print(np.unique(df.index.get_level_values(level=&#34;epsilon&#34;)))
+        df.loc[:, &#34;misalloc&#34;] = \
+            df[f&#34;dpest_grant_{grant}&#34;] - df[f&#34;true_grant_{grant}&#34;]
+        df.loc[:, &#34;misalloc_sq&#34;] = np.power(df[&#34;misalloc&#34;], 2)
+        if grant == &#34;total&#34;:
+            # try:
+            #     print(~df.true_eligible_basic.astype(bool))
+            # except:
+            #     print(&#34;Failed&#34;, df.true_eligible_basic)
+            df[&#34;lost_eligibility&#34;] = \
+                (
+                    df[&#34;dpest_eligible_basic&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_basic&#34;].astype(bool)
+                ) |\
+                (
+                    df[&#34;dpest_eligible_concentration&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_concentration&#34;].astype(bool)
+                ) |\
+                (
+                    df[&#34;dpest_eligible_targeted&#34;].astype(bool) &amp;
+                    ~df[&#34;true_eligible_targeted&#34;].astype(bool)
+                )
+        else:
+            df[&#34;lost_eligibility&#34;] = \
+                ~df[&#34;dpest_eligible_{}&#34;.format(grant)].astype(bool) \
+                &amp; df[&#34;true_eligible_{}&#34;.format(grant)].astype(bool)
+        plot_kwargs.update({
+            &#39;label&#39;: treatment,
+            &#39;color&#39;: palette[i]
+        })
+        x = x_func(df)
+        plot_method(x, **plot_kwargs)
+        if mean_line:
+            plt.axvline(
+                x.mean(), color=palette[i],
+                linestyle=&#39;dashed&#39;
+            )
+
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.legend(loc=&#39;upper right&#39;)
+    if filename:
+        plt.savefig(
+            f&#34;{config.root}/plots/bootstrap/{filename}.png&#34;,
+            dpi=100,
+            bbox_inches=&#39;tight&#39;
+        )
+    plt.show()
+    plt.close()</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.save_treatments"><code class="name flex">
+<span>def <span class="ident">save_treatments</span></span>(<span>treatments, experiment_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/1516db333ae8cc10611522f527ea8b41022f109a/dp_policy/titlei/evaluation.py#L463-L485" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def save_treatments(treatments, experiment_name):
+    # minify treatments
+    treatments = {
+        treatment: df.loc[:, [
+            c for c in df.columns
+            if c.endswith(&#34;- pct&#34;)
+            or c.endswith(&#34;- est&#34;)
+            or c.startswith(&#34;true&#34;)
+            or &#34;eligible&#34; in c
+            or &#34;grant&#34; in c
+            or c in [
+                &#34;ALAND&#34;
+            ]
+        ]]
+        for treatment, df in treatments.items()
+    }
+    pickle.dump(
+        treatments,
+        open(
+            f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
+            &#39;wb&#39;
+        )
+    )</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="dp_policy.titlei" href="index.html">dp_policy.titlei</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="dp_policy.titlei.evaluation.compare_treatments" href="#dp_policy.titlei.evaluation.compare_treatments">compare_treatments</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.cube" href="#dp_policy.titlei.evaluation.cube">cube</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.discrimination_join" href="#dp_policy.titlei.evaluation.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.discrimination_treatments_join" href="#dp_policy.titlei.evaluation.discrimination_treatments_join">discrimination_treatments_join</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.geo_join" href="#dp_policy.titlei.evaluation.geo_join">geo_join</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.get_geography" href="#dp_policy.titlei.evaluation.get_geography">get_geography</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.heatmap" href="#dp_policy.titlei.evaluation.heatmap">heatmap</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.load_treatments" href="#dp_policy.titlei.evaluation.load_treatments">load_treatments</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.match_true" href="#dp_policy.titlei.evaluation.match_true">match_true</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.misalloc_statistics" href="#dp_policy.titlei.evaluation.misalloc_statistics">misalloc_statistics</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.plot_treatments" href="#dp_policy.titlei.evaluation.plot_treatments">plot_treatments</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.save_treatments" href="#dp_policy.titlei.evaluation.save_treatments">save_treatments</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
