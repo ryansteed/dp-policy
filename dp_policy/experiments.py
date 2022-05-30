@@ -346,7 +346,7 @@ class HoldHarmless(Experiment):
             }
         )
         # ground truths are the same
-        match_true(self.baseline, [hold_harmless])
+        match_true(self.baseline, [hold_harmless, state_minimum, both])
 
         # save treatments to file for later
         return {
