@@ -213,12 +213,10 @@ trim_comparison = function(comparison) {
   )
 }
 
-
-race_comparison = function(comparison, kind) {
-  comparison =  comparison %>%
-    trim_comparison() %>%
+summarise_race = function(comparison, kind) {
+  comparison %>%
     race_comparison_long(kind) %>%
-    group_by(treatment, race, trial) %>%
+    group_by(race, trial) %>%
     # compute race-weighted misallocation for each trial
     summarise(
       dp_benefit_per_child = sum(misalloc_dp * race_pct / 100, na.rm=TRUE) / sum(children_of_race, na.rm=TRUE),
@@ -231,14 +229,22 @@ race_comparison = function(comparison, kind) {
       diff_benefit_per_child_eligible = dp_sampling_benefit_per_child_eligible - sampling_benefit_per_child_eligible
     ) %>%
     ungroup() %>%
-    group_by(treatment, race) %>%
+    group_by(race) %>%
     # average over trials
     summarise_all(funs(
       mean = mean,
       std_error = sd(.)/sqrt(n())
     )) %>%
     ungroup()
-  
+}
+
+race_comparison = function(comparison, kind) {
+  comparison =  comparison %>%
+    trim_comparison() %>%
+    group_by(treatment) %>%
+    # group modify to be more memory efficient (but slower) - otherwise longified df is too long
+    group_modify(~ summarise_race(.x, kind))
+
   # comparison_mean = comparison %>%
   #   group_by(treatment, race) %>%
   #   summarise(
