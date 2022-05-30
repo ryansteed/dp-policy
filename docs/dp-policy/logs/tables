@@ -1,0 +1,114 @@
+[1] "Cleaning..."
+[1] "13168000 rows"
+[1] "1000 trials"
+[1] "13168 districts"
+# A tibble: 8 × 2
+  var                                                                    missing
+  <chr>                                                                    <int>
+1 median_household_income_dollars_income_and_benefits_in_2019_inflation…   81000
+2 median_household_income_dollars_income_and_benefits_in_2019_inflation…  148000
+3 not_a_u_s_citizen_u_s_citizenship_status_pct                           4699000
+4 average_household_size_of_renter_occupied_unit_housing_tenure_est        74000
+5 median_income_est                                                        81000
+6 misalloc_dp_per_child                                                     2812
+7 misalloc_sampling_per_child                                               4000
+8 misalloc_dp_sampling_per_child                                            2812
+[1] "- OLS"
+
+% Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
+% Date and time: Mon, Apr 25, 2022 - 03:14:03 PM
+\begin{table}[!htbp] \centering 
+  \caption{} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & \multicolumn{3}{c}{Misallocation (deviated minus true)} \\ 
+ & Formula components & All variables & Demographic variables \\ 
+\\[-1.8ex] & (1) & (2) & (3)\\ 
+\hline \\[-1.8ex] 
+ Log population density &  & $-$278.264 & $-$4,724.341$^{***}$ \\ 
+  &  & (2,318.896) & (1,171.591) \\ 
+  & & & \\ 
+ Racial homogeneity (HHI) &  & $-$34,309.320 & $-$28,679.290 \\ 
+  &  & (36,312.080) & (20,901.040) \\ 
+  & & & \\ 
+ Proportion White &  & 80,242.410$^{**}$ & 66,878.780$^{***}$ \\ 
+  &  & (36,961.100) & (21,266.850) \\ 
+  & & & \\ 
+ Proportion Hispanic &  & 52,001.740$^{***}$ & 18,150.620 \\ 
+  &  & (17,880.940) & (12,241.470) \\ 
+  & & & \\ 
+ Median income &  & $-$0.124 & 0.098 \\ 
+  &  & (0.124) & (0.082) \\ 
+  & & & \\ 
+ % households renting &  & $-$152.917 & $-$271.252 \\ 
+  &  & (310.865) & (194.028) \\ 
+  & & & \\ 
+ Log total population & $-$3,750.712$^{**}$ & $-$2,687.247 &  \\ 
+  & (1,566.400) & (3,499.302) &  \\ 
+  & & & \\ 
+ Total # children & 2.683$^{***}$ & 2.856$^{***}$ &  \\ 
+  & (0.450) & (0.597) &  \\ 
+  & & & \\ 
+ Total # children in poverty & $-$28.230$^{***}$ & $-$29.234$^{***}$ &  \\ 
+  & (2.281) & (3.037) &  \\ 
+  & & & \\ 
+ % not a U.S. citizen &  & $-$13.139 &  \\ 
+  &  & (92.798) &  \\ 
+  & & & \\ 
+ Avg. renter's household size &  & $-$879.898 &  \\ 
+  &  & (7,431.625) &  \\ 
+  & & & \\ 
+ Constant & 39,813.270$^{***}$ & $-$5,172.050 & $-$84,311.130$^{***}$ \\ 
+  & (13,838.470) & (61,666.740) & (21,389.880) \\ 
+  & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 131,680 & 84,100 & 130,870 \\ 
+R$^{2}$ & 0.003 & 0.003 & 0.0005 \\ 
+Adjusted R$^{2}$ & 0.003 & 0.003 & 0.0004 \\ 
+Residual Std. Error & 768,736.700 (df = 131676) & 955,679.300 (df = 84088) & 772,091.300 (df = 130863) \\ 
+F Statistic & 138.769$^{***}$ (df = 3; 131676) & 26.239$^{***}$ (df = 11; 84088) & 10.493$^{***}$ (df = 6; 130863) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{3}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+[1] "- GAM"
+[1] "- GAM with interaction"
+
+% Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
+% Date and time: Mon, Apr 25, 2022 - 03:14:17 PM
+\begin{table}[!htbp] \centering 
+  \caption{} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}} ccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & Resid. Df & Resid. Dev & Df & Deviance & F & Pr(\textgreater F) \\ 
+\hline \\[-1.8ex] 
+1 & $130,841.500$ & $77,978,163,220,855,024$ & $$ & $$ & $$ & $$ \\ 
+2 & $130,833.700$ & $77,961,482,562,974,816$ & $7.811$ & $16,680,657,880,208$ & $3.584$ & $0.0004$ \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 
+Warning messages:
+1: `summarise_each_()` was deprecated in dplyr 0.7.0.
+Please use `across()` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 
+2: `funs()` was deprecated in dplyr 0.8.0.
+Please use a list of either functions or lambdas: 
+
+  # Simple named list: 
+  list(mean = mean, median = median)
+
+  # Auto named with `tibble::lst()`: 
+  tibble::lst(mean, median)
+
+  # Using lambdas
+  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated. 

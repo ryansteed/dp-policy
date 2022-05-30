@@ -1,0 +1,1538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>dp_policy.titlei.utils API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>dp_policy.titlei.utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L1-L609" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">from typing import Tuple
+import pandas as pd
+import numpy as np
+import re
+import os
+from math import floor, ceil
+
+import dp_policy.config as config
+from dp_policy.titlei.mechanisms import Sampled, Mechanism
+
+from typing import Tuple
+
+
+def get_official_combined(path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Load official Dept Ed data.
+
+    Args:
+        path (str): Path of file.
+
+    Returns:
+        pd.DataFrame: Return cleaned dataframe.
+    &#34;&#34;&#34;
+    allocs = get_official(
+        path, &#34;Allocations&#34;, 10, [
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;LEAID&#34;,
+            &#34;Name&#34;,
+            &#34;Basic Hold Harmless&#34;,
+            &#34;Concentration Hold Harmless&#34;,
+            &#34;Targeted Hold Harmless&#34;,
+            &#34;EFIG Hold Harmless&#34;,
+            &#34;Total Hold Harmless&#34;,
+            &#34;Basic Alloc&#34;,
+            &#34;Concentration Alloc&#34;,
+            &#34;Targeted Alloc&#34;,
+            &#34;EFIG Alloc&#34;,
+            &#34;Total Alloc&#34;,
+            &#34;Hold Harmless Percentage&#34;,
+            &#34;Resident Pop.&#34;
+        ]
+    )
+    counts = get_official(
+        path, &#34;Populations&#34;, 7, [
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;LEAID&#34;,
+            &#34;Name&#34;,
+            &#34;Total Formula Count&#34;,
+            &#34;5-17 Pop.&#34;,
+            &#34;Percent Formula&#34;,
+            &#34;Basic Eligibles&#34;,
+            &#34;Concentration Eligibles&#34;,
+            &#34;Targeted Eligibles&#34;,
+            &#34;Weighted Counts Targeted&#34;,
+            &#34;Weighted Counts EFIG&#34;
+        ]
+    )
+    combined = allocs.set_index(&#34;LEAID&#34;).join(
+        counts.drop(columns=[
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;Name&#34;
+        ]).set_index(&#34;LEAID&#34;),
+        how=&#34;inner&#34;
+    ).reset_index()
+    combined.loc[:, &#34;State FIPS Code&#34;] = \
+        combined[&#34;State FIPS Code&#34;].astype(int)
+    combined[&#34;District ID&#34;], _ = split_leaids(combined[&#34;LEAID&#34;].astype(int))
+    return combined.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+
+
+def get_official(path, sheet, header, columns):
+    allocs = pd.read_excel(path, sheet_name=sheet, header=header)
+    allocs = allocs.iloc[1:, :len(columns)]
+    allocs.columns = columns
+    return allocs
+
+
+def get_saipe(path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Get district-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned district-level data.
+    &#34;&#34;&#34;
+    saipe = pd.read_excel(path, header=2)\
+        .set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    saipe[&#34;cv&#34;] = saipe.apply(
+        lambda x: median_cv(x[&#34;Estimated Total Population&#34;]),
+        axis=1
+    )
+    return saipe
+
+
+def get_county_saipe(path: str):
+    &#34;&#34;&#34;Get county-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned county-level data.
+    &#34;&#34;&#34;
+    saipe = pd.read_excel(path, header=3, usecols=[
+        &#34;State FIPS Code&#34;,
+        &#34;County FIPS Code&#34;,
+        &#34;Name&#34;,
+        &#34;Poverty Estimate, All Ages&#34;,
+        &#34;Poverty Percent, All Ages&#34;,
+        &#34;Poverty Estimate, Age 5-17 in Families&#34;,
+        &#34;Poverty Percent, Age 5-17 in Families&#34;
+    ]).replace(&#39;.&#39;, np.NaN).fillna(0.0, )
+
+    # convert county FIPS codes to district ids
+    saipe[&#34;District ID&#34;] = saipe[&#34;County FIPS Code&#34;]
+    # convert to saipe district column names
+    saipe[&#34;Estimated Total Population&#34;] = \
+        saipe[&#34;Poverty Estimate, All Ages&#34;].astype(float) \
+        / (saipe[&#34;Poverty Percent, All Ages&#34;].astype(float) / 100)
+    saipe[&#34;Estimated Population 5-17&#34;] = \
+        saipe[&#34;Poverty Estimate, Age 5-17 in Families&#34;].astype(float) \
+        / (saipe[&#34;Poverty Percent, Age 5-17 in Families&#34;].astype(float) / 100)
+    saipe[
+        &#39;Estimated number of relevant children 5 to 17 years old &#39;
+        &#39;in poverty who are related to the householder&#39;
+    ] = saipe[&#34;Poverty Estimate, Age 5-17 in Families&#34;]
+
+    saipe[&#34;cv&#34;] = saipe.apply(
+        lambda x: median_cv(x[&#34;Estimated Total Population&#34;]),
+        axis=1
+    )
+
+    return saipe.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).drop(columns=[
+        &#34;Poverty Estimate, All Ages&#34;,
+        &#34;Poverty Percent, All Ages&#34;,
+        &#34;Poverty Estimate, Age 5-17 in Families&#34;,
+        &#34;Poverty Percent, Age 5-17 in Families&#34;
+    ])
+
+
+def district_id_from_name(df, name, state=None):
+    if state:
+        df = df.loc[state, :]
+    ind = df[df[&#34;Name&#34;] == name].index.get_level_values(&#34;District ID&#34;)
+    if len(ind) == 0:
+        raise Exception(&#34;No districts with the name&#34;, name)
+    if len(ind) &gt; 1:
+        raise Exception(&#34;Multiple district IDs with the name&#34;, name)
+    return ind[0]
+
+
+def get_inputs(
+    year,
+    baseline=&#34;prelim&#34;,
+    avg_lag=0,
+    verbose=True,
+    use_official_children=False
+):
+    &#34;&#34;&#34;Load the inputs for calculating title i allocations
+
+    Args:
+        year (int): _description_
+        baseline (str, optional): what official dep ed file to use as a
+            baseline. Options are &#34;prelim&#34;, &#34;final&#34;, and &#34;revfinal.&#34; Defaults
+            to &#34;prelim&#34;.
+        avg_lag (int, optional): Whether to average, and by how many years.
+            Defaults to 0.
+        verbose (bool, optional): Defaults to True.
+        use_official_children (bool, optional): Whether to use the official
+            # total children from Dep Ed, instead of the SAIPE # of children.
+            # of children in poverty will always be from SAIPE. Designed for
+            validation purposes. Defaults to False.
+
+    Returns:
+        pd.DataFrame: combined dataframe of inputs for use in an allocator.
+    &#34;&#34;&#34;
+    # official ESEA data
+    if year &lt; 2020:
+        print(&#34;[WARN] Using official data for 2020 instead.&#34;)
+        official_year = 2020
+    else:
+        official_year = year
+
+    print(config.root)
+    official = get_official_combined(os.path.join(
+        config.root,
+        f&#34;data/titlei-allocations/{baseline}_{str(official_year)[2:]}.xls&#34;
+    )).drop(columns=[
+        &#39;LEAID&#39;,
+        &#39;Sort C&#39;,
+        &#39;State&#39;,
+        &#39;Resident Pop.&#39;,
+        # &#39;Name&#39;
+    ])
+    official.columns = [
+        f&#34;official_{c.lower().replace(&#39; &#39;, &#39;_&#39;)}&#34; if c != &#39;Name&#39; else c
+        for c in official.columns
+    ]
+
+    # join with Census SAIPE
+    if avg_lag &gt; 0:
+        saipe, county_saipe = average_saipe(year-2, avg_lag, verbose=verbose)
+    else:
+        saipe = get_saipe(f&#34;{config.root}/data/saipe{str(year-2)[2:]}.xls&#34;)
+        county_saipe = get_county_saipe(
+            f&#34;{config.root}/data/county_saipe{str(year-2)[2:]}.xls&#34;
+        )
+    # for some reason, NY naming convention different...
+    # fixing that here
+    county_saipe.rename(index={
+        district_id_from_name(county_saipe, c, 36):
+            district_id_from_name(official, c, 36)
+        for c in [
+            &#34;Bronx County&#34;,
+            &#34;Kings County&#34;,
+            &#34;New York County&#34;,
+            &#34;Queens County&#34;,
+            &#34;Richmond County&#34;
+        ]
+    }, level=&#39;District ID&#39;, inplace=True)
+    saipe_stacked = impute_missing(saipe, county_saipe, verbose=verbose)
+
+    if verbose:
+        print(&#34;-- WARNING: dropping some balances from total budget --&#34;)
+        for name, filter in [
+            (&#34;Puerto Rico&#34;, official.Name == &#34;Puerto Rico&#34;),
+            (&#34;County balances&#34;, official.Name.str.contains(&#34;BALANCE OF&#34;)),
+            (&#34;Part D Subpart 2&#34;, official.Name == &#34;PART D SUBPART 2&#34;)
+        ]:
+            print(name, official[filter].official_total_alloc.sum())
+
+    # calculate coefficient of variation
+    inputs = official.join(saipe_stacked.drop(columns=&#34;Name&#34;), how=&#34;inner&#34;)\
+        .astype({&#39;Name&#39;: &#39;string&#39;})
+
+    if use_official_children:
+        # replace SAIPE # children with official # children
+        inputs[&#34;Estimated Population 5-17&#34;] = inputs[&#39;official_5-17_pop.&#39;]
+
+    return inputs
+
+
+def _average_saipe(saipes):
+    combined = pd.concat(saipes)
+    # convert cv to variance
+    combined[&#34;stderr&#34;] = \
+        (combined[
+            &#39;Estimated number of relevant children 5 to 17 years old &#39;
+            &#39;in poverty who are related to the householder&#39;
+        ] * combined[&#34;cv&#34;]).pow(2)
+    agg = combined \
+        .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]) \
+        .agg({
+            &#39;Name&#39;: &#39;first&#39;,
+            &#39;Estimated Total Population&#39;: &#39;mean&#39;,
+            &#39;Estimated Population 5-17&#39;: &#39;mean&#39;,
+            &#39;Estimated number of relevant children 5 to 17 years old &#39;
+            &#39;in poverty who are related to the householder&#39;: &#39;mean&#39;,
+            # variance of average of iid Gaussian is sum of variance over n^2
+            &#39;stderr&#39;: lambda stderr: np.sum(stderr) / (len(saipes)**2)
+        })
+    # convert variance back to cv
+    agg[&#39;cv&#39;] = np.sqrt(agg[&#39;stderr&#39;]) / agg[&#34;Estimated Total Population&#34;]
+    return agg.drop(columns=&#39;stderr&#39;)
+
+
+def average_saipe(
+    year: int, year_lag: int, verbose=True
+) -&gt; Tuple[pd.DataFrame, pd.DataFrame]:
+    &#34;&#34;&#34;Get SAIPE averaged over `year_lag` years.
+
+    Args:
+        year (int): Most recent year.
+        year_lag (int): Years to average over.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: Averaged SAIPE - district- and
+            county-level.
+    &#34;&#34;&#34;
+    if verbose:
+        print(
+            &#34;Averaging SAIPEs:&#34;,
+            [
+                f&#34;saipe{str(year)[2:]}&#34;
+                for year in range(year-year_lag, year+1)
+            ]
+        )
+    combined = _average_saipe([
+        get_saipe(f&#34;{config.root}/data/saipe{str(year)[2:]}.xls&#34;)
+        for year in range(year-year_lag, year+1)
+    ])
+    combined_county = _average_saipe([
+        get_county_saipe(f&#34;{config.root}/data/county_saipe{str(year)[2:]}.xls&#34;)
+        for year in range(year-year_lag, year+1)
+    ])
+    return combined, combined_county
+
+
+def get_acs_data(path: str, name: str):
+    &#34;&#34;&#34;Method for loading and formatting ACS data by school district from NCES
+    [website](https://nces.ed.gov/programs/edge/TableViewer/acs/2018).
+
+    Args:
+        path (str): Path to txt file downloaded form the link above
+        name (str): Sheet name.
+    &#34;&#34;&#34;
+    data = pd.read_csv(path, sep=&#34;|&#34;, low_memory=False)
+    # strip out NA district ID&#39;s
+    # separate LEAID into FIPS code and district ID
+    data[&#34;District ID&#34;], data[&#34;State FIPS Code&#34;] = \
+        split_leaids(data.LEAID)
+    data = data.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    data = data.drop(
+        columns=[&#34;GeoId&#34;, &#34;Year&#34;, &#34;Iteration&#34;]
+    )
+    # drop 99999 - remainders
+    data = data.query(&#34;`District ID` != 99999&#34;)
+
+    varnames = pd.read_excel(
+        os.path.join(
+            config.root,
+            &#34;data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx&#34;
+        ),
+        sheet_name=name,
+        index_col=0,
+        engine=&#39;openpyxl&#39;
+    )
+
+    drop = []
+    new = {}
+    for c in data.columns:
+        try:
+            newname = &#34;{} ({}) - {}&#34;.format(
+                varnames.loc[c].vlabel.split(&#34;;&#34;)[-1].lstrip(),
+                varnames.loc[c].vlabel.split(&#34;;&#34;)[2].lstrip(),
+                re.sub(r&#39;\d+&#39;, &#39;&#39;, c.split(&#34;_&#34;)[-1])
+            )
+            new[c] = newname if newname not in new.values() else c
+        except KeyError:
+            if c == &#34;Geography&#34;:
+                new[c] = c
+            else:
+                drop.append(c)
+
+    data = data.drop(columns=drop).rename(columns=new)
+    return data
+
+
+def impute_missing(original, update, verbose=True):
+    &#34;&#34;&#34;Impute data for missing LEAs from another file.
+    &#34;&#34;&#34;
+    for c in [c for c in original.columns if c not in update.columns]:
+        update.loc[:, c] = np.nan
+    update_reduced = update.loc[
+        update.index.difference(original.index),
+        original.columns
+    ]
+    imputed = pd.concat([
+        original,
+        update_reduced
+    ])
+    if verbose:
+        print(
+            &#34;[INFO] Successfully imputed&#34;,
+            len(update.index.difference(original.index)),
+            &#34;new indices&#34;
+        )
+    return imputed
+
+
+def get_acs_unified(verbose=False):
+    &#34;&#34;&#34;Load ACS demographic variables.
+    &#34;&#34;&#34;
+    # get public school children data
+    demographics_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP05.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    # update any missing with general pop data
+    demographics = impute_missing(
+        demographics_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP05.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    social_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP02.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    social = impute_missing(
+        social_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP02.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    economic_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP03.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    economic = impute_missing(
+        economic_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP03.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    housing_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP04.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    housing = impute_missing(
+        housing_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP04.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    if verbose:
+        print(demographics.shape)
+        print(social.shape)
+        print(economic.shape)
+        print(housing.shape)
+    return demographics\
+        .join(social, lsuffix=&#34;_demo&#34;, rsuffix=&#34;_social&#34;, how=&#34;inner&#34;)\
+        .join(economic, rsuffix=&#34;_econ&#34;, how=&#34;inner&#34;)\
+        .join(housing, rsuffix=&#34;_housing&#34;, how=&#34;inner&#34;)
+
+
+def split_leaids(leaids: pd.Series):
+    # get the last seven digits of the ID
+    leaids = leaids.astype(str).str[-7:]
+    return leaids.str[-5:].astype(int), leaids.str[:-5].astype(int)
+
+
+def get_sppe(path):
+    fips_codes = pd.read_csv(f&#34;{config.root}/data/fips_codes.csv&#34;).rename(
+        columns={
+            &#39;FIPS&#39;: &#39;State FIPS Code&#39;
+        }
+    )
+    # quirk of original data file - need to change DC&#39;s name for join
+    fips_codes.loc[fips_codes[&#34;Name&#34;] == &#34;District of Columbia&#34;, &#34;Name&#34;] = \
+        &#34;District Of Columbia Public Schools&#34;
+    sppe = pd.read_excel(path, header=2, engine=&#39;openpyxl&#39;)\
+        .rename(columns={&#34;Unnamed: 0&#34;: &#34;Name&#34;})[[&#34;Name&#34;, &#34;ppe&#34;]]
+    return sppe.merge(fips_codes, on=&#34;Name&#34;, how=&#34;right&#34;)\
+        .set_index(&#34;State FIPS Code&#34;)
+
+
+def median_cv(total_pop: float) -&gt; float:
+    &#34;&#34;&#34;
+    Based on the table given here:
+    https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html
+
+    Args:
+        total_pop (float): Total population of district.
+
+    Returns:
+        float: Coefficient of variation.
+    &#34;&#34;&#34;
+    if total_pop &lt;= 2500:
+        return 0.67
+    elif total_pop &lt;= 5000:
+        return 0.42
+    elif total_pop &lt;= 10000:
+        return 0.35
+    elif total_pop &lt;= 20000:
+        return 0.28
+    elif total_pop &lt;= 65000:
+        return 0.23
+    return 0.15
+
+
+def weighting(eligible: float, pop: float) -&gt; float:
+    &#34;&#34;&#34;Gradated weighting algorithm given in
+    [Sonnenberg](https://nces.ed.gov/surveys/annualreports/pdf/titlei20160111.pdf).
+
+    Returns weighted eligibility counts.
+
+    Args:
+        eligible (float): # of eligible children.
+        pop (float): # total children.
+
+    Returns:
+        float: Weighted count.
+    &#34;&#34;&#34;
+    # calculate weighted count based on counts
+    wec_counts = 0
+    for r, w in {
+        (1, 691): 1.0,
+        (692, 2262): 1.5,
+        (2263, 7851): 2.0,
+        (7852, 35514): 2.5,
+        (35514, None): 3.0
+    }.items():
+        if r[1] is not None and eligible &gt; r[1]:
+            wec_counts += (r[1] - r[0] + 1) * w
+        elif eligible &gt;= r[0]:
+            wec_counts += (eligible - r[0] + 1) * w
+
+    # calculate weighted count based on proportions
+    wec_props = 0
+    for r, w in {
+        (0, 0.1558): 1.0,
+        (0.1558, 0.2211): 1.75,
+        (0.2211, 0.3016): 2.5,
+        (0.3016, 0.3824): 3.25,
+        (0.3824, None): 4.0
+    }.items():
+        upper = floor(r[1]*pop) if r[1] is not None else None
+        lower = ceil(r[0]*pop)
+
+        if upper is not None and eligible &gt; upper:
+            wec_props += (upper - lower) * w
+        elif eligible &gt;= lower:
+            wec_props += (eligible - lower) * w
+
+    # take the higher weighted eligibility count
+    return max(wec_counts, wec_props)
+
+
+def data(
+    inputs: pd.DataFrame,
+    mechanism: Mechanism,
+    sppe: pd.DataFrame,
+    sampling_kwargs: dict = {},
+    verbose: bool = True
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Prepare data needed to compute Title I allocations, including noised
+    poverty estimates and other inputs.
+
+    Args:
+        inputs (pd.DataFrame): Ground truth poverty estimates.
+        mechanism (Mechanism): Randomization mechanism.
+        sppe (pd.DataFrame): State per-pupil expenditure.
+        sampling_kwargs (dict, optional): Sampling parameters. Defaults to {}.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        pd.DataFrame: Combined dataframe of inputs and noised estimates.
+    &#34;&#34;&#34;
+    # ground truth - assume SAIPE 2019 is ground truth
+    grants = inputs.rename(columns={
+        &#34;Estimated Total Population&#34;: &#34;true_pop_total&#34;,
+        &#34;Estimated Population 5-17&#34;: &#34;true_children_total&#34;,
+        &#34;Estimated number of relevant children 5 to 17 years old in poverty&#34;
+        &#34; who are related to the householder&#34;: &#34;true_children_poverty&#34;
+    })
+
+    # sample from the sampling distribution
+    mechanism_sampling = Sampled(**sampling_kwargs)
+    grants[&#34;est_pop_total&#34;], \
+        grants[&#34;est_children_total&#34;], \
+        grants[&#34;est_children_poverty&#34;] = mechanism_sampling.poverty_estimates(
+            grants[&#34;true_pop_total&#34;],
+            grants[&#34;true_children_total&#34;],
+            grants[&#34;true_children_poverty&#34;],
+            grants[&#34;cv&#34;]
+        )
+
+    # get the noise-infused estimates - after sampling
+    grants[&#34;dpest_pop_total&#34;], \
+        grants[&#34;dpest_children_total&#34;], \
+        grants[&#34;dpest_children_poverty&#34;] = mechanism.poverty_estimates(
+        grants[&#34;est_pop_total&#34;],
+        grants[&#34;est_children_total&#34;],
+        grants[&#34;est_children_poverty&#34;]
+    )
+
+    # back out the noise-infused estimates - before sampling
+    # doing it this way because we want to see the same noise draws added to
+    # both bases - not a separate draw here
+    for var in (&#34;pop_total&#34;, &#34;children_total&#34;, &#34;children_poverty&#34;):
+        grants[f&#34;dp_{var}&#34;] = \
+            grants[f&#34;dpest_{var}&#34;] - grants[f&#34;est_{var}&#34;] \
+            + grants[f&#34;true_{var}&#34;]
+
+    # now, add in the number of foster, TANF, delinquent children
+    # derived from final formula count reported by ESEA
+    other_eligible = \
+        inputs[&#34;official_total_formula_count&#34;] \
+        - grants[&#34;true_children_poverty&#34;]
+
+    for prefix in (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;):
+        grants[f&#34;{prefix}_children_eligible&#34;] = grants[
+            f&#34;{prefix}_children_poverty&#34;
+        ] + other_eligible
+
+    # join in SPPE
+    grants = grants.join(sppe[&#34;ppe&#34;].rename(&#39;sppe&#39;), how=&#39;left&#39;)
+
+    if verbose and len(grants[grants.sppe.isna()][&#39;Name&#39;].values) &gt; 0:
+        print(
+            &#34;[WARN] Dropping districts with missing SPPE data:&#34;,
+            grants[grants.sppe.isna()][&#39;Name&#39;].values
+        )
+    grants = grants.dropna(subset=[&#34;sppe&#34;])
+    grants.sppe = grants.sppe.astype(float)
+
+    return grants</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dp_policy.titlei.utils.average_saipe"><code class="name flex">
+<span>def <span class="ident">average_saipe</span></span>(<span>year: int, year_lag: int, verbose=True) ‑> Tuple[pandas.core.frame.DataFrame, pandas.core.frame.DataFrame]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get SAIPE averaged over <code>year_lag</code> years.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code></dt>
+<dd>Most recent year.</dd>
+<dt><strong><code>year_lag</code></strong> :&ensp;<code>int</code></dt>
+<dd>Years to average over.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to True.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Tuple[pd.DataFrame, pd.DataFrame]</code></dt>
+<dd>Averaged SAIPE - district- and
+county-level.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L273-L303" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def average_saipe(
+    year: int, year_lag: int, verbose=True
+) -&gt; Tuple[pd.DataFrame, pd.DataFrame]:
+    &#34;&#34;&#34;Get SAIPE averaged over `year_lag` years.
+
+    Args:
+        year (int): Most recent year.
+        year_lag (int): Years to average over.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: Averaged SAIPE - district- and
+            county-level.
+    &#34;&#34;&#34;
+    if verbose:
+        print(
+            &#34;Averaging SAIPEs:&#34;,
+            [
+                f&#34;saipe{str(year)[2:]}&#34;
+                for year in range(year-year_lag, year+1)
+            ]
+        )
+    combined = _average_saipe([
+        get_saipe(f&#34;{config.root}/data/saipe{str(year)[2:]}.xls&#34;)
+        for year in range(year-year_lag, year+1)
+    ])
+    combined_county = _average_saipe([
+        get_county_saipe(f&#34;{config.root}/data/county_saipe{str(year)[2:]}.xls&#34;)
+        for year in range(year-year_lag, year+1)
+    ])
+    return combined, combined_county</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.data"><code class="name flex">
+<span>def <span class="ident">data</span></span>(<span>inputs: pandas.core.frame.DataFrame, mechanism: <a title="dp_policy.titlei.mechanisms.Mechanism" href="mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, sppe: pandas.core.frame.DataFrame, sampling_kwargs: dict = {}, verbose: bool = True) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Prepare data needed to compute Title I allocations, including noised
+poverty estimates and other inputs.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inputs</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>Ground truth poverty estimates.</dd>
+<dt><strong><code>mechanism</code></strong> :&ensp;<code>Mechanism</code></dt>
+<dd>Randomization mechanism.</dd>
+<dt><strong><code>sppe</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>State per-pupil expenditure.</dd>
+<dt><strong><code>sampling_kwargs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>Sampling parameters. Defaults to {}.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to True.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Combined dataframe of inputs and noised estimates.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L531-L609" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def data(
+    inputs: pd.DataFrame,
+    mechanism: Mechanism,
+    sppe: pd.DataFrame,
+    sampling_kwargs: dict = {},
+    verbose: bool = True
+) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Prepare data needed to compute Title I allocations, including noised
+    poverty estimates and other inputs.
+
+    Args:
+        inputs (pd.DataFrame): Ground truth poverty estimates.
+        mechanism (Mechanism): Randomization mechanism.
+        sppe (pd.DataFrame): State per-pupil expenditure.
+        sampling_kwargs (dict, optional): Sampling parameters. Defaults to {}.
+        verbose (bool, optional): Defaults to True.
+
+    Returns:
+        pd.DataFrame: Combined dataframe of inputs and noised estimates.
+    &#34;&#34;&#34;
+    # ground truth - assume SAIPE 2019 is ground truth
+    grants = inputs.rename(columns={
+        &#34;Estimated Total Population&#34;: &#34;true_pop_total&#34;,
+        &#34;Estimated Population 5-17&#34;: &#34;true_children_total&#34;,
+        &#34;Estimated number of relevant children 5 to 17 years old in poverty&#34;
+        &#34; who are related to the householder&#34;: &#34;true_children_poverty&#34;
+    })
+
+    # sample from the sampling distribution
+    mechanism_sampling = Sampled(**sampling_kwargs)
+    grants[&#34;est_pop_total&#34;], \
+        grants[&#34;est_children_total&#34;], \
+        grants[&#34;est_children_poverty&#34;] = mechanism_sampling.poverty_estimates(
+            grants[&#34;true_pop_total&#34;],
+            grants[&#34;true_children_total&#34;],
+            grants[&#34;true_children_poverty&#34;],
+            grants[&#34;cv&#34;]
+        )
+
+    # get the noise-infused estimates - after sampling
+    grants[&#34;dpest_pop_total&#34;], \
+        grants[&#34;dpest_children_total&#34;], \
+        grants[&#34;dpest_children_poverty&#34;] = mechanism.poverty_estimates(
+        grants[&#34;est_pop_total&#34;],
+        grants[&#34;est_children_total&#34;],
+        grants[&#34;est_children_poverty&#34;]
+    )
+
+    # back out the noise-infused estimates - before sampling
+    # doing it this way because we want to see the same noise draws added to
+    # both bases - not a separate draw here
+    for var in (&#34;pop_total&#34;, &#34;children_total&#34;, &#34;children_poverty&#34;):
+        grants[f&#34;dp_{var}&#34;] = \
+            grants[f&#34;dpest_{var}&#34;] - grants[f&#34;est_{var}&#34;] \
+            + grants[f&#34;true_{var}&#34;]
+
+    # now, add in the number of foster, TANF, delinquent children
+    # derived from final formula count reported by ESEA
+    other_eligible = \
+        inputs[&#34;official_total_formula_count&#34;] \
+        - grants[&#34;true_children_poverty&#34;]
+
+    for prefix in (&#34;true&#34;, &#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;):
+        grants[f&#34;{prefix}_children_eligible&#34;] = grants[
+            f&#34;{prefix}_children_poverty&#34;
+        ] + other_eligible
+
+    # join in SPPE
+    grants = grants.join(sppe[&#34;ppe&#34;].rename(&#39;sppe&#39;), how=&#39;left&#39;)
+
+    if verbose and len(grants[grants.sppe.isna()][&#39;Name&#39;].values) &gt; 0:
+        print(
+            &#34;[WARN] Dropping districts with missing SPPE data:&#34;,
+            grants[grants.sppe.isna()][&#39;Name&#39;].values
+        )
+    grants = grants.dropna(subset=[&#34;sppe&#34;])
+    grants.sppe = grants.sppe.astype(float)
+
+    return grants</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.district_id_from_name"><code class="name flex">
+<span>def <span class="ident">district_id_from_name</span></span>(<span>df, name, state=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L147-L155" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def district_id_from_name(df, name, state=None):
+    if state:
+        df = df.loc[state, :]
+    ind = df[df[&#34;Name&#34;] == name].index.get_level_values(&#34;District ID&#34;)
+    if len(ind) == 0:
+        raise Exception(&#34;No districts with the name&#34;, name)
+    if len(ind) &gt; 1:
+        raise Exception(&#34;Multiple district IDs with the name&#34;, name)
+    return ind[0]</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_acs_data"><code class="name flex">
+<span>def <span class="ident">get_acs_data</span></span>(<span>path: str, name: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Method for loading and formatting ACS data by school district from NCES
+<a href="https://nces.ed.gov/programs/edge/TableViewer/acs/2018">website</a>.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to txt file downloaded form the link above</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Sheet name.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L306-L353" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_acs_data(path: str, name: str):
+    &#34;&#34;&#34;Method for loading and formatting ACS data by school district from NCES
+    [website](https://nces.ed.gov/programs/edge/TableViewer/acs/2018).
+
+    Args:
+        path (str): Path to txt file downloaded form the link above
+        name (str): Sheet name.
+    &#34;&#34;&#34;
+    data = pd.read_csv(path, sep=&#34;|&#34;, low_memory=False)
+    # strip out NA district ID&#39;s
+    # separate LEAID into FIPS code and district ID
+    data[&#34;District ID&#34;], data[&#34;State FIPS Code&#34;] = \
+        split_leaids(data.LEAID)
+    data = data.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    data = data.drop(
+        columns=[&#34;GeoId&#34;, &#34;Year&#34;, &#34;Iteration&#34;]
+    )
+    # drop 99999 - remainders
+    data = data.query(&#34;`District ID` != 99999&#34;)
+
+    varnames = pd.read_excel(
+        os.path.join(
+            config.root,
+            &#34;data/discrimination/ACS-ED_2015-2019_RecordLayouts.xlsx&#34;
+        ),
+        sheet_name=name,
+        index_col=0,
+        engine=&#39;openpyxl&#39;
+    )
+
+    drop = []
+    new = {}
+    for c in data.columns:
+        try:
+            newname = &#34;{} ({}) - {}&#34;.format(
+                varnames.loc[c].vlabel.split(&#34;;&#34;)[-1].lstrip(),
+                varnames.loc[c].vlabel.split(&#34;;&#34;)[2].lstrip(),
+                re.sub(r&#39;\d+&#39;, &#39;&#39;, c.split(&#34;_&#34;)[-1])
+            )
+            new[c] = newname if newname not in new.values() else c
+        except KeyError:
+            if c == &#34;Geography&#34;:
+                new[c] = c
+            else:
+                drop.append(c)
+
+    data = data.drop(columns=drop).rename(columns=new)
+    return data</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_acs_unified"><code class="name flex">
+<span>def <span class="ident">get_acs_unified</span></span>(<span>verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load ACS demographic variables.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L378-L435" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_acs_unified(verbose=False):
+    &#34;&#34;&#34;Load ACS demographic variables.
+    &#34;&#34;&#34;
+    # get public school children data
+    demographics_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP05.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    # update any missing with general pop data
+    demographics = impute_missing(
+        demographics_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP05.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    social_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP02.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    social = impute_missing(
+        social_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP02.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    economic_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP03.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    economic = impute_missing(
+        economic_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP03.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    housing_students = get_acs_data(
+        f&#34;{config.root}/data/discrimination/CDP04.txt&#34;,
+        &#34;CDP_ChildPop&#34;
+    )
+    housing = impute_missing(
+        housing_students,
+        get_acs_data(
+            f&#34;{config.root}/data/discrimination/DP04.txt&#34;,
+            &#34;DP_TotalPop&#34;
+        )
+    )
+    if verbose:
+        print(demographics.shape)
+        print(social.shape)
+        print(economic.shape)
+        print(housing.shape)
+    return demographics\
+        .join(social, lsuffix=&#34;_demo&#34;, rsuffix=&#34;_social&#34;, how=&#34;inner&#34;)\
+        .join(economic, rsuffix=&#34;_econ&#34;, how=&#34;inner&#34;)\
+        .join(housing, rsuffix=&#34;_housing&#34;, how=&#34;inner&#34;)</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_county_saipe"><code class="name flex">
+<span>def <span class="ident">get_county_saipe</span></span>(<span>path: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get county-level SAIPE data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Cleaned county-level data.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L101-L144" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_county_saipe(path: str):
+    &#34;&#34;&#34;Get county-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned county-level data.
+    &#34;&#34;&#34;
+    saipe = pd.read_excel(path, header=3, usecols=[
+        &#34;State FIPS Code&#34;,
+        &#34;County FIPS Code&#34;,
+        &#34;Name&#34;,
+        &#34;Poverty Estimate, All Ages&#34;,
+        &#34;Poverty Percent, All Ages&#34;,
+        &#34;Poverty Estimate, Age 5-17 in Families&#34;,
+        &#34;Poverty Percent, Age 5-17 in Families&#34;
+    ]).replace(&#39;.&#39;, np.NaN).fillna(0.0, )
+
+    # convert county FIPS codes to district ids
+    saipe[&#34;District ID&#34;] = saipe[&#34;County FIPS Code&#34;]
+    # convert to saipe district column names
+    saipe[&#34;Estimated Total Population&#34;] = \
+        saipe[&#34;Poverty Estimate, All Ages&#34;].astype(float) \
+        / (saipe[&#34;Poverty Percent, All Ages&#34;].astype(float) / 100)
+    saipe[&#34;Estimated Population 5-17&#34;] = \
+        saipe[&#34;Poverty Estimate, Age 5-17 in Families&#34;].astype(float) \
+        / (saipe[&#34;Poverty Percent, Age 5-17 in Families&#34;].astype(float) / 100)
+    saipe[
+        &#39;Estimated number of relevant children 5 to 17 years old &#39;
+        &#39;in poverty who are related to the householder&#39;
+    ] = saipe[&#34;Poverty Estimate, Age 5-17 in Families&#34;]
+
+    saipe[&#34;cv&#34;] = saipe.apply(
+        lambda x: median_cv(x[&#34;Estimated Total Population&#34;]),
+        axis=1
+    )
+
+    return saipe.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).drop(columns=[
+        &#34;Poverty Estimate, All Ages&#34;,
+        &#34;Poverty Percent, All Ages&#34;,
+        &#34;Poverty Estimate, Age 5-17 in Families&#34;,
+        &#34;Poverty Percent, Age 5-17 in Families&#34;
+    ])</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_inputs"><code class="name flex">
+<span>def <span class="ident">get_inputs</span></span>(<span>year, baseline='prelim', avg_lag=0, verbose=True, use_official_children=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load the inputs for calculating title i allocations</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code></dt>
+<dd><em>description</em></dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>what official dep ed file to use as a
+baseline. Options are "prelim", "final", and "revfinal." Defaults
+to "prelim".</dd>
+<dt><strong><code>avg_lag</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Whether to average, and by how many years.
+Defaults to 0.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Defaults to True.</dd>
+<dt><strong><code>use_official_children</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use the official<h1 id="total-children-from-dep-ed-instead-of-the-saipe-of-children">total children from Dep Ed, instead of the SAIPE # of children.</h1>
+<h1 id="of-children-in-poverty-will-always-be-from-saipe-designed-for">of children in poverty will always be from SAIPE. Designed for</h1>
+validation purposes. Defaults to False.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>combined dataframe of inputs for use in an allocator.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L158-L246" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_inputs(
+    year,
+    baseline=&#34;prelim&#34;,
+    avg_lag=0,
+    verbose=True,
+    use_official_children=False
+):
+    &#34;&#34;&#34;Load the inputs for calculating title i allocations
+
+    Args:
+        year (int): _description_
+        baseline (str, optional): what official dep ed file to use as a
+            baseline. Options are &#34;prelim&#34;, &#34;final&#34;, and &#34;revfinal.&#34; Defaults
+            to &#34;prelim&#34;.
+        avg_lag (int, optional): Whether to average, and by how many years.
+            Defaults to 0.
+        verbose (bool, optional): Defaults to True.
+        use_official_children (bool, optional): Whether to use the official
+            # total children from Dep Ed, instead of the SAIPE # of children.
+            # of children in poverty will always be from SAIPE. Designed for
+            validation purposes. Defaults to False.
+
+    Returns:
+        pd.DataFrame: combined dataframe of inputs for use in an allocator.
+    &#34;&#34;&#34;
+    # official ESEA data
+    if year &lt; 2020:
+        print(&#34;[WARN] Using official data for 2020 instead.&#34;)
+        official_year = 2020
+    else:
+        official_year = year
+
+    print(config.root)
+    official = get_official_combined(os.path.join(
+        config.root,
+        f&#34;data/titlei-allocations/{baseline}_{str(official_year)[2:]}.xls&#34;
+    )).drop(columns=[
+        &#39;LEAID&#39;,
+        &#39;Sort C&#39;,
+        &#39;State&#39;,
+        &#39;Resident Pop.&#39;,
+        # &#39;Name&#39;
+    ])
+    official.columns = [
+        f&#34;official_{c.lower().replace(&#39; &#39;, &#39;_&#39;)}&#34; if c != &#39;Name&#39; else c
+        for c in official.columns
+    ]
+
+    # join with Census SAIPE
+    if avg_lag &gt; 0:
+        saipe, county_saipe = average_saipe(year-2, avg_lag, verbose=verbose)
+    else:
+        saipe = get_saipe(f&#34;{config.root}/data/saipe{str(year-2)[2:]}.xls&#34;)
+        county_saipe = get_county_saipe(
+            f&#34;{config.root}/data/county_saipe{str(year-2)[2:]}.xls&#34;
+        )
+    # for some reason, NY naming convention different...
+    # fixing that here
+    county_saipe.rename(index={
+        district_id_from_name(county_saipe, c, 36):
+            district_id_from_name(official, c, 36)
+        for c in [
+            &#34;Bronx County&#34;,
+            &#34;Kings County&#34;,
+            &#34;New York County&#34;,
+            &#34;Queens County&#34;,
+            &#34;Richmond County&#34;
+        ]
+    }, level=&#39;District ID&#39;, inplace=True)
+    saipe_stacked = impute_missing(saipe, county_saipe, verbose=verbose)
+
+    if verbose:
+        print(&#34;-- WARNING: dropping some balances from total budget --&#34;)
+        for name, filter in [
+            (&#34;Puerto Rico&#34;, official.Name == &#34;Puerto Rico&#34;),
+            (&#34;County balances&#34;, official.Name.str.contains(&#34;BALANCE OF&#34;)),
+            (&#34;Part D Subpart 2&#34;, official.Name == &#34;PART D SUBPART 2&#34;)
+        ]:
+            print(name, official[filter].official_total_alloc.sum())
+
+    # calculate coefficient of variation
+    inputs = official.join(saipe_stacked.drop(columns=&#34;Name&#34;), how=&#34;inner&#34;)\
+        .astype({&#39;Name&#39;: &#39;string&#39;})
+
+    if use_official_children:
+        # replace SAIPE # children with official # children
+        inputs[&#34;Estimated Population 5-17&#34;] = inputs[&#39;official_5-17_pop.&#39;]
+
+    return inputs</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_official"><code class="name flex">
+<span>def <span class="ident">get_official</span></span>(<span>path, sheet, header, columns)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L76-L80" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_official(path, sheet, header, columns):
+    allocs = pd.read_excel(path, sheet_name=sheet, header=header)
+    allocs = allocs.iloc[1:, :len(columns)]
+    allocs.columns = columns
+    return allocs</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_official_combined"><code class="name flex">
+<span>def <span class="ident">get_official_combined</span></span>(<span>path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load official Dept Ed data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path of file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Return cleaned dataframe.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L14-L73" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_official_combined(path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Load official Dept Ed data.
+
+    Args:
+        path (str): Path of file.
+
+    Returns:
+        pd.DataFrame: Return cleaned dataframe.
+    &#34;&#34;&#34;
+    allocs = get_official(
+        path, &#34;Allocations&#34;, 10, [
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;LEAID&#34;,
+            &#34;Name&#34;,
+            &#34;Basic Hold Harmless&#34;,
+            &#34;Concentration Hold Harmless&#34;,
+            &#34;Targeted Hold Harmless&#34;,
+            &#34;EFIG Hold Harmless&#34;,
+            &#34;Total Hold Harmless&#34;,
+            &#34;Basic Alloc&#34;,
+            &#34;Concentration Alloc&#34;,
+            &#34;Targeted Alloc&#34;,
+            &#34;EFIG Alloc&#34;,
+            &#34;Total Alloc&#34;,
+            &#34;Hold Harmless Percentage&#34;,
+            &#34;Resident Pop.&#34;
+        ]
+    )
+    counts = get_official(
+        path, &#34;Populations&#34;, 7, [
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;LEAID&#34;,
+            &#34;Name&#34;,
+            &#34;Total Formula Count&#34;,
+            &#34;5-17 Pop.&#34;,
+            &#34;Percent Formula&#34;,
+            &#34;Basic Eligibles&#34;,
+            &#34;Concentration Eligibles&#34;,
+            &#34;Targeted Eligibles&#34;,
+            &#34;Weighted Counts Targeted&#34;,
+            &#34;Weighted Counts EFIG&#34;
+        ]
+    )
+    combined = allocs.set_index(&#34;LEAID&#34;).join(
+        counts.drop(columns=[
+            &#34;Sort C&#34;,
+            &#34;State FIPS Code&#34;,
+            &#34;State&#34;,
+            &#34;Name&#34;
+        ]).set_index(&#34;LEAID&#34;),
+        how=&#34;inner&#34;
+    ).reset_index()
+    combined.loc[:, &#34;State FIPS Code&#34;] = \
+        combined[&#34;State FIPS Code&#34;].astype(int)
+    combined[&#34;District ID&#34;], _ = split_leaids(combined[&#34;LEAID&#34;].astype(int))
+    return combined.set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_saipe"><code class="name flex">
+<span>def <span class="ident">get_saipe</span></span>(<span>path: str) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get district-level SAIPE data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to file.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Cleaned district-level data.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L83-L98" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_saipe(path: str) -&gt; pd.DataFrame:
+    &#34;&#34;&#34;Get district-level SAIPE data.
+
+    Args:
+        path (str): Path to file.
+
+    Returns:
+        pd.DataFrame: Cleaned district-level data.
+    &#34;&#34;&#34;
+    saipe = pd.read_excel(path, header=2)\
+        .set_index([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+    saipe[&#34;cv&#34;] = saipe.apply(
+        lambda x: median_cv(x[&#34;Estimated Total Population&#34;]),
+        axis=1
+    )
+    return saipe</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.get_sppe"><code class="name flex">
+<span>def <span class="ident">get_sppe</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L444-L456" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def get_sppe(path):
+    fips_codes = pd.read_csv(f&#34;{config.root}/data/fips_codes.csv&#34;).rename(
+        columns={
+            &#39;FIPS&#39;: &#39;State FIPS Code&#39;
+        }
+    )
+    # quirk of original data file - need to change DC&#39;s name for join
+    fips_codes.loc[fips_codes[&#34;Name&#34;] == &#34;District of Columbia&#34;, &#34;Name&#34;] = \
+        &#34;District Of Columbia Public Schools&#34;
+    sppe = pd.read_excel(path, header=2, engine=&#39;openpyxl&#39;)\
+        .rename(columns={&#34;Unnamed: 0&#34;: &#34;Name&#34;})[[&#34;Name&#34;, &#34;ppe&#34;]]
+    return sppe.merge(fips_codes, on=&#34;Name&#34;, how=&#34;right&#34;)\
+        .set_index(&#34;State FIPS Code&#34;)</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.impute_missing"><code class="name flex">
+<span>def <span class="ident">impute_missing</span></span>(<span>original, update, verbose=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Impute data for missing LEAs from another file.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L356-L375" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def impute_missing(original, update, verbose=True):
+    &#34;&#34;&#34;Impute data for missing LEAs from another file.
+    &#34;&#34;&#34;
+    for c in [c for c in original.columns if c not in update.columns]:
+        update.loc[:, c] = np.nan
+    update_reduced = update.loc[
+        update.index.difference(original.index),
+        original.columns
+    ]
+    imputed = pd.concat([
+        original,
+        update_reduced
+    ])
+    if verbose:
+        print(
+            &#34;[INFO] Successfully imputed&#34;,
+            len(update.index.difference(original.index)),
+            &#34;new indices&#34;
+        )
+    return imputed</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.median_cv"><code class="name flex">
+<span>def <span class="ident">median_cv</span></span>(<span>total_pop: float) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Based on the table given here:
+<a href="https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html">https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html</a></p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>total_pop</code></strong> :&ensp;<code>float</code></dt>
+<dd>Total population of district.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>Coefficient of variation.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L459-L480" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def median_cv(total_pop: float) -&gt; float:
+    &#34;&#34;&#34;
+    Based on the table given here:
+    https://www.census.gov/programs-surveys/saipe/guidance/district-estimates.html
+
+    Args:
+        total_pop (float): Total population of district.
+
+    Returns:
+        float: Coefficient of variation.
+    &#34;&#34;&#34;
+    if total_pop &lt;= 2500:
+        return 0.67
+    elif total_pop &lt;= 5000:
+        return 0.42
+    elif total_pop &lt;= 10000:
+        return 0.35
+    elif total_pop &lt;= 20000:
+        return 0.28
+    elif total_pop &lt;= 65000:
+        return 0.23
+    return 0.15</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.split_leaids"><code class="name flex">
+<span>def <span class="ident">split_leaids</span></span>(<span>leaids: pandas.core.series.Series)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L438-L441" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def split_leaids(leaids: pd.Series):
+    # get the last seven digits of the ID
+    leaids = leaids.astype(str).str[-7:]
+    return leaids.str[-5:].astype(int), leaids.str[:-5].astype(int)</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.utils.weighting"><code class="name flex">
+<span>def <span class="ident">weighting</span></span>(<span>eligible: float, pop: float) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Gradated weighting algorithm given in
+<a href="https://nces.ed.gov/surveys/annualreports/pdf/titlei20160111.pdf">Sonnenberg</a>.</p>
+<p>Returns weighted eligibility counts.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>eligible</code></strong> :&ensp;<code>float</code></dt>
+<dd>
+<h1 id="of-eligible-children">of eligible children.</h1>
+</dd>
+<dt><strong><code>pop</code></strong> :&ensp;<code>float</code></dt>
+<dd>
+<h1 id="total-children">total children.</h1>
+</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>Weighted count.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/0a16f5ad99bbed9ce1f570f085a3e6b58a56bdca/dp_policy/titlei/utils.py#L483-L528" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def weighting(eligible: float, pop: float) -&gt; float:
+    &#34;&#34;&#34;Gradated weighting algorithm given in
+    [Sonnenberg](https://nces.ed.gov/surveys/annualreports/pdf/titlei20160111.pdf).
+
+    Returns weighted eligibility counts.
+
+    Args:
+        eligible (float): # of eligible children.
+        pop (float): # total children.
+
+    Returns:
+        float: Weighted count.
+    &#34;&#34;&#34;
+    # calculate weighted count based on counts
+    wec_counts = 0
+    for r, w in {
+        (1, 691): 1.0,
+        (692, 2262): 1.5,
+        (2263, 7851): 2.0,
+        (7852, 35514): 2.5,
+        (35514, None): 3.0
+    }.items():
+        if r[1] is not None and eligible &gt; r[1]:
+            wec_counts += (r[1] - r[0] + 1) * w
+        elif eligible &gt;= r[0]:
+            wec_counts += (eligible - r[0] + 1) * w
+
+    # calculate weighted count based on proportions
+    wec_props = 0
+    for r, w in {
+        (0, 0.1558): 1.0,
+        (0.1558, 0.2211): 1.75,
+        (0.2211, 0.3016): 2.5,
+        (0.3016, 0.3824): 3.25,
+        (0.3824, None): 4.0
+    }.items():
+        upper = floor(r[1]*pop) if r[1] is not None else None
+        lower = ceil(r[0]*pop)
+
+        if upper is not None and eligible &gt; upper:
+            wec_props += (upper - lower) * w
+        elif eligible &gt;= lower:
+            wec_props += (eligible - lower) * w
+
+    # take the higher weighted eligibility count
+    return max(wec_counts, wec_props)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="dp_policy.titlei" href="index.html">dp_policy.titlei</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="dp_policy.titlei.utils.average_saipe" href="#dp_policy.titlei.utils.average_saipe">average_saipe</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.data" href="#dp_policy.titlei.utils.data">data</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.district_id_from_name" href="#dp_policy.titlei.utils.district_id_from_name">district_id_from_name</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_acs_data" href="#dp_policy.titlei.utils.get_acs_data">get_acs_data</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_acs_unified" href="#dp_policy.titlei.utils.get_acs_unified">get_acs_unified</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_county_saipe" href="#dp_policy.titlei.utils.get_county_saipe">get_county_saipe</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_inputs" href="#dp_policy.titlei.utils.get_inputs">get_inputs</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_official" href="#dp_policy.titlei.utils.get_official">get_official</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_official_combined" href="#dp_policy.titlei.utils.get_official_combined">get_official_combined</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_saipe" href="#dp_policy.titlei.utils.get_saipe">get_saipe</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.get_sppe" href="#dp_policy.titlei.utils.get_sppe">get_sppe</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.impute_missing" href="#dp_policy.titlei.utils.impute_missing">impute_missing</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.median_cv" href="#dp_policy.titlei.utils.median_cv">median_cv</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.split_leaids" href="#dp_policy.titlei.utils.split_leaids">split_leaids</a></code></li>
+<li><code><a title="dp_policy.titlei.utils.weighting" href="#dp_policy.titlei.utils.weighting">weighting</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
