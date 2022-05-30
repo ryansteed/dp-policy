@@ -330,13 +330,30 @@ class HoldHarmless(Experiment):
             trials=self.trials, print_results=False,
             allocator_kwargs={'hold_harmless': True}
         )
+        state_minimum = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials, print_results=False,
+            allocator_kwargs={'state_minimum': True}
+        )
+        both = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials, print_results=False,
+            allocator_kwargs={
+                'hold_harmless': True,
+                'state_minimum': True
+            }
+        )
         # ground truths are the same
         match_true(self.baseline, [hold_harmless])
 
         # save treatments to file for later
         return {
-            'No hold harmless (baseline)': self.baseline,
-            'Hold harmless': hold_harmless
+            'No provisions (baseline)': self.baseline,
+            'Hold harmless only': hold_harmless,
+            'State minimum only': state_minimum,
+            'Both provisions': both
         }
 
 
