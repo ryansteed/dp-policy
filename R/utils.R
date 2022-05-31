@@ -513,15 +513,22 @@ plot_ru_by_race = function(comparison, marginal, alpha) {
     alpha = 0.01
   }
   alpha_sig = alpha
-  
+
   comparison = comparison %>%
     mutate(
-      avg = ifelse(rep(marginal, nrow(comparison)), diff_benefit_per_child_eligible_mean, dp_sampling_benefit_per_child_eligible_mean),
-      std_error = ifelse(rep(marginal, nrow(comparison)), diff_benefit_per_child_eligible_std_error, dp_sampling_benefit_per_child_eligible_std_error),
-      moe = qnorm(1-alpha/2) * std_error
+      avg = if(marginal) {
+        diff_benefit_per_child_eligible_mean
+      } else {
+        dp_sampling_benefit_per_child_eligible_mean
+      },
+      std_error = if(marginal) {
+        diff_benefit_per_child_eligible_std_error
+      } else {
+        dp_sampling_benefit_per_child_eligible_std_error
+      },
+      moe = qnorm(1 - alpha / 2) * std_error
     )
-  print(comparison$avg)
-  
+
   plt = ggplot(comparison, aes(x=treatment, y=avg)) +
     geom_errorbar(aes(ymin=avg - moe, ymax = avg + moe, color=race), width=0.1) +
     geom_line(aes(color=race)) +
