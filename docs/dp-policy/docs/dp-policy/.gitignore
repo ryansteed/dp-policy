@@ -1,0 +1,15 @@
+*.ipynb_checkpoints/
+.vscode
+*.egg-info
+results/*
+*__pycache__
+.Rproj.user
+.Rhistory
+*.Rproj
+.RData
+default.profraw
+*__pycache__
+data/shapefiles/*/
+venv
+build
+*.zip
