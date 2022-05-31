@@ -16,14 +16,64 @@ CLI endpoints in `dp_policy/api.py`.
 ```bash
 dp_policy --help
 # to run a specific experiment
-dp_policy run [name]
+dp_policy run [experiment]
 # to only produce the feather file for regression analysis (using cached results)
 dp_policy run --just-join [name]
 # to run all experiments
 dp_policy run_all
 ```
 
-## Running on server
+## Contents
+- `data/`
+  - `discrimination/` - [ACS 5-year data for discrimination analysis](https://nces.ed.gov/programs/edge/tableviewer/acsProfile/2019)
+  - `shapefiles/` - [TIGER shapefiles for school districts](https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html)
+  - `titlei-allocations` - official dep. of ed. figures, from Todd Stephenson
+  - `saipe*`, `county_saipe*` - district- and county-level [SAIPE data](https://www.census.gov/data/datasets/2020/demo/saipe/2020-school-districts.html)
+  - `fips_codes.csv` - map  of FIPS codes to postal codes and state names
+  - `nslp19.csv` - [National School Lunch program data](https://nces.ed.gov/ccd/files.asp#Fiscal:2,LevelId:7,SchoolYearId:34,Page:1) (exploration only)
+  - `sppe*` - [state per-pupil expenditure data](https://nces.ed.gov/ccd/pub_rev_exp.asp)
+- `dp_policy/` - codebase
+  - `titlei/` - submodule for replicating the Title I allocation procedure, with noise
+    - `allocators.py` - allocation procedures
+    - `bootstrap.py` - exploratory functions for sampling experiments
+    - `evaluation.py` - utility functions for evaluating results
+    - `mechanisms.py` - randomization mechanisms
+    - `thresholders.py` - thresholding mechanisms for formula
+    - `utils.py` - utility functions
+  - `api.py` - endpoints for CLI
+  - `config.py` - settings
+  - `experiments.py` - set of experiment configurations for replicating results
+- `logs/` - logs for recording runs
+- `notebooks/` - Jupyter notebooks for exploration and visualization
+  - `titlei.ipynb` - main notebook for replicating and visualizing experiment results
+  - `nslp.ipynb` - exploring NSLP data as an alternative ground truth
+  - `plot_sampling.ipynb` - developing sampling mechanisms
+- `plots/` - output plots
+- `R/` - R scripts for regression and visualization
+  - `exploration.Rmd` - exploring results
+  - `plot_all.R` - plots/regressions for all experiments
+  - `plot_experiment.R` - plots/regressions for one experiment
+  - `plots.R` - endpoints for plotting results and running regressions
+  - `regression_tables.R` - endpoint for recording regression tables
+  - `regressions.Rmd` - exploring regression specifications
+  - `utils.R` - utility functions for plotting and regressions
+- `results/` - cached results files
+  - `policy_experiments/` - for experiment runs
+  - `regressions/` - for regressions
+- `scripts/` - miscellaneous bash scripts to make server runs easier
+
+## Administration
+### Documentation
+Documentation for the `dp-policy` API is published at [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy).
+
+To generate the documentation, use pdoc3:
+
+```bash
+pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
+git subtree push --prefix docs/dp-policy origin gh-pages
+```
+
+### Running on server
 To sync discrimination files:
 
 ```bash
@@ -44,17 +94,7 @@ jobs
 watch -n 60 ps
 ```
 
-## Compressing for simple release
+### Compressing for simple release
 ```bash
 make zip
-```
-
-# Documentation
-Documentation for the `dp-policy` API is published at [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy).
-
-To generate the documentation, use pdoc3:
-
-```bash
-pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
-git subtree push --prefix docs/dp-policy origin gh-pages
 ```
