@@ -200,6 +200,13 @@ def discrimination_treatments_join(
     return discrimination_joined
 
 
+def percentile(n):
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = 'percentile_{}'.format(n*100)
+    return percentile_
+
+
 def geo_join(results: pd.DataFrame) -> pd.DataFrame:
     """Join results wwith shapefiles.
 
@@ -319,7 +326,7 @@ def geo_join(results: pd.DataFrame) -> pd.DataFrame:
             "dp_marginal"
         ]]
         .groupby(["State FIPS Code", "District ID"])
-        .agg(['mean', 'std', 'sem']),
+        .agg(['mean', 'std', 'sem', percentile(0.05)]),
         how="inner"
     )
     joined.columns = [
@@ -465,20 +472,21 @@ def heatmap(
         dpi (int, optional): Figure DPI. Defaults to 300.
         alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
     """
-    data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * stats.norm.ppf(1 - alpha / 2)
-    sig = ~(
-        ((data[y] + data[f"{y}_moe"]) >= 0) &
-        ((data[y] - data[f"{y}_moe"]) <= 0)
-    )
-    print(
-        "All but",
-        len(data)-sig.sum(),
-        f"are significantly different from zero at {alpha}"
-    )
+    if alpha is not None:
+        data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * stats.norm.ppf(1 - alpha / 2)
+        sig = ~(
+            ((data[y] + data[f"{y}_moe"]) >= 0) &
+            ((data[y] - data[f"{y}_moe"]) <= 0)
+        )
+        print(
+            "All but",
+            len(data)-sig.sum(),
+            f"are significantly different from zero at {alpha}"
+        )
 
     fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
 
-    for key in [y, f"{y}_moe"]:
+    for key in [y, f"{y}_moe"] if alpha is not None else [y]:
         if transform == 'cube':
             data.loc[:, key] = cube(data[key])
         if transform == 'log':
@@ -500,13 +508,14 @@ def heatmap(
         norm = pltc.Normalize(vmin=min, vmax=max)
     sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
 
-    print(
-        f"None of the {(1-alpha)*100}% MOEs exceeds",
-        data[f"{y}_moe"].abs().max()
-    )
-    data[f"{y}_sig"] = np.where(sig, data[y], np.nan)
+    if alpha is not None:
+        print(
+            f"None of the {(1-alpha)*100}% MOEs exceeds",
+            data[f"{y}_moe"].abs().max()
+        )
+        data[f"{y}_sig"] = np.where(sig, data[y], np.nan)
     data.plot(
-        column=f"{y}_sig",
+        column=f"{y}_sig" if alpha is not None else y,
         cmap=theme,
         norm=norm,
         ax=ax,
