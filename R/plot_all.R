@@ -8,10 +8,10 @@ for (experiment_name in c(
   # "baseline",
   # "hold_harmless",
   # "post_processing",
-  # "thresholds",
-  # "moving_average_truth=average",
-  # "budget",
-  # "epsilon",
+  "thresholds",
+  "moving_average_truth=average",
+  "budget",
+  "epsilon",
   "sampling"
 )) {
   print("\n")
