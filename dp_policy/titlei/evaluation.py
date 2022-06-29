@@ -826,12 +826,6 @@ def misalloc_statistics(
 
     if allocations is not None:
         print("-- Other stats --")
-        print(
-            "Avg total true alloc:",
-            allocations[f"true_grant_{grant_type}"]
-            .groupby(["State FIPS Code", "District ID"])
-            .first().abs().sum()
-        )
         small_district = allocations["true_pop_total"]\
             .groupby(["State FIPS Code", "District ID"])\
             .first() < 20000
@@ -847,10 +841,24 @@ def misalloc_statistics(
             "Total exp misalloc to small districts:",
             exp_error[small_district].abs().sum()
         )
+
         if grant_type is not None:
+            print(
+                "Avg total true alloc:",
+                allocations[f"true_grant_{grant_type}"]
+                .groupby(["State FIPS Code", "District ID"])
+                .first().abs().sum()
+            )
             print("Average true alloc: {}".format(
                 allocations[f"true_grant_{grant_type}"].mean()
             ))
+            print(
+                "Average true alloc per child eligible",
+                (
+                    allocations[f"true_grant_{grant_type}"] /
+                    allocations["true_children_eligible"]
+                ).mean()
+            )
             print("Max true alloc: {}".format(
                 allocations[f"true_grant_{grant_type}"].max()
             ))
