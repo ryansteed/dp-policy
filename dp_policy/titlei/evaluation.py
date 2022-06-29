@@ -844,10 +844,18 @@ def misalloc_statistics(
 
         if grant_type is not None:
             print(
-                "Avg total true alloc:",
+                "Total true alloc:",
                 allocations[f"true_grant_{grant_type}"]
                 .groupby(["State FIPS Code", "District ID"])
                 .first().abs().sum()
+            )
+            print(
+                "Total true alloc per child eligible",
+                allocations[f"true_grant_{grant_type}"]
+                .groupby(["State FIPS Code", "District ID"])
+                .first().sum() / allocations[f"true_children_eligible"]
+                .groupby(["State FIPS Code", "District ID"])
+                .first().sum()
             )
             print("Average true alloc: {}".format(
                 allocations[f"true_grant_{grant_type}"].mean()
