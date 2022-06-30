@@ -12,11 +12,12 @@ class Mechanism:
     poverty estimates.
     """
     def __init__(
-        self, sensitivity=2.0, round=False, clip=True
+        self, sensitivity=2.0, round=False, clip=True, noise_total=False
     ):
         self.sensitivity = sensitivity
         self.round = round
         self.clip = clip
+        self.noise_total = noise_total
 
     def poverty_estimates(
         self, pop_total, children_total, children_poverty
@@ -24,6 +25,7 @@ class Mechanism:
         """
         Returns dataframe for children in poverty, children total, and total
         population indexed by district ID.
+
         """
         raise NotImplementedError
 
@@ -75,11 +77,11 @@ class DiffPriv(Mechanism):
         if self.mechanism is None:
             raise NotImplementedError
 
-        # NOTE: as of 3/21, only adding noise to poverty estimate
+        # NOTE: as of 3/21, by default only adding noise to poverty estimate
         # (for consistency with sampling, where est. var. is unavailable)
-        # pop_total = pop_total.apply(self.mechanism.randomise)
-        # children_total = children_total.apply(self.mechanism.randomise)
         children_poverty = children_poverty.apply(self.mechanism.randomise)
+        if self.noise_total:
+            children_total = children_total.apply(self.mechanism.randomise)
 
         # print("After estimation, privacy acc:", self.accountant.total())
         # no negative values, please
@@ -139,27 +141,35 @@ class Sampled(Mechanism):
     def poverty_estimates(
         self, pop_total, children_total, children_poverty, cv
     ):
+        children_poverty = self._noise(children_poverty, cv)
+        if self.noise_total:
+            # NOTE: assuming CVs are same for total children.
+            # This is beyond Census guidance.
+            children_total = self._noise(children_total, cv)
+
+        return self.post_processing(pop_total), \
+            self.post_processing(children_total), \
+            self.post_processing(children_poverty)
+
+    def _noise(self, count, cv):
         if self.distribution == "gaussian":
             noised = np.random.normal(
-                children_poverty,  # mean
-                children_poverty * cv * self.multiplier  # stderr
+                count,  # mean
+                count * cv * self.multiplier  # stderr
             )
         elif self.distribution == "laplace":
             noised = np.random.laplace(
                 # mean
-                children_poverty,
+                count,
                 # variance is 2b^2, so b = stderr * np.sqrt ( 1/2 )
-                np.sqrt(0.5) * children_poverty * cv * self.multiplier
+                np.sqrt(0.5) * count * cv * self.multiplier
             )
         else:
             raise ValueError(
                 f"{self.distribution} is not a valid distribution."
             )
-        children_poverty = np.clip(
+        return np.clip(
             noised,
             0,
             None
         )
-        return self.post_processing(pop_total), \
-            self.post_processing(children_total), \
-            self.post_processing(children_poverty)
