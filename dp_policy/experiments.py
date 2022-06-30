@@ -351,7 +351,8 @@ class Experiment:
             'epsilon': Epsilon,
             'moving_average': MovingAverage,
             'budget': Budget,
-            'sampling': Sampling
+            'sampling': Sampling,
+            'vary_total_children': VaryTotalChildren
         }
         Exp = experiments.get(name)
         if Exp is None:
@@ -679,4 +680,22 @@ class Sampling(Experiment):
         return {
             **gaussian,
             **laplace
+        }
+
+
+class VaryTotalChildren(Experiment):
+    """Robustness check: what happens if the # of total children is not fixed?
+    """
+    def _get_treatments(self):
+        varies = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials, print_results=False,
+            mech_kwargs=dict(
+                noise_total=True
+            )
+        )
+        return {
+            'Total number of children is fixed (baseline)': self.baseline,
+            'Total number of children varies': varies
         }
