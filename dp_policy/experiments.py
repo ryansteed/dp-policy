@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 import dp_policy.config as config
 from dp_policy.titlei.evaluation import \
@@ -156,34 +157,99 @@ def titlei_grid(
                     - alloc["true_children_eligible"]
                 dp_error = alloc["dpest_children_eligible"] \
                     - alloc["est_children_eligible"]
-                s = 0.5
-                plt.scatter(
-                    alloc["true_children_eligible"], data_error,
-                    s, label="data"
+                
+                s = 1
+                # plt.scatter(
+                #     np.log(alloc["true_children_eligible"]), data_error,
+                #     s, label="Data deviations"
+                # )
+                # plt.scatter(
+                #     np.log(alloc["true_children_eligible"]), dp_error,
+                #     s, label="Privacy deviations"
+                # )
+                df = pd.melt(
+                    pd.DataFrame({
+                        "Privacy": dp_error,
+                        "Data": data_error,
+                        "Log children in poverty":
+                            np.log(alloc["true_children_eligible"])
+                    }).reset_index(),
+                    id_vars=["trial", "State FIPS Code", "District ID", "Log children in poverty"],
+                    value_vars=["Data", "Privacy"],
+                    var_name="Deviation",
+                    value_name="Noise"
                 )
-                plt.scatter(
-                    alloc["true_children_eligible"], dp_error,
-                    s, label="dp"
+
+                sns.scatterplot(
+                    data=df,
+                    x="Log children in poverty",
+                    y="Noise",
+                    hue="Deviation",
+                    s=s,
+                    alpha=0.5,
+                    palette=('#5D3A9B', "#E66100")
                 )
                 plt.legend()
-                plt.xlabel("# children in poverty")
+                plt.xlabel("Log children in poverty")
                 plt.ylabel("Noise")
+                plt.savefig(
+                    os.path.join(
+                        config.root,
+                        f"plots/robustness/noise_poverty_eps={e}.png"
+                    ),
+                    dpi=300
+                )
                 plt.show()
 
-                plt.scatter(
-                    alloc["true_children_eligible"],
-                    data_error/alloc["true_children_eligible"],
-                    s, label="data"
+                # plt.scatter(
+                #     alloc["true_children_eligible"],
+                #     data_error/alloc["true_children_eligible"],
+                #     s, label="data"
+                # )
+                # plt.scatter(
+                #     alloc["true_children_eligible"],
+                #     dp_error/alloc["true_children_eligible"],
+                #     s, label="dp"
+                # )
+                # plt.legend()
+                # plt.xlabel("# children in poverty")
+                # plt.ylabel("Noise per child in poverty")
+                # plt.show()
+
+                range = (
+                    min(data_error.quantile(0.05), dp_error.quantile(0.05)),
+                    max(data_error.quantile(0.95), dp_error.quantile(0.95))
                 )
-                plt.scatter(
-                    alloc["true_children_eligible"],
-                    dp_error/alloc["true_children_eligible"],
-                    s, label="dp"
+                alpha = 0.25
+                sns.histplot(
+                    df,
+                    x="Noise",
+                    hue="Deviation",
+                    bins=75,
+                    binrange=range,
+                    alpha=alpha,
+                    # kde=True,
+                    # stat="density",
+                    # linewidth=0,
+                    # kde_kws=dict(
+                    #     clip=range
+                    # ),
+                    palette=('#5D3A9B', "#E66100")
+                    # label="Data deviations",
+                    # color='#5D3A9B'
                 )
-                plt.legend()
-                plt.xlabel("# children in poverty")
-                plt.ylabel("Noise per child in poverty")
+                # plt.legend()
+                plt.xlabel("Added noise")
+                plt.savefig(
+                    os.path.join(
+                        config.root,
+                        f"plots/robustness/noise_eps={e}.png"
+                    ),
+                    dpi=300
+                )
                 plt.show()
+
+        raise Exception
 
         for prefix in prefixes:
             print("##", prefix)
