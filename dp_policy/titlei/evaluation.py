@@ -473,7 +473,8 @@ def heatmap(
         alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
     """
     if alpha is not None:
-        data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * stats.norm.ppf(1 - alpha / 2)
+        data[f"{y}_moe"] = data.loc[:, f"{y}_sem"] * \
+            stats.norm.ppf(1 - alpha / 2)
         sig = ~(
             ((data[y] + data[f"{y}_moe"]) >= 0) &
             ((data[y] - data[f"{y}_moe"]) <= 0)
@@ -556,7 +557,8 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
             if c.endswith("- pct")
             or c.endswith("- est")
             or c.startswith("true")
-            or "eligible" in c
+            or "children_eligible" in c
+            or "children_total" in c
             or "grant" in c
             or c in [
                 "ALAND"
@@ -573,13 +575,18 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
     )
 
 
-def load_treatments(experiment_name) -> Dict[str, pd.DataFrame]:
-    return pickle.load(
+def load_treatments(
+    experiment_name, treatment_name=None
+) -> Dict[str, pd.DataFrame]:
+    treatments = pickle.load(
         open(
             f"{config.root}/results/policy_experiments/{experiment_name}.pkl",
             'rb'
         )
     )
+    if treatment_name is None:
+        return treatments
+    return treatments[treatment_name]
 
 
 def compare_treatments(

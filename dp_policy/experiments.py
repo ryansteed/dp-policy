@@ -73,6 +73,7 @@ def titlei_grid(
     verbose: bool = True,
     print_results: list = [2.52, 0.1],
     plot_results: bool = False,
+    noise_to_plot: str = "children_eligible",
     alpha: float = 0.05,
     results: pd.DataFrame = None
 ):
@@ -100,6 +101,8 @@ def titlei_grid(
             results for. Defaults to [2.52, 0.1].
         plot_results (bool, optional): Whether to plot results. Defaults to
             False.
+        noise_to_plot (str, optional): Which variable to plot noise for.
+            Defaults to children_eligible.
         alpha (float, optional): Confidence level for confidence bands.
             Defaults to 0.05.
         results (pd.DataFrame, optional): Pre-computed results to plot. If
@@ -113,7 +116,7 @@ def titlei_grid(
         thresholder = allocator_kwargs.get('thresholder')
         if verbose:
             print(f"{len(eps)*len(delta)*trials} iters:")
-        for trial in tqdm(range(trials), desc='trial', disable=(not verbose)):
+        for _ in tqdm(range(trials), desc='trial', disable=(not verbose)):
             for d in tqdm(delta, desc='delta', leave=False, disable=True):
                 for e in tqdm(eps, desc='eps', leave=False, disable=True):
                     mechanism = mech(e, d, **mech_kwargs)
@@ -153,11 +156,11 @@ def titlei_grid(
         for e, alloc in results.groupby("epsilon"):
             if e in print_results:
                 print(f"--- eps={e} ---")
-                data_error = alloc["est_children_eligible"] \
-                    - alloc["true_children_eligible"]
-                dp_error = alloc["dpest_children_eligible"] \
-                    - alloc["est_children_eligible"]
-                
+                data_error = alloc[f"est_{noise_to_plot}"] \
+                    - alloc[f"true_{noise_to_plot}"]
+                dp_error = alloc[f"dpest_{noise_to_plot}"] \
+                    - alloc[f"est_{noise_to_plot}"]
+
                 s = 1
                 # plt.scatter(
                 #     np.log(alloc["true_children_eligible"]), data_error,
@@ -171,10 +174,15 @@ def titlei_grid(
                     pd.DataFrame({
                         "Privacy": dp_error,
                         "Data": data_error,
-                        "Log children in poverty":
-                            np.log(alloc["true_children_eligible"])
+                        "Log count":
+                            np.log(alloc[f"true_{noise_to_plot}"])
                     }).reset_index(),
-                    id_vars=["trial", "State FIPS Code", "District ID", "Log children in poverty"],
+                    id_vars=[
+                        "trial",
+                        "State FIPS Code",
+                        "District ID",
+                        "Log count"
+                    ],
                     value_vars=["Data", "Privacy"],
                     var_name="Deviation",
                     value_name="Noise"
@@ -182,7 +190,7 @@ def titlei_grid(
 
                 sns.scatterplot(
                     data=df,
-                    x="Log children in poverty",
+                    x="Log count",
                     y="Noise",
                     hue="Deviation",
                     s=s,
@@ -190,12 +198,17 @@ def titlei_grid(
                     palette=('#5D3A9B', "#E66100")
                 )
                 plt.legend()
-                plt.xlabel("Log children in poverty")
+                plt.xlabel("Log count")
                 plt.ylabel("Noise")
                 plt.savefig(
                     os.path.join(
                         config.root,
                         f"plots/robustness/noise_poverty_eps={e}.png"
+                        if noise_to_plot == "children_eligible" else
+                        "plots/robustness/noise_poverty_eps={}_{}.png".format(
+                            e,
+                            noise_to_plot
+                        )
                     ),
                     dpi=300
                 )
@@ -216,7 +229,7 @@ def titlei_grid(
                 # plt.ylabel("Noise per child in poverty")
                 # plt.show()
 
-                range = (
+                r = (
                     min(data_error.quantile(0.05), dp_error.quantile(0.05)),
                     max(data_error.quantile(0.95), dp_error.quantile(0.95))
                 )
@@ -226,7 +239,7 @@ def titlei_grid(
                     x="Noise",
                     hue="Deviation",
                     bins=75,
-                    binrange=range,
+                    binrange=r,
                     alpha=alpha,
                     # kde=True,
                     # stat="density",
@@ -244,12 +257,15 @@ def titlei_grid(
                     os.path.join(
                         config.root,
                         f"plots/robustness/noise_eps={e}.png"
+                        if noise_to_plot == "children_eligible" else
+                        "plots/robustness/noise_eps={}_{}.png".format(
+                            e,
+                            noise_to_plot
+                        )
                     ),
                     dpi=300
                 )
                 plt.show()
-
-        raise Exception
 
         for prefix in prefixes:
             print("##", prefix)
@@ -320,7 +336,8 @@ class Experiment:
         year: int = 2021,
         trials: int = 1000,
         eps: List[float] = [0.1],
-        delta: List[float] = [0.0]
+        delta: List[float] = [0.0],
+        no_match_true: bool = False
     ):
         """Initialize experiment and set baseline.
 
@@ -336,11 +353,15 @@ class Experiment:
                 [0.1].
             delta (List[float], optional): Values of delta to try. Defaults to
                 [0.0].
+            no_match_true (bool, optional): Whether to use different baselines
+                for policies that modify the allocation procedure. Default is
+                to use the same baseline for both.
         """
-        self.name = name
+        self.name = name if not no_match_true else f"{name}_unmatched"
         self.trials = trials
         self.eps = eps
         self.delta = delta
+        self.match_true = not no_match_true
         self.saipe = get_inputs(year)
 
         if str(baseline) == "cached":
@@ -460,8 +481,9 @@ class HoldHarmless(Experiment):
                 'state_minimum': True
             }
         )
-        # ground truths are the same
-        match_true(self.baseline, [hold_harmless, state_minimum, both])
+        if self.match_true:
+            # ground truths are the same
+            match_true(self.baseline, [hold_harmless, state_minimum, both])
 
         # save treatments to file for later
         return {
@@ -499,7 +521,8 @@ class PostProcessing(Experiment):
             ),
             print_results=False
         )
-        match_true(self.baseline, [none, rounding])
+        if self.match_true:
+            match_true(self.baseline, [none, rounding])
         return {
             'None': none,
             'Clipping (baseline)': clipping,
@@ -544,7 +567,8 @@ class MovingAverage(Experiment):
             )
             for i in range(4)
         ]
-        match_true(averaged[-1], [single_year] + averaged[:-1])
+        if self.match_true:
+            match_true(averaged[-1], [single_year] + averaged[:-1])
         return {
             'Lag 0': single_year,
             **{f"Lag {i+1}": a for i, a in enumerate(averaged)}
@@ -622,8 +646,8 @@ class Thresholds(Experiment):
             },
             print_results=False
         )
-
-        match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
+        if self.match_true:
+            match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
         return {
             'None': none,
             'Hard (baseline)': hard,
@@ -688,7 +712,8 @@ class Budget(Experiment):
                 }
             ) for name, budget in budgets.items()
         }
-        match_true(self.baseline, list(treatments.values()))
+        if self.match_true:
+            match_true(self.baseline, list(treatments.values()))
         treatments["FY2019 appropriation (baseline)"] = test
 
         return treatments
@@ -757,7 +782,7 @@ class VaryTotalChildren(Experiment):
             self.saipe, Laplace,
             eps=self.eps, delta=self.delta,
             trials=self.trials, print_results=False,
-            mech_kwargs=dict(
+            sampling_kwargs=dict(
                 noise_total=True
             )
         )

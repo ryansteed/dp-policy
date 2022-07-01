@@ -161,7 +161,8 @@ class Sampled(Mechanism):
             noised = np.random.laplace(
                 # mean
                 count,
-                # variance is 2b^2, so b = stderr * np.sqrt ( 1/2 )
+                # variance is 2b^2 = (count * cv)^2
+                # b = count * cv * sqrt(1/2)
                 np.sqrt(0.5) * count * cv * self.multiplier
             )
         else:

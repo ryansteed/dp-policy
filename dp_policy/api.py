@@ -11,6 +11,7 @@ def cli():
 @cli.command('run')
 @click.argument('name')
 @click.option('--just-join', is_flag=True)
+@click.option('--no-match-true', is_flag=True)
 @click.option('--trials', type=int, default=1000)
 def run(
     name: str,
