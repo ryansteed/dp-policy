@@ -557,7 +557,7 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
             if c.endswith("- pct")
             or c.endswith("- est")
             or c.startswith("true")
-            or "children_eligible" in c
+            or "eligible" in c
             or "children_total" in c
             or "grant" in c
             or c in [
