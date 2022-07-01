@@ -6,10 +6,10 @@ plot_experiment = function(experiment_name, trials) {
     ncols = 2
   }
 
-  # print("- Race")
-  # plot_race(experiment_name, trials, "race_aggregate", ncols)
-  # print("- Ethnicity")
-  # plot_race(experiment_name, trials, "hispanic", ncols)
+  print("- Race")
+  plot_race(experiment_name, trials, "race_aggregate", ncols)
+  print("- Ethnicity")
+  plot_race(experiment_name, trials, "hispanic", ncols)
   print("- Race Detail")
   plot_race(experiment_name, trials, "race", ncols)
 }
