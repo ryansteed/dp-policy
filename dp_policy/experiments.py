@@ -782,6 +782,9 @@ class VaryTotalChildren(Experiment):
             self.saipe, Laplace,
             eps=self.eps, delta=self.delta,
             trials=self.trials, print_results=False,
+            mech_kwargs=dict(
+                noise_total=True
+            ),
             sampling_kwargs=dict(
                 noise_total=True
             )
