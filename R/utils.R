@@ -577,15 +577,15 @@ plot_race = function(name, trials, kind, ncol) {
     # for epsilon experiment, disparities are too large to see if we include 0.001
     comparison = comparison %>% filter(treatment > 0.001)
     plt = plot_ru_by_race(comparison, FALSE)
-    ggsave(sprintf("plots/race/ru_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+    ggsave(sprintf("plots/race/ru_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
     plt_marginal = plot_ru_by_race(comparison, TRUE)
-    ggsave(sprintf("plots/race/ru_marginal_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+    ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
   }
   
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
   print(plt)
   
-  ggsave(sprintf("plots/race/misalloc_%s%s.png", name, kind_formatted), dpi=300, width=6, height=7.2)
+  ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
 }
 
 sq_share = function(x) {
@@ -898,7 +898,7 @@ plot_gam = function(viz, plotname) {
   
   if (!missing(plotname)) {
     ggsave(
-      sprintf("plots/smooths/%s.png", sanitize(plotname)),
+      sprintf("plots/smooths/%s.pdf", sanitize(plotname)),
       plot, width=12, height=6, dpi=300
     )
   }

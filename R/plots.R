@@ -10,8 +10,16 @@ plot_experiment = function(experiment_name, trials) {
   plot_race(experiment_name, trials, "race_aggregate", ncols)
   print("- Ethnicity")
   plot_race(experiment_name, trials, "hispanic", ncols)
-  print("- Race Detail")
-  plot_race(experiment_name, trials, "race", ncols)
+  if (experiment_name %in% c(
+    "baseline",
+    "hold_harmless",
+    "hold_harmless_unmatched",
+    "post_processing",
+    "vary_total_children"
+  )) {
+    print("- Race Detail")
+    plot_race(experiment_name, trials, "race", ncols)
+  }
 }
 
 gam_experiment = function(experiment, sampling_only) {
