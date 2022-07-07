@@ -17,18 +17,13 @@ source("R/utils.R")
 regression_tables("baseline", F, 10)
 ```
 
-
-## Treatment comparison
-```{r treatments}
-test_experiment = "hold_harmless"
-experiment = load_experiment(test_experiment, 10)
+## Univariate analysis
+```{r univariate}
+experiment = load_experiment("baseline", 100)
 ```
 
 ```{r}
-df_reg = clean_for_reg(experiment, F) %>% filter(treatment == "Hold harmless")
-```
-
-```{r}
+df_reg = clean_for_reg(experiment)
 gam_mr = gam(
     misalloc ~
       # s(true_children_total, bs="tp") +
@@ -44,7 +39,145 @@ gam_mr = gam(
     method="REML", # restricted MLE
     data=df_reg
   )
-summary(gam_mr)
+print(summary(gam_mr))
+```
+
+## Treatment comparison
+```{r treatments}
+test_experiment = "hold_harmless"
+experiment = load_experiment(test_experiment, 10)
+```
+
+```{r}
+df_reg = clean_for_reg(experiment, F) %>% filter(treatment == "Hold harmless")
+```
+
+```{r}
+# gam_mr = gam(
+#     misalloc ~
+#       # s(true_children_total, bs="tp") +
+#       # s(true_children_poverty, bs="tp") +
+#       s(log(pop_density), bs="tp") +
+#       s(hhi, bs="tp") +
+#       s(prop_white, bs="tp") +
+#       s(prop_hispanic, bs="tp") +
+#       s(median_income_est, bs="tp") +
+#       # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
+#       s(renter_occupied_housing_tenure_pct, bs="tp"),
+#     # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
+#     method="REML", # restricted MLE
+#     data=df_reg
+#   )
+```
+```{r}
+plot_uv_gam = function(uv_gam, label) {
+  summary(uv_gam)
+  viz = getViz(uv_gam)
+  level = 0.95
+  mul = qnorm((level+1)/2)
+  plot_obj = plot(sm(viz, 1))
+  upper = max(plot_obj$data$fit$y + mul*plot_obj$data$fit$se)
+  lower = min(plot_obj$data$fit$y - mul*plot_obj$data$fit$se)
+  p = plot_obj +
+    theme_minimal() +
+    # ylab("Smoothed effect (in terms of $$ misallocated)") +
+    l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+    # l_dens("joint") +
+    l_ciPoly(level=level, alpha=0.5, size=0.25) +
+    l_ciLine(level=level) +
+    l_fitLine() +
+    # l_rug(alpha=0.5) +
+    geom_hline(yintercept = 0, linetype = 2) +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+    ) +
+    coord_cartesian(ylim=c(lower, upper)) +
+    ggtitle(label)
+  p$ggObj
+}
+
+cplt = cowplot::plot_grid(
+  plotlist=map2(
+    list(
+      gam(
+        misalloc ~ s(true_children_total, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(true_children_poverty, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(log(pop_density), bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(hhi, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(prop_white, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(prop_hispanic, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(median_income_est, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(renter_occupied_housing_tenure_pct, bs="tp"),
+        method="REML",
+        data=df_reg
+      ),
+      gam(
+        misalloc ~ s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
+        method="REML",
+        data=df_reg
+      )
+    ),
+    list(
+      "# children",
+      "# children in poverty",
+      "Log population density",
+      "Racial homogeneity (HHI)",
+      "% white-only",
+      "% hispanic",
+      "Median income",
+      "% not a U.S. citizen",
+      "% renter-occupied housing",
+      "Average size of renter household"
+    ),
+    plot_uv_gam
+  ),
+  nrow=5
+)
+y.grob = textGrob(
+  "Smoothed effect (in terms of $$ misallocated)",
+  gp=gpar(fontface="bold"),
+  rot=90
+)
+plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+ggsave(
+  "plots/smooths/baseline_univariate.pdf",
+  plot, width=12, height=9, dpi=300
+)
+plot
 ```
 
 ```{r}
