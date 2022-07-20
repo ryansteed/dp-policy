@@ -17,9 +17,9 @@ experiment = load_experiment(experiment_name, trials)
 plot_experiment(experiment)
 
 # reduced size for GAM - otherwise takes too long... maybe reverse this later
-# experiment = experiment %>% filter(trial < gam_trials)
-# print(nrow(experiment %>% distinct(trial)))
+experiment = experiment %>% filter(trial < gam_trials)
+print(nrow(experiment %>% distinct(trial)))
 
-# gam_experiment(experiment)
+gam_experiment(experiment)
 
 print("DONE")

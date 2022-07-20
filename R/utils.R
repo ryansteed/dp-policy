@@ -585,15 +585,15 @@ plot_race = function(name, trials, kind, ncol) {
     # for epsilon experiment, disparities are too large to see if we include 0.001
     comparison = comparison %>% filter(treatment > 0.001)
     plt = plot_ru_by_race(comparison, FALSE)
-    ggsave(sprintf("plots/race/ru_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent')
+    ggsave(sprintf("plots/race/ru_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
     plt_marginal = plot_ru_by_race(comparison, TRUE)
-    ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent')
+    ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
   }
   
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
   print(plt)
   
-  ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent')
+  ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
 }
 
 sq_share = function(x) {
