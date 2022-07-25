@@ -1,3 +1,7 @@
 data/shapefiles/michigan_2019.zip filter=lfs diff=lfs merge=lfs -text
 data/shapefiles/pennsylvania_2019.zip filter=lfs diff=lfs merge=lfs -text
 data/shapefiles/school_districts_19.zip filter=lfs diff=lfs merge=lfs -text
+plots/*.pdf filter=lfs diff=lfs merge=lfs -text
+plots/robustness/*.pdf filter=lfs diff=lfs merge=lfs -text
+plots/geo/*.pdf filter=lfs diff=lfs merge=lfs -text
+plots/*.zip filter=lfs diff=lfs merge=lfs -text
