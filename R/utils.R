@@ -400,6 +400,8 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
       treatment = fct_reorder(as.factor(treatment), treatment, .desc=TRUE)
     )
   
+  include_sig = any(comparison$sigdiff == "notsig")
+
   # for baseline
   if (nrow(comparison %>% distinct(treatment)) == 1) {
     print("Just printing one treatment")
@@ -478,11 +480,20 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
       stroke=0.75,
       position=position_dodge(width=0.9)
     ) +
-    ylab("Race-weighted misallocation per eligible child") +
-    scale_linetype_manual(
-      values=c("sig" = "solid", "notsig" = "dashed"),
-      labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
-    ) +
+    ylab("Race-weighted misallocation per eligible child ($)")
+  if (include_sig) {
+    plt = plt + scale_linetype_manual(
+        values=c("sig" = "solid", "notsig" = "dashed"),
+        labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+      )
+  } else {
+    print("Ignoring insig")
+    plt = plt + scale_linetype_manual(
+        values=c("sig" = "solid"),
+        labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig))
+      )
+  }
+  plt = plt +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
       values = palette(unique(comparison$treatment)),
@@ -508,7 +519,7 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
     ) +
     theme(
       legend.position = "top",
-      legend.box="vertical"
+      legend.box=ifelse(include_sig, "vertical", "horizontal")
     )
   
   return(plt)
