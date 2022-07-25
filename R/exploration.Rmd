@@ -44,7 +44,7 @@ ggplot(experiment, aes(x=prop_white, y=ifelse(true_children_eligible == 0, 0, lo
     y="Log # of children in poverty",
     x="% white-only"
   )
-ggsave("plots/race/thresholds_raw.png", dpi=300, width=6, height=5)
+ggsave("plots/race/thresholds_raw.pdf", dpi=300, width=6, height=5)
 
 ggplot(experiment, aes(x=prop_white, y=log(true_children_eligible/true_children_total))) +
   point_plot +
@@ -54,7 +54,7 @@ ggplot(experiment, aes(x=prop_white, y=log(true_children_eligible/true_children_
     y="Log prop. of children in poverty",
     x="% white-only"
   )
-ggsave("plots/race/thresholds_prop.png", dpi=300, width=6, height=5)
+ggsave("plots/race/thresholds_prop.pdf", dpi=300, width=6, height=5)
 
 ggplot(experiment, aes(x=not_hispanic, y=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)))) +
   point_plot +
@@ -64,7 +64,7 @@ ggplot(experiment, aes(x=not_hispanic, y=ifelse(true_children_eligible == 0, 0, 
     y="Log # of children in poverty",
     x="% non-Hispanic"
   )
-ggsave("plots/race/thresholds_raw_ethnicity.png", dpi=300, width=6, height=5)
+ggsave("plots/race/thresholds_raw_ethnicity.pdf", dpi=300, width=6, height=5)
 
 ggplot(experiment, aes(x=not_hispanic, y=log(true_children_eligible/true_children_total))) +
   point_plot +
@@ -74,7 +74,7 @@ ggplot(experiment, aes(x=not_hispanic, y=log(true_children_eligible/true_childre
     y="Log prop. of children in poverty",
     x="% non-Hispanic"
   )
-ggsave("plots/race/thresholds_prop_ethnicity.png", dpi=300, width=6, height=5)
+ggsave("plots/race/thresholds_prop_ethnicity.pdf", dpi=300, width=6, height=5)
 ```
 
 ## Differences in natural variance

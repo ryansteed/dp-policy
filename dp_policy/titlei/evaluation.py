@@ -230,7 +230,7 @@ def geo_join(results: pd.DataFrame) -> pd.DataFrame:
 
     results["percent_eligible"] = \
         results["true_children_eligible"] / results["true_children_total"]
-    results["switched_eligibility"] = \
+    results["switched_eligibility"] = (
         ~(
             (results.est_eligible_targeted == results.true_eligible_targeted)
             & (results.est_eligible_basic == results.true_eligible_basic)
@@ -239,33 +239,36 @@ def geo_join(results: pd.DataFrame) -> pd.DataFrame:
                 results.true_eligible_concentration
             )
         )
-    results["became_eligible"] = \
+    ).astype(int)
+    results["became_eligible"] = (
         (
             results.est_eligible_targeted.astype(bool)
             & ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_basic.astype(bool)
             & ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_concentration.astype(bool)
             & ~results.true_eligible_concentration.astype(bool)
         )
-    results["became_ineligible"] = \
+    ).astype(int)
+    results["became_ineligible"] = (
         (
             ~results.est_eligible_targeted.astype(bool)
             & results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_basic.astype(bool)
             & results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_concentration.astype(bool)
             & results.true_eligible_concentration.astype(bool)
         )
-    results["switched_eligibility_dp"] = \
+    ).astype(int)
+    results["switched_eligibility_dp"] = (
         ~(
             (results.dpest_eligible_targeted == results.true_eligible_targeted)
             & (results.dpest_eligible_basic == results.true_eligible_basic)
@@ -274,32 +277,35 @@ def geo_join(results: pd.DataFrame) -> pd.DataFrame:
                 results.true_eligible_concentration
             )
         )
-    results["became_eligible_dp"] = \
+    ).astype(int)
+    results["became_eligible_dp"] = (
         (
             results.dpest_eligible_targeted.astype(bool)
             & ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_basic.astype(bool)
             & ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_concentration.astype(bool)
             & ~results.true_eligible_concentration.astype(bool)
         )
-    results["became_ineligible_dp"] = \
+    ).astype(int)
+    results["became_ineligible_dp"] = (
         (
             ~results.dpest_eligible_targeted.astype(bool)
             & results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_basic.astype(bool)
             & results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_concentration.astype(bool)
             & results.true_eligible_concentration.astype(bool)
         )
+    ).astype(int)
     results["dp_marginal"] = \
         results["error_dp_per_child_eligible"] -\
         results["error_per_child_eligible"]
@@ -425,7 +431,7 @@ def plot_treatments(
     plt.legend(loc='upper right')
     if filename:
         plt.savefig(
-            f"{config.root}/plots/bootstrap/{filename}.png",
+            f"{config.root}/plots/bootstrap/{filename}.pdf",
             dpi=100,
             bbox_inches='tight'
         )
@@ -737,7 +743,7 @@ def compare_treatments(
             y="error_per_child_eligible",
             label="Misallocation per eligible child (cube root)",
             title=treatment,
-            file=f"{experiment_name}_{treatment}.png",
+            file=f"{experiment_name}_{treatment}.pdf",
             figsize=(15, 10),
             bar_location='right',
             min=ymin,
