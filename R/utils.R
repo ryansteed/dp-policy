@@ -400,6 +400,8 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
       treatment = fct_reorder(as.factor(treatment), treatment, .desc=TRUE)
     )
   
+  include_sig = any(comparison$sigdiff == "notsig")
+
   # for baseline
   if (nrow(comparison %>% distinct(treatment)) == 1) {
     print("Just printing one treatment")
@@ -470,22 +472,37 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
     geom_point(
       aes(
         y = sampling_benefit_per_child_eligible_mean,
-        fill = treatment
+        fill = treatment,
+        shape = treatment
       ),
       colour="black",
-      shape=21,
       size=1.5,
       stroke=0.75,
       position=position_dodge(width=0.9)
     ) +
-    ylab("Race-weighted misallocation per eligible child") +
-    scale_linetype_manual(
-      values=c("sig" = "solid", "notsig" = "dashed"),
-      labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
-    ) +
+    ylab("Race-weighted misallocation per eligible child ($)")
+  if (include_sig) {
+    plt = plt + scale_linetype_manual(
+        values=c("sig" = "solid", "notsig" = "dashed"),
+        labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig), "notsig" = "Not\nsignificant")
+      )
+  } else {
+    print("Ignoring insig")
+    plt = plt + scale_linetype_manual(
+        values=c("sig" = "solid"),
+        labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig))
+      )
+  }
+  plt = plt +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
-      values = palette(unique(comparison$treatment))
+      values = palette(unique(comparison$treatment)),
+      guide = guide_legend(ncol=ncol, order=1)
+    ) +
+    scale_shape_manual(
+      labels = function(x) str_wrap(x, width=5),
+      values = c(21, 22, 23, 24, 25, 3, 4),
+      guide = guide_legend(ncol=ncol, order=1)
     ) +
     scale_x_discrete(
       labels = function(x) str_wrap(x, width=label_width)
@@ -493,16 +510,16 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
     coord_flip() +
     xlab("Census Race Category") +
     guides(
-      fill = guide_legend(ncol=ncol, order=1),
       linetype = guide_legend(ncol=2, order=2)
     ) +
     labs(
       fill = "Data\ndeviations",
+      shape = "Data\ndeviations",
       linetype = "+ privacy\ndevations\n(ε=0.1)"
     ) +
     theme(
       legend.position = "top",
-      legend.box="vertical"
+      legend.box=ifelse(include_sig, "vertical", "horizontal")
     )
   
   return(plt)
@@ -532,7 +549,7 @@ plot_ru_by_race = function(comparison, marginal, alpha) {
   plt = ggplot(comparison, aes(x=treatment, y=avg)) +
     geom_errorbar(aes(ymin=avg - moe, ymax = avg + moe, color=race), width=0.1) +
     geom_line(aes(color=race)) +
-    geom_point(aes(color=race)) +
+    geom_point(aes(color=race, shape=race)) +
     scale_x_continuous(trans='log10') +
     scale_color_brewer(palette="Accent") +
     xlab("Privacy parameter ε") +
@@ -542,10 +559,12 @@ plot_ru_by_race = function(comparison, marginal, alpha) {
       "Race-weighted misallocation per eligible child"
     )) +
     labs(
-      color = ""
+      color = "",
+      shape = ""
     ) +
     guides(
-      color = guide_legend(ncol=3)
+      color = guide_legend(ncol=3),
+      shape = guide_legend(ncol=3)
     ) +
     theme(
       legend.position = "top",
@@ -577,15 +596,15 @@ plot_race = function(name, trials, kind, ncol) {
     # for epsilon experiment, disparities are too large to see if we include 0.001
     comparison = comparison %>% filter(treatment > 0.001)
     plt = plot_ru_by_race(comparison, FALSE)
-    ggsave(sprintf("plots/race/ru_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
+    ggsave(sprintf("plots/race/ru_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
     plt_marginal = plot_ru_by_race(comparison, TRUE)
-    ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
+    ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
   }
   
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
   print(plt)
   
-  ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2)
+  ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
 }
 
 sq_share = function(x) {
@@ -899,7 +918,7 @@ plot_gam = function(viz, plotname) {
   if (!missing(plotname)) {
     ggsave(
       sprintf("plots/smooths/%s.pdf", sanitize(plotname)),
-      plot, width=12, height=6, dpi=300
+      plot, width=12, height=6, dpi=300, bg='transparent'
     )
   }
   

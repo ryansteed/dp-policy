@@ -203,9 +203,9 @@ def titlei_grid(
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        f"plots/robustness/noise_poverty_eps={e}.png"
+                        f"plots/robustness/noise_poverty_eps={e}.pdf"
                         if noise_to_plot == "children_eligible" else
-                        "plots/robustness/noise_poverty_eps={}_{}.png".format(
+                        "plots/robustness/noise_poverty_eps={}_{}.pdf".format(
                             e,
                             noise_to_plot
                         )
@@ -256,9 +256,9 @@ def titlei_grid(
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        f"plots/robustness/noise_eps={e}.png"
+                        f"plots/robustness/noise_eps={e}.pdf"
                         if noise_to_plot == "children_eligible" else
-                        "plots/robustness/noise_eps={}_{}.png".format(
+                        "plots/robustness/noise_eps={}_{}.pdf".format(
                             e,
                             noise_to_plot
                         )
@@ -317,7 +317,7 @@ def titlei_grid(
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        "plots/robustness/eps_sensitivity_frontier.png"
+                        "plots/robustness/eps_sensitivity_frontier.pdf"
                     ),
                     dpi=300
                 )
