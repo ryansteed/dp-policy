@@ -153,119 +153,120 @@ def titlei_grid(
     if print_results:
         prefixes = ["est", "dp", "dpest"]
 
-        for e, alloc in results.groupby("epsilon"):
-            if e in print_results:
-                print(f"--- eps={e} ---")
-                data_error = alloc[f"est_{noise_to_plot}"] \
-                    - alloc[f"true_{noise_to_plot}"]
-                dp_error = alloc[f"dpest_{noise_to_plot}"] \
-                    - alloc[f"est_{noise_to_plot}"]
+        if plot_results:
+            for e, alloc in results.groupby("epsilon"):
+                if e in print_results:
+                    print(f"--- eps={e} ---")
+                    data_error = alloc[f"est_{noise_to_plot}"] \
+                        - alloc[f"true_{noise_to_plot}"]
+                    dp_error = alloc[f"dpest_{noise_to_plot}"] \
+                        - alloc[f"est_{noise_to_plot}"]
 
-                s = 1
-                # plt.scatter(
-                #     np.log(alloc["true_children_eligible"]), data_error,
-                #     s, label="Data deviations"
-                # )
-                # plt.scatter(
-                #     np.log(alloc["true_children_eligible"]), dp_error,
-                #     s, label="Privacy deviations"
-                # )
-                df = pd.melt(
-                    pd.DataFrame({
-                        "Privacy": dp_error,
-                        "Data": data_error,
-                        "Log count":
-                            np.log(alloc[f"true_{noise_to_plot}"])
-                    }).reset_index(),
-                    id_vars=[
-                        "trial",
-                        "State FIPS Code",
-                        "District ID",
-                        "Log count"
-                    ],
-                    value_vars=["Data", "Privacy"],
-                    var_name="Deviation",
-                    value_name="Noise"
-                )
+                    s = 1
+                    # plt.scatter(
+                    #     np.log(alloc["true_children_eligible"]), data_error,
+                    #     s, label="Data deviations"
+                    # )
+                    # plt.scatter(
+                    #     np.log(alloc["true_children_eligible"]), dp_error,
+                    #     s, label="Privacy deviations"
+                    # )
+                    df = pd.melt(
+                        pd.DataFrame({
+                            "Privacy": dp_error,
+                            "Data": data_error,
+                            "Log count":
+                                np.log(alloc[f"true_{noise_to_plot}"])
+                        }).reset_index(),
+                        id_vars=[
+                            "trial",
+                            "State FIPS Code",
+                            "District ID",
+                            "Log count"
+                        ],
+                        value_vars=["Data", "Privacy"],
+                        var_name="Deviation",
+                        value_name="Noise"
+                    )
+                    
+                    sns.scatterplot(
+                        data=df,
+                        x="Log count",
+                        y="Noise",
+                        hue="Deviation",
+                        s=s,
+                        alpha=0.5,
+                        palette=('#5D3A9B', "#E66100")
+                    )
+                    plt.legend()
+                    plt.xlabel("Log count")
+                    plt.ylabel("Noise")
+                    plt.savefig(
+                        os.path.join(
+                            config.root,
+                            f"plots/robustness/noise_poverty_eps={e}.pdf"
+                            if noise_to_plot == "children_eligible" else
+                            "plots/robustness/noise_poverty_eps={}_{}.pdf".format(
+                                e,
+                                noise_to_plot
+                            )
+                        ),
+                        dpi=300
+                    )
+                    plt.show()
 
-                sns.scatterplot(
-                    data=df,
-                    x="Log count",
-                    y="Noise",
-                    hue="Deviation",
-                    s=s,
-                    alpha=0.5,
-                    palette=('#5D3A9B', "#E66100")
-                )
-                plt.legend()
-                plt.xlabel("Log count")
-                plt.ylabel("Noise")
-                plt.savefig(
-                    os.path.join(
-                        config.root,
-                        f"plots/robustness/noise_poverty_eps={e}.pdf"
-                        if noise_to_plot == "children_eligible" else
-                        "plots/robustness/noise_poverty_eps={}_{}.pdf".format(
-                            e,
-                            noise_to_plot
-                        )
-                    ),
-                    dpi=300
-                )
-                plt.show()
+                    # plt.scatter(
+                    #     alloc["true_children_eligible"],
+                    #     data_error/alloc["true_children_eligible"],
+                    #     s, label="data"
+                    # )
+                    # plt.scatter(
+                    #     alloc["true_children_eligible"],
+                    #     dp_error/alloc["true_children_eligible"],
+                    #     s, label="dp"
+                    # )
+                    # plt.legend()
+                    # plt.xlabel("# children in poverty")
+                    # plt.ylabel("Noise per child in poverty")
+                    # plt.show()
 
-                # plt.scatter(
-                #     alloc["true_children_eligible"],
-                #     data_error/alloc["true_children_eligible"],
-                #     s, label="data"
-                # )
-                # plt.scatter(
-                #     alloc["true_children_eligible"],
-                #     dp_error/alloc["true_children_eligible"],
-                #     s, label="dp"
-                # )
-                # plt.legend()
-                # plt.xlabel("# children in poverty")
-                # plt.ylabel("Noise per child in poverty")
-                # plt.show()
-
-                r = (
-                    min(data_error.quantile(0.05), dp_error.quantile(0.05)),
-                    max(data_error.quantile(0.95), dp_error.quantile(0.95))
-                )
-                alpha = 0.25
-                sns.histplot(
-                    df,
-                    x="Noise",
-                    hue="Deviation",
-                    bins=75,
-                    binrange=r,
-                    alpha=alpha,
-                    # kde=True,
-                    # stat="density",
-                    # linewidth=0,
-                    # kde_kws=dict(
-                    #     clip=range
-                    # ),
-                    palette=('#5D3A9B', "#E66100")
-                    # label="Data deviations",
-                    # color='#5D3A9B'
-                )
-                # plt.legend()
-                plt.xlabel("Added noise")
-                plt.savefig(
-                    os.path.join(
-                        config.root,
-                        f"plots/robustness/noise_eps={e}.pdf"
-                        if noise_to_plot == "children_eligible" else
-                        "plots/robustness/noise_eps={}_{}.pdf".format(
-                            e,
-                            noise_to_plot
-                        )
-                    ),
-                    dpi=300
-                )
-                plt.show()
+                    r = (
+                        min(data_error.quantile(0.05), dp_error.quantile(0.05)),
+                        max(data_error.quantile(0.95), dp_error.quantile(0.95))
+                    )
+                    alpha = 0.25
+                    sns.histplot(
+                        df,
+                        x="Noise",
+                        hue="Deviation",
+                        bins=75,
+                        binrange=r,
+                        alpha=alpha,
+                        # kde=True,
+                        # stat="density",
+                        # linewidth=0,
+                        # kde_kws=dict(
+                        #     clip=range
+                        # ),
+                        palette=('#5D3A9B', "#E66100")
+                        # label="Data deviations",
+                        # color='#5D3A9B'
+                    )
+                    # plt.legend()
+                    plt.xlabel("Added noise")
+                    plt.savefig(
+                        os.path.join(
+                            config.root,
+                            f"plots/robustness/noise_eps={e}.pdf"
+                            if noise_to_plot == "children_eligible" else
+                            "plots/robustness/noise_eps={}_{}.pdf".format(
+                                e,
+                                noise_to_plot
+                            )
+                        ),
+                        dpi=300
+                    )
+                    plt.show()
 
         for prefix in prefixes:
             print("##", prefix)
@@ -663,7 +664,9 @@ class Budget(Experiment):
     """
     def _get_treatments(self):
         if len(self.eps) > 0:
-            print("[WARN] Using first value of epsilon for budget calcs.")
+            print("[WARN] Using first value of epsilon {} for budget calcs.".format(
+                self.baseline.index.get_level_values("epsilon")[0]
+            ))
 
         e = self.eps[0]
         alpha = 0.05
