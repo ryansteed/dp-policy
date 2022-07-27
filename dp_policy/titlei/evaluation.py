@@ -814,10 +814,16 @@ def misalloc_statistics(
         exp_error[exp_error < 0].abs().sum()
     )
     print(
+        "SD in total. exp. losses",
+        np.sqrt(error.groupby(
+            ["State FIPS Code", "District ID"]
+        ).std()[exp_error < 0].pow(2).sum())
+    )
+    print(
         "Average exp loss",
         exp_error[exp_error < 0].abs().mean()
     )
-    lowerr = error.groupby(["State FIPS Code", "District ID"]).quantile(0.05)
+    lowerr = err_grouped.quantile(0.05)
     print(
         "Total 5% quantile losses:",
         lowerr[lowerr < 0].abs().sum()
