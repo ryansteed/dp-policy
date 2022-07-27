@@ -14,3 +14,4 @@ venv
 build
 *.zip
 plots/robustness/noise_poverty_eps=0.1_children_total.pdf
+*_compressed.pdf
