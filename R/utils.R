@@ -406,7 +406,7 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
   # for baseline
   if (nrow(comparison %>% distinct(treatment)) == 1) {
     print("Just printing one treatment")
-    comparison$treatment = ""
+    comparison$treatment = as.factor("")
   }
   
   # specify default value - used for baseline
@@ -494,6 +494,7 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
         labels=c("sig" = sprintf("Significantly\ndifferent\n(p<%.2f)", alpha_sig))
       )
   }
+
   plt = plt +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
