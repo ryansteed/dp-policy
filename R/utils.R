@@ -387,8 +387,8 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
     alpha = 0.01
   }
   alpha_sig = alpha
-  
   comparison = comparison %>%
+    ungroup() %>%
     mutate(
       dp_moe = qnorm(1-alpha/2) * dp_sampling_benefit_per_child_eligible_std_error,
       sampling_moe = qnorm(1-alpha/2) * sampling_benefit_per_child_eligible_std_error,
@@ -397,9 +397,10 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
         ((diff_benefit_per_child_eligible_mean - diff_moe) < 0) &
           ((diff_benefit_per_child_eligible_mean + diff_moe) > 0)
       ), "notsig", "sig"),
-      treatment = fct_reorder(as.factor(treatment), treatment, .desc=TRUE)
+      treatment = fct_reorder(
+        treatment, as.integer(str_detect(treatment, "baseline")),
+      )
     )
-  
   include_sig = any(comparison$sigdiff == "notsig")
 
   # for baseline
@@ -496,16 +497,19 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
   plt = plt +
     scale_fill_manual(
       labels = function(x) str_wrap(x, width=5),
-      values = palette(unique(comparison$treatment)),
-      guide = guide_legend(ncol=ncol, order=1)
+      values = palette(levels(comparison$treatment)),
+      guide = guide_legend(ncol=ncol, order=1, reverse=TRUE)
     ) +
     scale_shape_manual(
       labels = function(x) str_wrap(x, width=5),
       values = c(21, 22, 23, 24, 25, 3, 4),
-      guide = guide_legend(ncol=ncol, order=1)
+      guide = guide_legend(ncol=ncol, order=1, reverse=TRUE)
     ) +
     scale_x_discrete(
       labels = function(x) str_wrap(x, width=label_width)
+    ) +
+    scale_y_continuous(
+      breaks = scales::breaks_pretty(8)
     ) +
     coord_flip() +
     xlab("Census Race Category") +
@@ -519,7 +523,8 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
     ) +
     theme(
       legend.position = "top",
-      legend.box=ifelse(include_sig, "vertical", "horizontal")
+      legend.box=ifelse(include_sig, "vertical", "horizontal"),
+      axis.ticks = element_blank()
     )
   
   return(plt)
@@ -574,7 +579,7 @@ plot_ru_by_race = function(comparison, marginal, alpha) {
   return(plt)
 }
 
-plot_race = function(name, trials, kind, ncol) {
+plot_race = function(name, trials, kind, from_cache, ncol) {
   if (missing(ncol)) {
     ncol = 3
   }
@@ -588,7 +593,20 @@ plot_race = function(name, trials, kind, ncol) {
   # grouped = summarise_trials(experiment)
   
   print("Comparing...")
-  comparison = race_comparison(load_experiment(name, trials), kind)
+  savepath = sprintf(
+    "results/policy_experiments/%s_comparison%s_trials=%d.rds",
+    name,
+    kind_formatted,
+    trials
+  )
+  if (file.exists(savepath) & from_cache) {
+    print("Reading comparison from cache...")
+    comparison = readRDS(savepath)
+  } else {
+    print("Generating comparison from scratch...")
+    comparison = race_comparison(load_experiment(name, trials), kind)
+    saveRDS(comparison, savepath)
+  }
   
   print("Plotting...")
   if (name == "epsilon") {
