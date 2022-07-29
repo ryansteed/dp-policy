@@ -398,7 +398,7 @@ plot_race_bar_stacked = function(comparison, ncol, label_width, alpha) {
           ((diff_benefit_per_child_eligible_mean + diff_moe) > 0)
       ), "notsig", "sig"),
       treatment = fct_reorder(
-        treatment, as.integer(str_detect(treatment, "baseline")),
+        as.factor(treatment), as.integer(str_detect(treatment, "baseline")),
       )
     )
   include_sig = any(comparison$sigdiff == "notsig")
@@ -619,10 +619,9 @@ plot_race = function(name, trials, kind, from_cache, ncol) {
     plt_marginal = plot_ru_by_race(comparison, TRUE)
     ggsave(sprintf("plots/race/ru_marginal_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
   }
-  
+
   plt = plot_race_bar_stacked(comparison, ncol, ifelse(kind == "race", 16, 8))
   print(plt)
-  
   ggsave(sprintf("plots/race/misalloc_%s%s.pdf", name, kind_formatted), dpi=300, width=6, height=7.2, bg='transparent', device=cairo_pdf)
 }
 

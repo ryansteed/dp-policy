@@ -8,19 +8,19 @@ plot_experiment = function(experiment_name, trials) {
 
   from_cache = T
 
-  print("- Race")
-  plot_race(experiment_name, trials, "race_aggregate", from_cache, ncols)
-  # print("- Ethnicity")
-  # plot_race(experiment_name, trials, "hispanic", from_cache, ncols)
-  # if (experiment_name %in% c(
-  #   "baseline",
-  #   "hold_harmless",
-  #   "hold_harmless_unmatched",
-  #   "vary_total_children"
-  # )) {
-  #   print("- Race Detail")
-  #   plot_race(experiment_name, trials, "race", from_cache, ncols)
-  # }
+  # print("- Race")
+  # plot_race(experiment_name, trials, "race_aggregate", from_cache, ncols)
+  print("- Ethnicity")
+  plot_race(experiment_name, trials, "hispanic", from_cache, ncols)
+  if (experiment_name %in% c(
+    "baseline",
+    "hold_harmless",
+    "hold_harmless_unmatched",
+    "vary_total_children"
+  )) {
+    print("- Race Detail")
+    plot_race(experiment_name, trials, "race", from_cache, ncols)
+  }
 }
 
 gam_experiment = function(experiment, sampling_only) {
