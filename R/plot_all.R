@@ -6,15 +6,15 @@ gam_trials = 100
 
 for (experiment_name in c(
   "baseline",
-  # "hold_harmless"
+  "hold_harmless",
   "post_processing",
   "thresholds",
   "moving_average_truth=average",
   "budget",
   "epsilon",
   "sampling",
-  "vary_total_children",
-  "hold_harmless_unmatched"
+  "vary_total_children"
+  # "hold_harmless_unmatched"
 )) {
   print("\n")
   print(experiment_name)
