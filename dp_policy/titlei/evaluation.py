@@ -432,7 +432,7 @@ def plot_treatments(
     if filename:
         plt.savefig(
             f"{config.root}/plots/bootstrap/{filename}.pdf",
-            dpi=100,
+            transparent=True,
             bbox_inches='tight'
         )
     plt.show()
@@ -533,7 +533,8 @@ def heatmap(
             edgecolor=(0, 0, 0, 0.25),
             facecolor='none',
             label=f"Not significant (p < {alpha})"
-        )
+        ),
+        rasterized=True
     )
     cb = fig.colorbar(
         sm,
@@ -548,8 +549,15 @@ def heatmap(
     if file is not None:
         plt.savefig(
             f"{config.root}/plots/geo/{file}",
-            dpi=dpi, bbox_inches='tight'
+            bbox_inches='tight',
+            transparent=True,
+            dpi=dpi
         )
+        # plt.savefig(
+        #     f"{config.root}/plots/geo/{file}_large",
+        #     dpi=dpi, bbox_inches='tight',
+        #     transparent=True
+        # )
         plt.close()
     else:
         plt.show()

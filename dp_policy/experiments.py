@@ -196,7 +196,8 @@ def titlei_grid(
                         hue="Deviation",
                         s=s,
                         alpha=0.5,
-                        palette=('#5D3A9B', "#E66100")
+                        palette=('#5D3A9B', "#E66100"),
+                        rasterized=True
                     )
                     plt.legend()
                     plt.xlabel("Log count")
@@ -211,7 +212,8 @@ def titlei_grid(
                                 noise_to_plot
                             )
                         ),
-                        dpi=300
+                        transparent=True,
+                        dpi=100
                     )
                     plt.show()
 
@@ -264,7 +266,7 @@ def titlei_grid(
                                 noise_to_plot
                             )
                         ),
-                        dpi=300
+                        transparent=True
                     )
                     plt.show()
 
@@ -284,7 +286,7 @@ def titlei_grid(
                             grant_type=grant_type
                         )
 
-            if plot_results:
+            if plot_results and len(eps) > 1:
                 trials = len(np.unique(
                     results.index.get_level_values("trial")
                 ))
