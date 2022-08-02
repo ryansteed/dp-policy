@@ -45,7 +45,8 @@ dp_policy run_all
   - `experiments.py` - set of experiment configurations for replicating results
 - `logs/` - logs for recording runs
 - `notebooks/` - Jupyter notebooks for exploration and visualization
-  - `titlei.ipynb` - main notebook for replicating and visualizing experiment results
+  - `results.ipynb` - main notebook for replicating and visualizing auxiliary experiment results
+  - `policy-experiments.ipynb` - notebook for visualizing results of policy experiments
   - `nslp.ipynb` - exploring NSLP data as an alternative ground truth
   - `plot_sampling.ipynb` - developing sampling mechanisms
 - `plots/` - output plots

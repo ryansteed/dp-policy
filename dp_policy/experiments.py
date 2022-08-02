@@ -286,7 +286,7 @@ def titlei_grid(
                             grant_type=grant_type
                         )
 
-            if plot_results and len(eps) > 1:
+            if plot_results and len(eps) > 2:
                 trials = len(np.unique(
                     results.index.get_level_values("trial")
                 ))
