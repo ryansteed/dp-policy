@@ -21,7 +21,8 @@ pacman::p_load(
   arrow,
   itsadug,
   xtable,
-  comprehenr
+  comprehenr,
+  truncnorm
 )
 # p_load_gh(
 #   "coolbutuseless/ggpattern"
