@@ -20,16 +20,34 @@ class Mechanism:
         self.noise_total = noise_total
 
     def poverty_estimates(
-        self, pop_total, children_total, children_poverty
+        self,
+        pop_total: pd.Series,
+        children_total: pd.Series,
+        children_poverty: pd.Series
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Returns dataframe for children in poverty, children total, and total
+        """Returns dataframe for children in poverty, children total, and total
         population indexed by district ID.
 
+        Args:
+            pop_total (pd.Series): Total population in each district.
+            children_total (pd.Series): Total children in each district.
+            children_poverty (pd.Series): Children in poverty in each district.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Noised versions
+                of the input tuples.
         """
         raise NotImplementedError
 
-    def post_processing(self, count):
+    def post_processing(self, count: pd.Series) -> pd.Series:
+        """Post processing methods for noised counts. (Rounding or clipping.)
+
+        Args:
+            count (pd.Series): Noised count to process.
+
+        Returns:
+            pd.Series: Processed count.
+        """
         if self.round:
             count = np.round(count)
         if self.clip:
@@ -151,7 +169,17 @@ class Sampled(Mechanism):
             self.post_processing(children_total), \
             self.post_processing(children_poverty)
 
-    def _noise(self, count, cv):
+    def _noise(self, count: pd.Series, cv: pd.Series) -> pd.Series:
+        """Add sampling noise.
+
+        Args:
+            count (pd.Series): Count to add sampling noise to.
+            cv (pd.Series): Coefficients of variation to use for sampling
+                variance.
+
+        Returns:
+            pd.Series: Noised counts.
+        """
         if self.distribution == "gaussian":
             noised = np.random.normal(
                 count,  # mean

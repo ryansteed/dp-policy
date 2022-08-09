@@ -19,18 +19,18 @@ def collect_results(
     num_runs: int = 1,
     quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
-    """Collect bootstrapped results.
+    """Method for testing basic noise addition.
     """
     cols_keep = ["true_grant_{}".format(col) for col in COLS_GRANT] + \
-                ["est_grant_{}".format(col) for col in COLS_GRANT] + \
-                [
-                    "true_eligible_{}".format(col)
-                    for col in COLS_GRANT if col != 'total'
-                ] + \
-                [
-                    "est_eligible_{}".format(col)
-                    for col in COLS_GRANT if col != 'total'
-                ]
+        ["est_grant_{}".format(col) for col in COLS_GRANT] + \
+        [
+            "true_eligible_{}".format(col)
+            for col in COLS_GRANT if col != 'total'
+        ] + \
+        [
+            "est_eligible_{}".format(col)
+            for col in COLS_GRANT if col != 'total'
+        ]
     results = []
     for i in tqdm(range(num_runs)):
         allocations = funding(

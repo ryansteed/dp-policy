@@ -14,7 +14,7 @@ class Threshold:
         self,
         t: float,
         prop: bool = False
-    ) -> None:
+    ):
         """
         Args:
             t (float): The threshold.

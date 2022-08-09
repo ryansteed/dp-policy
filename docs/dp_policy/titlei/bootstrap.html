@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/bootstrap.py#L1-L63" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/bootstrap.py#L1-L63" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import pandas as pd
 from tqdm.notebook import tqdm
@@ -48,18 +48,18 @@ def collect_results(
     num_runs: int = 1,
     quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
-    &#34;&#34;&#34;Collect bootstrapped results.
+    &#34;&#34;&#34;Method for testing basic noise addition.
     &#34;&#34;&#34;
     cols_keep = [&#34;true_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
-                [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
-                [
-                    &#34;true_eligible_{}&#34;.format(col)
-                    for col in COLS_GRANT if col != &#39;total&#39;
-                ] + \
-                [
-                    &#34;est_eligible_{}&#34;.format(col)
-                    for col in COLS_GRANT if col != &#39;total&#39;
-                ]
+        [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
+        [
+            &#34;true_eligible_{}&#34;.format(col)
+            for col in COLS_GRANT if col != &#39;total&#39;
+        ] + \
+        [
+            &#34;est_eligible_{}&#34;.format(col)
+            for col in COLS_GRANT if col != &#39;total&#39;
+        ]
     results = []
     for i in tqdm(range(num_runs)):
         allocations = funding(
@@ -103,11 +103,11 @@ def collect_results(
 <span>def <span class="ident">collect_results</span></span>(<span>saipe: pandas.core.frame.DataFrame, mech: <a title="dp_policy.titlei.mechanisms.Mechanism" href="mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, sppe: pandas.core.frame.DataFrame, num_runs: int = 1, quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95))</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Collect bootstrapped results.</p></div>
+<div class="desc"><p>Method for testing basic noise addition.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/bootstrap.py#L15-L63" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/bootstrap.py#L15-L63" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def collect_results(
     saipe: pd.DataFrame,
@@ -116,18 +116,18 @@ def collect_results(
     num_runs: int = 1,
     quantiles: Tuple[float] = (0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95)
 ):
-    &#34;&#34;&#34;Collect bootstrapped results.
+    &#34;&#34;&#34;Method for testing basic noise addition.
     &#34;&#34;&#34;
     cols_keep = [&#34;true_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
-                [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
-                [
-                    &#34;true_eligible_{}&#34;.format(col)
-                    for col in COLS_GRANT if col != &#39;total&#39;
-                ] + \
-                [
-                    &#34;est_eligible_{}&#34;.format(col)
-                    for col in COLS_GRANT if col != &#39;total&#39;
-                ]
+        [&#34;est_grant_{}&#34;.format(col) for col in COLS_GRANT] + \
+        [
+            &#34;true_eligible_{}&#34;.format(col)
+            for col in COLS_GRANT if col != &#39;total&#39;
+        ] + \
+        [
+            &#34;est_eligible_{}&#34;.format(col)
+            for col in COLS_GRANT if col != &#39;total&#39;
+        ]
     results = []
     for i in tqdm(range(num_runs)):
         allocations = funding(

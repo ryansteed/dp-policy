@@ -11,11 +11,14 @@ import pickle
 from dp_policy.titlei.utils import get_acs_unified
 import dp_policy.config as config
 
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 
 
-def get_geography():
+def get_geography() -> pd.DataFrame:
     """Load shapefiles for LEAs.
+
+    Returns:
+        pd.DataFrame: Shapefiles indexed by school district.
     """
     geo = gpd.read_file(os.path.join(
         config.root,
@@ -159,7 +162,7 @@ def discrimination_treatments_join(
         delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
 
     Returns:
-        _type_: Combined dataframe for all treatments.
+        pd.DataFrame: Combined dataframe for all treatments.
     """
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
@@ -563,7 +566,17 @@ def heatmap(
         plt.show()
 
 
-def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
+def save_treatments(
+    treatments: Dict[str, pd.DataFrame],
+    experiment_name: str
+):
+    """Save treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Dictionary of treatment names
+            mapped to results.
+        experiment_name (str): Name for this collection of treatments.
+    """
     # minify treatments
     treatments = {
         treatment: df.loc[:, [
@@ -590,8 +603,20 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
 
 
 def load_treatments(
-    experiment_name, treatment_name=None
-) -> Dict[str, pd.DataFrame]:
+    experiment_name: str,
+    treatment_name: str = None
+) -> Union[Dict[str, pd.DataFrame], pd.DataFrame]:
+    """Load treatment results from memory.
+
+    Args:
+        experiment_name (str): Experiment to load.
+        treatment_name (str, optional): Name of treatment to load. If not
+            specified, loads all treatments. Defaults to None.
+
+    Returns:
+        Dict[str, pd.DataFrame]: Dictionary of treatments mapped to results,
+            or individual set of results if `treatment_name` is specified.
+    """
     treatments = pickle.load(
         open(
             f"{config.root}/results/policy_experiments/{experiment_name}.pkl",
@@ -780,6 +805,15 @@ def misalloc_statistics(
     allocations: pd.DataFrame = None,
     grant_type: str = None
 ):
+    """Print statistics describing misallocation in a set of simulations.
+
+    Args:
+        error (pd.Series): Error in allocation indexed by district.
+        allocations (pd.DataFrame, optional): Full set of allocations.
+            Defaults to None.
+        grant_type (str, optional): Optionally, a grant type to print specific
+            statistics for. Defaults to None.
+    """
     err_grouped = error.groupby(
         ["State FIPS Code", "District ID"]
     )

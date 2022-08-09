@@ -309,6 +309,17 @@ class Authorizer(Allocator):
         prefix: str,
         segment_appropriation: float
     ):
+        """Normalize the budget for a segment of the districts.
+
+        Args:
+            segment (pd.Series): A boolean mask indicating the segment to
+                normalize.
+            hold_harmless (pd.Series): Which districts should be held harmless.
+            grant_type (str): Grant type to normalize.
+            prefix (str): Which treatment to normalize (generally "true",
+                "est" or "dpest").
+            segment_appropriation (float): The total budget for this segment.
+        """
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
                 segment & hold_harmless, f"{prefix}_grant_{grant_type}"
@@ -324,11 +335,18 @@ class Authorizer(Allocator):
             )
 
     @staticmethod
-    def normalize_to_budget(authorizations, total_budget):
+    def normalize_to_budget(
+        authorizations: pd.Series,
+        total_budget: int
+    ) -> pd.Series:
         """Scale authorizations proportional to total federal budget.
 
         Args:
+            authorizations (pd.Series): Authorization amounts.
             total_budget (int): Estimated total budget for Title I this year.
+
+        Returns:
+            pd.Series: Normalized authorization amounts.
         """
         return authorizations / authorizations.sum() * total_budget
 
@@ -459,6 +477,11 @@ class SonnenbergAuthorizer(Authorizer):
         self.calc_total()
 
     def _provisions(self):
+        """
+        Apply post-formula provisions (hold harmless and state minimum).
+        Achieved by recursively updating allocations until all provisions are
+        satisfied.
+        """
         if self.verbose:
             if self.hold_harmless:
                 print("Applying hold harmless")
@@ -500,14 +523,27 @@ class SonnenbergAuthorizer(Authorizer):
 
     def _provisions_recursive(
         self,
-        depth,
-        prefix,
-        grant_type,
-        appropriation,
-        alloc_previous,
-        held_harmless=None,
-        max_depth=10
+        depth: int,
+        prefix: str,
+        grant_type: str,
+        appropriation: float,
+        alloc_previous: pd.Series,
+        held_harmless: bool = None,
+        max_depth: int = 10
     ):
+        """Apply one iteration of post-formula provisions.
+
+        Args:
+            depth (int): Current iteration of recursion.
+            prefix (str): Prefix of allocation to adjust.
+            grant_type (str): Grant type to adjust.
+            appropriation (float): Appropriation for this grant type.
+            alloc_previous (pd.Series): Previous year's allocations.
+            held_harmless (bool, optional): Boolena mask for districts to hold
+                harmless. Defaults to None.
+            max_depth (int, optional): Maximum number of iterations to run
+                before stopping. Defaults to 10.
+        """
         # assume no LEAs in violation of provisions
         leas_in_violation = np.zeros(len(self.estimates)).astype(bool)
 
@@ -564,15 +600,29 @@ class SonnenbergAuthorizer(Authorizer):
         )
 
     def _excessive_loss(
-        self, prefix, grant_type, alloc_previous, harmless_rate
-    ):
+        self,
+        prefix: str,
+        grant_type: str,
+        alloc_previous: pd.Series,
+        harmless_rate: pd.Series
+    ) -> pd.Series:
+        """Determine whether a district has suffered excessive loss.
+
+        Returns:
+            pd.Series: Boolean mask for each district indicating whether it
+                has suffered excessive loss compared to the previous
+                year's allocation.
+        """
         return (
             self.estimates[f"{prefix}_grant_{grant_type}"] <
             harmless_rate * alloc_previous
         )
 
     @staticmethod
-    def _hold_harmless_rate(prop_eligible):
+    def _hold_harmless_rate(prop_eligible: pd.Series) -> np.ndarray:
+        """Determine the hold harmless rate for a district based on the
+        proportion of eligible children.
+        """
         return np.where(
             prop_eligible < 0.15,
             0.85,
@@ -584,9 +634,9 @@ class SonnenbergAuthorizer(Authorizer):
         )
 
     @staticmethod
-    def _state_minimum_global(grant_type):
+    def _state_minimum_global(grant_type: str) -> int:
         # drawing this manually from the FY 2021 state-level data
-        # NOTE: only works (truly) for 2021 data
+        # NOTE: only works for 2021 data
         if grant_type == "basic":
             return 17744098
         if grant_type == "concentration":

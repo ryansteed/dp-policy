@@ -188,7 +188,7 @@ def titlei_grid(
                         var_name="Deviation",
                         value_name="Noise"
                     )
-                    
+
                     sns.scatterplot(
                         data=df,
                         x="Log count",
@@ -202,19 +202,15 @@ def titlei_grid(
                     plt.legend()
                     plt.xlabel("Log count")
                     plt.ylabel("Noise")
-                    plt.savefig(
-                        os.path.join(
-                            config.root,
-                            f"plots/robustness/noise_poverty_eps={e}.pdf"
-                            if noise_to_plot == "children_eligible" else
-                            "plots/robustness/noise_poverty_eps={}_{}.pdf".format(
-                                e,
-                                noise_to_plot
-                            )
-                        ),
-                        transparent=True,
-                        dpi=100
-                    )
+                    plt.savefig(os.path.join(
+                        config.root,
+                        f"plots/robustness/noise_poverty_eps={e}.pdf"
+                        if noise_to_plot == "children_eligible" else
+                        "plots/robustness/noise_poverty_eps={}_{}.pdf".format(
+                            e,
+                            noise_to_plot
+                        )
+                    ), transparent=True, dpi=100)
                     plt.show()
 
                     # plt.scatter(
@@ -233,8 +229,14 @@ def titlei_grid(
                     # plt.show()
 
                     r = (
-                        min(data_error.quantile(0.05), dp_error.quantile(0.05)),
-                        max(data_error.quantile(0.95), dp_error.quantile(0.95))
+                        min(
+                            data_error.quantile(0.05),
+                            dp_error.quantile(0.05)
+                        ),
+                        max(
+                            data_error.quantile(0.95),
+                            dp_error.quantile(0.95)
+                        )
                     )
                     alpha = 0.25
                     sns.histplot(
@@ -666,9 +668,12 @@ class Budget(Experiment):
     """
     def _get_treatments(self):
         if len(self.eps) > 0:
-            print("[WARN] Using first value of epsilon {} for budget calcs.".format(
-                self.baseline.index.get_level_values("epsilon")[0]
-            ))
+            print(
+                "[WARN] Using first value of epsilon "
+                "{} for budget calcs.".format(
+                    self.baseline.index.get_level_values("epsilon")[0]
+                )
+            )
 
         e = self.eps[0]
         alpha = 0.05
