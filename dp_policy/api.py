@@ -33,7 +33,7 @@ def run(
     )
     if just_join:
         click.echo("Skipping run, straight to join")
-        experiment.discrimination_join()
+        experiment.discrimination_join(include_moes=(name == "baseline"))
     else:
         experiment.run()
 

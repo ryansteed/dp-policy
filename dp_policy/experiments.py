@@ -395,7 +395,7 @@ class Experiment:
             allocator_kwargs={'verbose': False}
         )
         save_treatments({'baseline': self.baseline}, "baseline")
-        discrimination_treatments_join("baseline")
+        discrimination_treatments_join("baseline", include_moes=True)
 
     def run(self):
         """Run the experiment, save results, and create joined covariate file.

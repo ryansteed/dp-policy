@@ -44,7 +44,8 @@ def get_geography() -> pd.DataFrame:
 def discrimination_join(
     results: pd.DataFrame,
     save_path: str = None,
-    verbose: bool = False
+    verbose: bool = False,
+    include_moes: bool = False
 ) -> pd.DataFrame:
     """Join results to demographic covariates.
 
@@ -53,6 +54,8 @@ def discrimination_join(
         save_path (str, optional): Where to save the joined dataframe.
             Defaults to None.
         verbose (bool, optional): Defaults to False.
+        include_moes (bool, optional): Whether to include moes with percents.
+            Defaults to False.
 
     Returns:
         pd.DataFrame: Joined dataframe.
@@ -65,11 +68,16 @@ def discrimination_join(
     # add race variables
     variables += [
         r for r in acs.columns
-        if r.endswith("(RACE) - pct")
+        if (
+            r.endswith("(RACE) - pct")
+            or (include_moes and r.endswith("(RACE) - pctmoe"))
+        )
         and "and" not in r
         and "races" not in r
         and not r.startswith("One race")
     ] + ["Two or more races (RACE) - pct"]
+    if verbose and include_moes:
+        print("Including MOEs")
     # add ethnicity variables
     hisp = [
         r for r in acs.columns
@@ -150,7 +158,8 @@ def discrimination_treatments_join(
     treatments_name: dict,
     exclude: list = [],
     epsilon: float = 0.1,
-    delta: float = 0.0
+    delta: float = 0.0,
+    **join_kwargs
 ) -> pd.DataFrame:
     """Join results to demographic covariates.
 
@@ -198,7 +207,8 @@ def discrimination_treatments_join(
     discrimination_joined = discrimination_join(
         joined,
         save_path=f"{config.root}/results/policy_experiments/"
-        f"{treatments_name}_discrimination_laplace"
+        f"{treatments_name}_discrimination_laplace",
+        **join_kwargs
     )
     return discrimination_joined
 
