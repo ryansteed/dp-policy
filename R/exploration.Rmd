@@ -17,97 +17,115 @@ Why do racial groups have different outcomes? Two possible explanations: distanc
 
 ## Distances from eligibility thresholds
 ```{r}
-experiment = load_experiment("baseline", 1) %>% mutate(not_hispanic = not_hispanic_or_latino_hispanic_or_latino_and_race_pct)
+experiment <- load_experiment("baseline", 1) %>%
+  mutate(
+    not_hispanic = not_hispanic_or_latino_hispanic_or_latino_and_race_pct
+  )
 experiment
 ```
 ```{r}
-thresholds = data.frame(raw=c(10, 6500, 10), prop=c(0.02, 0.15, 0.05), grant=c("Basic", "Concentration", "Targeted"))
+thresholds <- data.frame(
+  raw = c(10, 6500, 10),
+  prop = c(0.02, 0.15, 0.05),
+  grant = c("Basic", "Concentration", "Targeted")
+)
 
-point_plot = geom_point(alpha=0.5, size=0.25, color="#3a3b3c")
-formatting = list(
-  geom_smooth(method="lm", linetype="dashed", color="red"),
+point_plot <- geom_point(alpha = 0.5, size = 0.25, color = "#3a3b3c")
+formatting <- list(
+  geom_smooth(method = "lm", linetype = "dashed", color = "red"),
   theme(
     legend.position = "bottom",
-    legend.box="vertical"
+    legend.box = "vertical"
   ),
-  scale_color_brewer(palette="Dark2"),
+  scale_color_brewer(palette = "Dark2"),
   guides(
-    color=guide_legend("Eligibility Threshold")
+    color = guide_legend("Eligibility Threshold")
   )
 )
 
-ggplot(experiment, aes(x=prop_white, y=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)))) +
-  point_plot +
-  geom_hline(data=thresholds, aes(yintercept=log(raw), color=grant)) +
-  formatting +
-  labs(
-    y="Log # of children in poverty",
-    x="% white-only"
+ggplot(
+  experiment,
+  aes(
+    x = prop_white,
+    y = ifelse(true_children_eligible == 0, 0, log(true_children_eligible))
   )
-ggsave("plots/race/thresholds_raw.pdf", dpi=300, width=6, height=5)
-
-ggplot(experiment, aes(x=prop_white, y=log(true_children_eligible/true_children_total))) +
+) +
   point_plot +
-  geom_hline(data=thresholds, aes(yintercept=log(prop), color=grant)) +
+  geom_hline(data = thresholds, aes(yintercept = log(raw), color = grant)) +
   formatting +
   labs(
-    y="Log prop. of children in poverty",
-    x="% white-only"
+    y = "Log # of children in poverty",
+    x = "% white-only"
   )
-ggsave("plots/race/thresholds_prop.pdf", dpi=300, width=6, height=5)
+ggsave("plots/race/thresholds_raw.pdf", dpi = 300, width = 6, height = 5)
 
-ggplot(experiment, aes(x=not_hispanic, y=ifelse(true_children_eligible == 0, 0, log(true_children_eligible)))) +
+ggplot(
+  experiment,
+  aes(x = prop_white, y = log(true_children_eligible/true_children_total))
+) +
   point_plot +
-  geom_hline(data=thresholds, aes(yintercept=log(raw), color=grant)) +
+  geom_hline(data = thresholds, aes(yintercept = log(prop), color = grant)) +
   formatting +
   labs(
-    y="Log # of children in poverty",
-    x="% non-Hispanic"
+    y = "Log prop. of children in poverty",
+    x = "% white-only"
+  )
+ggsave("plots/race/thresholds_prop.pdf", dpi = 300, width = 6, height = 5)
+
+ggplot(
+  experiment,
+  aes(
+    x = not_hispanic,
+    y = ifelse(true_children_eligible == 0, 0, log(true_children_eligible))
+  )
+) +
+  point_plot +
+  geom_hline(data = thresholds, aes(yintercept = log(raw), color = grant)) +
+  formatting +
+  labs(
+    y = "Log # of children in poverty",
+    x = "% non-Hispanic"
   )
 ggsave("plots/race/thresholds_raw_ethnicity.pdf", dpi=300, width=6, height=5)
 
-ggplot(experiment, aes(x=not_hispanic, y=log(true_children_eligible/true_children_total))) +
+ggplot(
+  experiment,
+  aes(x = not_hispanic, y = log(true_children_eligible / true_children_total))
+) +
   point_plot +
-  geom_hline(data=thresholds, aes(yintercept=log(prop), color=grant)) +
+  geom_hline(data = thresholds, aes(yintercept = log(prop), color = grant)) +
   formatting +
   labs(
-    y="Log prop. of children in poverty",
-    x="% non-Hispanic"
+    y = "Log prop. of children in poverty",
+    x = "% non-Hispanic"
   )
-ggsave("plots/race/thresholds_prop_ethnicity.pdf", dpi=300, width=6, height=5)
+ggsave(
+  "plots/race/thresholds_prop_ethnicity.pdf",
+  dpi = 300, width = 6, height = 5
+)
 ```
 
 ## Differences in natural variance
 ```{r}
-ggplot(experiment, aes(x=prop_white, y=log(true_pop_total))) +
-  geom_point(alpha=0.5, size=0.25) +
-  geom_smooth(method="lm", linetype="dashed", color="red")
-  # guides(
-  #   color=guide_legend("Eligibility Threshold")
-  # ) +
+ggplot(experiment, aes(x = prop_white, y = log(true_pop_total))) +
+  geom_point(alpha = 0.5, size=0.25) +
+  geom_smooth(method = "lm", linetype = "dashed", color = "red")
   labs(
-    y="Log population",
-    x="% white-only"
+    y = "Log population",
+    x = "% white-only"
   )
 ```
 
 # Robustness check: ACS-derived variability in race-weighted misallocation
 ```{r}
-experiment = load_experiment("baseline", 100)
+experiment <- load_experiment("baseline", 100)
 ```
 
 ```{r}
 # BOOTSTRAP
 
 # std = (margin of error / 1.645)
-draw_sample = function(x, moe) {
-  # rtruncnorm(
-  #   n = length(x),
-  #   a = 0,
-  #   b = 100,
-  #   mean=x,
-  #   sd=moe / 1.645 # std
-  # )
+draw_sample <- function(x, moe) {
   rnorm(
     length(x),
     x,
@@ -125,8 +143,8 @@ filter_comparison = function(comparison) {
     ))
 }
 
-N = 100
-bootstrap = filter_comparison(race_comparison(experiment, "race_aggregate"))
+N <- 100
+bootstrap <- filter_comparison(race_comparison(experiment, "race_aggregate"))
 for (i in 1:N) {
   print(i)
   sample = race_comparison(
@@ -151,7 +169,7 @@ for (i in 1:N) {
       ),
     "race_aggregate"
   )
-  bootstrap = rbind(bootstrap, filter_comparison(sample))
+  bootstrap <- rbind(bootstrap, filter_comparison(sample))
 }
 ```
 
@@ -160,11 +178,20 @@ readRDS("results/policy_experiments/baseline_comparison_trials=1000.rds")
 bootstrap %>%
   group_by(race) %>%
   summarise(
-    moe = quantile(dp_sampling_benefit_per_child_eligible_mean, probs=0.9) - quantile(dp_sampling_benefit_per_child_eligible_mean, probs=0.1)
+    moe = quantile(dp_sampling_benefit_per_child_eligible_mean, probs = 0.9)
+      - quantile(dp_sampling_benefit_per_child_eligible_mean, probs = 0.1)
   )
 ```
 
 ```{r}
 # ANALYTIC
-sqrt(sum((experiment$misalloc_sampling*experiment$black_or_african_american_race_pctmoe/1.645)**2))/sum(experiment$black_or_african_american_race_pct*experiment$true_children_total)
+sqrt(sum(
+  (
+    experiment$misalloc_sampling
+    * experiment$black_or_african_american_race_pctmoe
+    / 1.645
+  ) ** 2
+)) / sum(
+  experiment$black_or_african_american_race_pct * experiment$true_children_total
+)
 ```

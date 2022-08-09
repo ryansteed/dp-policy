@@ -14,42 +14,49 @@ source("R/utils.R")
 
 ## Regression analysis
 ```{r regressions}
-regression_tables("baseline", F, 10)
+regression_tables("baseline", FALSE, 10)
 ```
 
 ## Relationship between race and population
 ```{r race}
-experiment = clean_for_reg(load_experiment("baseline", 1))
+experiment <- clean_for_reg(load_experiment("baseline", 1))
 experiment
 ```
 
 ```{r}
-plot(experiment$black_or_african_american_race_pct, log(experiment$true_pop_total))
+plot(
+  experiment$black_or_african_american_race_pct,
+  log(experiment$true_pop_total)
+)
 plot(experiment$white_race_pct, log(experiment$true_pop_total))
-mean(experiment$true_pop_total[experiment$black_or_african_american_race_pct > 0.5])
-mean(experiment$true_pop_total[experiment$white_race_pct > 0.5])
+mean(experiment$true_pop_total[
+  experiment$black_or_african_american_race_pct > 0.5
+])
+mean(experiment$true_pop_total[
+  experiment$white_race_pct > 0.5
+])
 ```
 
 ## Univariate analysis
 ```{r univariate}
-experiment = clean_for_reg(load_experiment("baseline", 100))
+experiment <- clean_for_reg(load_experiment("baseline", 100))
 ```
 ```{r}
-plot_uv_gam = function(uv_gam, label) {
+plot_uv_gam <- function(uv_gam, label) {
   summary(uv_gam)
-  viz = getViz(uv_gam)
-  level = 0.95
-  mul = qnorm((level+1)/2)
-  plot_obj = plot(sm(viz, 1))
-  upper = max(plot_obj$data$fit$y + mul*plot_obj$data$fit$se)
-  lower = min(plot_obj$data$fit$y - mul*plot_obj$data$fit$se)
-  p = plot_obj +
+  viz <- getViz(uv_gam)
+  level <- 0.95
+  mul <- qnorm((level+1)/2)
+  plot_obj <- plot(sm(viz, 1))
+  upper <- max(plot_obj$data$fit$y + mul * plot_obj$data$fit$se)
+  lower <- min(plot_obj$data$fit$y - mul * plot_obj$data$fit$se)
+  p <- plot_obj +
     theme_minimal() +
     # ylab("Smoothed effect (in terms of $$ misallocated)") +
-    l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+    l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
     # l_dens("joint") +
-    l_ciPoly(level=level, alpha=0.5, size=0.25) +
-    l_ciLine(level=level) +
+    l_ciPoly(level = level, alpha = 0.5, size = 0.25) +
+    l_ciLine(level = level) +
     l_fitLine() +
     # l_rug(alpha=0.5) +
     geom_hline(yintercept = 0, linetype = 2) +
@@ -57,63 +64,68 @@ plot_uv_gam = function(uv_gam, label) {
       axis.title.x = element_blank(),
       axis.title.y = element_blank()
     ) +
-    coord_cartesian(ylim=c(lower, upper)) +
+    coord_cartesian(ylim = c(lower, upper)) +
     ggtitle(label)
   p$ggObj
 }
 
-cplt = cowplot::plot_grid(
-  plotlist=map2(
+cplt <- cowplot::plot_grid(
+  plotlist = map2(
     list(
       gam(
-        misalloc ~ s(log1p(true_children_total), bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(log1p(true_children_total), bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(log1p(true_children_poverty), bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(log1p(true_children_poverty), bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(log(pop_density), bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(log(pop_density), bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(hhi, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(hhi, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(prop_white, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(prop_white, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(prop_hispanic, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(prop_hispanic, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(median_income_est, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(median_income_est, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(renter_occupied_housing_tenure_pct, bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(renter_occupied_housing_tenure_pct, bs = "tp"),
+        method = "REML",
+        data = df_reg
       ),
       gam(
-        misalloc ~ s(log(average_household_size_of_renter_occupied_unit_housing_tenure_est), bs="tp"),
-        method="REML",
-        data=df_reg
+        misalloc ~ s(
+          log(
+            average_household_size_of_renter_occupied_unit_housing_tenure_est
+          ),
+          bs = "tp"
+        ),
+        method = "REML",
+        data = df_reg
       )
     ),
     list(
@@ -130,17 +142,17 @@ cplt = cowplot::plot_grid(
     ),
     plot_uv_gam
   ),
-  nrow=5
+  nrow = 5
 )
-y.grob = textGrob(
+ygrob <- textGrob(
   "Smoothed effect (in terms of $$ misallocated)",
-  gp=gpar(fontface="bold"),
-  rot=90
+  gp <- gpar(fontface = "bold"),
+  rot <- 90
 )
-plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+plot <- grid.arrange(arrangeGrob(cplt, left = ygrob))
 ggsave(
   "plots/smooths/baseline_univariate.pdf",
-  plot, width=12, height=9, dpi=300
+  plot, width = 12, height = 9, dpi = 300
 )
 plot
 ```
@@ -150,8 +162,8 @@ sum(is.infinite(log(df_reg$pop_density)))
 ```
 
 ```{r}
-df_reg = clean_for_reg(experiment)
-gam_mr = gam(
+df_reg <- clean_for_reg(experiment)
+gam_mr <- gam(
     misalloc ~
       # s(true_children_total, bs="tp") +
       # s(true_children_poverty, bs="tp") +
@@ -162,67 +174,57 @@ gam_mr = gam(
       s(median_income_est, bs="tp") +
       # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
       s(renter_occupied_housing_tenure_pct, bs="tp"),
-    # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
-    method="REML", # restricted MLE
-    data=df_reg
+    # s(
+    #  average_household_size_of_renter_occupied_unit_housing_tenure_est,
+    #  bs = "tp"
+    # ),
+    method = "REML", # restricted MLE
+    data = df_reg
   )
 print(summary(gam_mr))
 ```
 
 ## Treatment comparison
 ```{r treatments}
-test_experiment = "hold_harmless"
-experiment = load_experiment(test_experiment, 10)
+test_experiment <- "hold_harmless"
+experiment <- load_experiment(test_experiment, 10)
 ```
 
 ```{r}
-df_reg = clean_for_reg(experiment, F) %>% filter(treatment == "Hold harmless")
+df_reg <- clean_for_reg(experiment, FALSE) %>%
+  filter(treatment == "Hold harmless")
 ```
 
 ```{r}
-# gam_mr = gam(
-#     misalloc ~
-#       # s(true_children_total, bs="tp") +
-#       # s(true_children_poverty, bs="tp") +
-#       s(log(pop_density), bs="tp") +
-#       s(hhi, bs="tp") +
-#       s(prop_white, bs="tp") +
-#       s(prop_hispanic, bs="tp") +
-#       s(median_income_est, bs="tp") +
-#       # s(not_a_u_s_citizen_u_s_citizenship_status_pct, bs="tp") +
-#       s(renter_occupied_housing_tenure_pct, bs="tp"),
-#     # s(average_household_size_of_renter_occupied_unit_housing_tenure_est, bs="tp"),
-#     method="REML", # restricted MLE
-#     data=df_reg
-#   )
-```
-
-```{r}
-gam_mr_interact = gam(
+gam_mr_interact <- gam(
     misalloc ~
       te(
         prop_white,
         log(pop_density)
       ) +
-      s(median_income_est, bs="tp") +
-      s(hhi, bs="tp") +
-      s(prop_hispanic, bs="tp") +
-      s(renter_occupied_housing_tenure_pct, bs="tp"),
-    data=df_reg
+      s(median_income_est, bs = "tp") +
+      s(hhi, bs = "tp") +
+      s(prop_hispanic, bs = "tp") +
+      s(renter_occupied_housing_tenure_pct, bs = "tp"),
+    data = df_reg
   )
 summary(gam_mr_interact)
-stargazer(anova.gam(gam_mr, gam_mr_interact, test="F"), type="text", summary=FALSE)
-b = getViz(gam_mr_interact)
+stargazer(
+  anova.gam(gam_mr, gam_mr_interact, test = "F"),
+  type = "text",
+  summary = FALSE
+)
+b <- getViz(gam_mr_interact)
 ```
 ```{r}
 plot(sm(b, 1)) +
   theme_minimal() +
   l_fitRaster(pTrans = function(p) p < 0.05) +
   l_fitContour() +
-  l_points(alpha=0.2) +
-  scale_fill_distiller(type="div", direction=1) +
+  l_points(alpha = 0.2) +
+  scale_fill_distiller(type = "div", direction = 1) +
   guides(
-    fill=guide_legend(title="Smoothed effect ($ misallocated)")
+    fill = guide_legend(title = "Smoothed effect ($ misallocated)")
   ) +
   labs(
     title = element_blank(),
@@ -233,17 +235,17 @@ plot(sm(b, 1)) +
 
 
 ```{r treatment-gam}
-experiment_name = "hold_harmless"
+experiment_name <- "hold_harmless"
 for (t in unique(experiment$treatment)) {
   print(sprintf("%s: %s", experiment_name, t))
-  gam_mr = get_gam(
+  gam_mr <- get_gam(
     sprintf("%s_%s", experiment_name, t),
-    F,
+    FALSE,
     from_cache,  # load gam from cache?
     experiment %>% filter(treatment == t)
   )
-  plotname = sprintf("%s_%s", experiment_name, t)
-  viz = get_gam_viz(
+  plotname <- sprintf("%s_%s", experiment_name, t)
+  viz <- get_gam_viz(
     plotname,
     from_cache,  # load viz from cache?
     gam_mr

@@ -71,7 +71,7 @@ To generate the documentation, use pdoc3:
 
 ```bash
 pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
-git subtree push --prefix docs/dp-policy origin gh-pages
+git subtree push --prefix docs/dp_policy origin gh-pages
 ```
 
 ### Running on server

@@ -1,15 +1,17 @@
 source("R/utils.R")
 
-plot_experiment = function(experiment_name, trials) {
-  ncols = 3
+plot_experiment <- function(experiment_name, trials) {
+  #' Plots race disparity plots for an experiment using a given number of
+  #' trials.
+  ncols <- 3
   if (experiment_name == "budget") {
-    ncols = 2
+    ncols <- 2
   }
 
-  from_cache = T
+  from_cache <- TRUE
 
-  # print("- Race")
-  # plot_race(experiment_name, trials, "race_aggregate", from_cache, ncols)
+  print("- Race")
+  plot_race(experiment_name, trials, "race_aggregate", from_cache, ncols)
   print("- Ethnicity")
   plot_race(experiment_name, trials, "hispanic", from_cache, ncols)
   if (experiment_name %in% c(
@@ -23,32 +25,35 @@ plot_experiment = function(experiment_name, trials) {
   }
 }
 
-gam_experiment = function(experiment, sampling_only) {
+gam_experiment <- function(experiment, sampling_only) {
+  #' Run GAM and plot smooths for a given experiment.
+  #' If `sampling_only`, show the effects for only data deviations.
+  #' Otherwise, show effects for combined privacy and data deviations.
+
   if (missing(sampling_only)) {
-    sampling_only = F
+    sampling_only <- FALSE
   }
-  
+
   print("- GAM")
-  from_cache = T
-  
+  from_cache <- TRUE
+
   for (t in unique(experiment$treatment)) {
     print(sprintf("%s: %s", experiment_name, t))
-    gam_mr = get_gam(
+    gam_mr -> get_gam(
       sprintf("%s_%s", experiment_name, t),
       sampling_only,
       from_cache,  # load gam from cache?
       experiment %>% filter(treatment == t)
     )
     if (sampling_only) {
-      plotname = sprintf("%s_%s_sampling", experiment_name, t)
+      plotname <- sprintf("%s_%s_sampling", experiment_name, t)
+    } else {
+      plotname <- sprintf("%s_%s", experiment_name, t)
     }
-    else {
-      plotname = sprintf("%s_%s", experiment_name, t)
-    }
-    
+
     gam_table(gam_mr, sprintf("plots/tables/%s.tex", plotname))
-    
-    viz = get_gam_viz(
+
+    viz <- get_gam_viz(
       plotname,
       from_cache,  # load viz from cache?
       gam_mr
