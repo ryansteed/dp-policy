@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dp_policy API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Impacts of Uncertainty &amp; Differential Privacy on Title I …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,6 +22,113 @@
 <h1 class="title">Package <code>dp_policy</code></h1>
 </header>
 <section id="section-intro">
+<h1 id="impacts-of-uncertainty-differential-privacy-on-title-i">Impacts of Uncertainty &amp; Differential Privacy on Title I</h1>
+<p>Author: Ryan Steed</p>
+<h2 id="installation">Installation</h2>
+<pre><code>make dp_policy
+</code></pre>
+<h2 id="running-the-cli">Running the CLI</h2>
+<p>CLI endpoints in <code>dp_policy/api.py</code>.</p>
+<pre><code class="language-bash">dp_policy --help
+# to run a specific experiment
+dp_policy run [experiment]
+# to only produce the feather file for regression analysis (using cached results)
+dp_policy run --just-join [name]
+# to run all experiments
+dp_policy run_all
+</code></pre>
+<h2 id="replicating-results">Replicating Results</h2>
+<ol>
+<li>For general results, run cells in <code>notebooks/results.ipynb</code>.</li>
+<li>Experimental results.</li>
+<li>Generate all the experimental results by running <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run_all</code> or running chosen experiments sindividually with <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run [experiment]</code>.</li>
+<li>Visualize experiment results with <code>notebooks/policy_experiments.ipynb</code>. (For example, Fig. 1 was produced with statistics from the Epsilon Sensitivity section of <code>notebooks/policy_experiments.ipynb</code>.)</li>
+<li>Produce disparity plots and GAM smooth plots with <code>R/plot_all.R</code>. (For example, Fig. 2 is the race disparity plot for the hold_harmless experiment.)</li>
+</ol>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><code>data/</code></li>
+<li><code>discrimination/</code> - <a href="https://nces.ed.gov/programs/edge/tableviewer/acsProfile/2019">ACS 5-year data for discrimination analysis</a></li>
+<li><code>shapefiles/</code> - <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html">TIGER shapefiles for school districts</a></li>
+<li><code>titlei-allocations</code> - official dep. of ed. figures, from Todd Stephenson</li>
+<li><code>saipe*</code>, <code>county_saipe*</code> - district- and county-level <a href="https://www.census.gov/data/datasets/2020/demo/saipe/2020-school-districts.html">SAIPE data</a></li>
+<li><code>fips_codes.csv</code> - map
+of FIPS codes to postal codes and state names</li>
+<li><code>nslp19.csv</code> - <a href="https://nces.ed.gov/ccd/files.asp#Fiscal:2,LevelId:7,SchoolYearId:34,Page:1">National School Lunch program data</a> (exploration only)</li>
+<li><code>sppe*</code> - <a href="https://nces.ed.gov/ccd/pub_rev_exp.asp">state per-pupil expenditure data</a></li>
+<li><code>dp_policy/</code> - codebase</li>
+<li><code>titlei/</code> - submodule for replicating the Title I allocation procedure, with noise<ul>
+<li><code>allocators.py</code> - allocation procedures</li>
+<li><code>bootstrap.py</code> - exploratory functions for sampling experiments</li>
+<li><code>evaluation.py</code> - utility functions for evaluating results</li>
+<li><code>mechanisms.py</code> - randomization mechanisms</li>
+<li><code>thresholders.py</code> - thresholding mechanisms for formula</li>
+<li><code>utils.py</code> - utility functions</li>
+</ul>
+</li>
+<li><code>api.py</code> - endpoints for CLI</li>
+<li><code>config.py</code> - settings</li>
+<li><code>experiments.py</code> - set of experiment configurations for replicating results</li>
+<li><code>logs/</code> - logs for recording runs</li>
+<li><code>notebooks/</code> - Jupyter notebooks for exploration and visualization</li>
+<li><code>results.ipynb</code> - main notebook for replicating and visualizing auxiliary experiment results</li>
+<li><code>policy-experiments.ipynb</code> - notebook for visualizing results of policy experiments</li>
+<li><code>nslp.ipynb</code> - exploring NSLP data as an alternative ground truth</li>
+<li><code>plot_sampling.ipynb</code> - developing sampling mechanisms</li>
+<li><code>plots/</code> - output plots</li>
+<li><code>R/</code> - R scripts for regression and visualization</li>
+<li><code>exploration.Rmd</code> - exploring results</li>
+<li><code>plot_all.R</code> - plots/regressions for all experiments</li>
+<li><code>plot_experiment.R</code> - plots/regressions for one experiment</li>
+<li><code>plots.R</code> - endpoints for plotting results and running regressions</li>
+<li><code>regression_tables.R</code> - endpoint for recording regression tables</li>
+<li><code>regressions.Rmd</code> - exploring regression specifications</li>
+<li><code>utils.R</code> - utility functions for plotting and regressions</li>
+<li><code>results/</code> - cached results files</li>
+<li><code>policy_experiments/</code> - for experiment runs</li>
+<li><code>regressions/</code> - for regressions</li>
+<li><code>scripts/</code> - miscellaneous bash scripts to make server runs easier</li>
+</ul>
+<h2 id="administration">Administration</h2>
+<h3 id="documentation">Documentation</h3>
+<p>Documentation for the <code>dp-policy</code> API is published at <a href="https://rbsteed.com/dp-policy">rbsteed.com/dp-policy</a>.</p>
+<p>To generate the documentation, use pdoc3:</p>
+<pre><code class="language-bash">pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
+git subtree push --prefix docs/dp_policy origin gh-pages
+</code></pre>
+<h3 id="running-on-server">Running on server</h3>
+<p>To sync discrimination files:</p>
+<pre><code class="language-bash">rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-policy/results/policy_experiments
+</code></pre>
+<p>To sync data files:</p>
+<pre><code class="language-bash">rsync -avz data/* heinz:/home/rsteed/dp-policy/data
+</code></pre>
+<p>To run R files, first <a href="https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory">set the lib path</a>.</p>
+<p>Managing jobs:</p>
+<pre><code class="language-bash">scripts/kickoff.sh # or cp paste for jobs management
+jobs
+watch -n 60 ps
+</code></pre>
+<h3 id="compressing-for-simple-release">Compressing for simple release</h3>
+<pre><code class="language-bash">make zip
+</code></pre>
+<h3 id="compressing-pdfs-for-overleaf">Compressing PDFs for Overleaf</h3>
+<pre><code class="language-bash"># NOTE: reduces DPI
+# `/prepress` is highest DPI; then `/printer`; then `/ebook`
+gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -r100 -dPDFSETTINGS=/printer \
+-dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
+# gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer \
+# -dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
+</code></pre>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+.. include:: ../README.md
+&#34;&#34;&#34;</code></pre>
+</details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
@@ -54,7 +161,22 @@
 <nav id="sidebar">
 <h1>Index</h1>
 <div class="toc">
-<ul></ul>
+<ul>
+<li><a href="#impacts-of-uncertainty-differential-privacy-on-title-i">Impacts of Uncertainty &amp; Differential Privacy on Title I</a><ul>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#running-the-cli">Running the CLI</a></li>
+<li><a href="#replicating-results">Replicating Results</a></li>
+<li><a href="#contents">Contents</a></li>
+<li><a href="#administration">Administration</a><ul>
+<li><a href="#documentation">Documentation</a></li>
+<li><a href="#running-on-server">Running on server</a></li>
+<li><a href="#compressing-for-simple-release">Compressing for simple release</a></li>
+<li><a href="#compressing-pdfs-for-overleaf">Compressing PDFs for Overleaf</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 </div>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>

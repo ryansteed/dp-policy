@@ -1,8 +1,6 @@
-# DP Policy Decision-Making
+# Impacts of Uncertainty & Differential Privacy on Title I
 
 Author: Ryan Steed
-
-WIP
 
 ## Installation
 
@@ -28,7 +26,7 @@ dp_policy run_all
 2. Experimental results.
   1. Generate all the experimental results by running `dp_policy run_all` or running chosen experiments sindividually with `dp_policy run [experiment]`.
   2. Visualize experiment results with `notebooks/policy_experiments.ipynb`. (For example, Fig. 1 was produced with statistics from the Epsilon Sensitivity section of `notebooks/policy_experiments.ipynb`.)
-  3. Produce disparity plots and GAM smooth plots with `R/plot_all.R`. (For example, Fig. 2 is the race disparity plot for the `hold_harmless` experiment.)
+  3. Produce disparity plots and GAM smooth plots with `R/plot_all.R`. (For example, Fig. 2 is the race disparity plot for the hold_harmless experiment.)
 
 ## Contents
 - `data/`
