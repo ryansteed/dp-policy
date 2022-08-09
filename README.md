@@ -1,6 +1,6 @@
 # Impacts of Uncertainty & Differential Privacy on Title I
 
-Author: Ryan Steed
+Author: Ryan Steed, with code contributions from Terrance Liu
 
 ## Installation
 
