@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/api.py#L1-L55" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/api.py#L1-L55" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">from dp_policy.experiments import Experiment
 import click
@@ -62,7 +62,7 @@ def run(
     )
     if just_join:
         click.echo(&#34;Skipping run, straight to join&#34;)
-        experiment.discrimination_join()
+        experiment.discrimination_join(include_moes=(name == &#34;baseline&#34;))
     else:
         experiment.run()
 

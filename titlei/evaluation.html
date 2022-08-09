@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L1-L933" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L1-L943" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -73,7 +73,8 @@ def get_geography() -&gt; pd.DataFrame:
 def discrimination_join(
     results: pd.DataFrame,
     save_path: str = None,
-    verbose: bool = False
+    verbose: bool = False,
+    include_moes: bool = False
 ) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results to demographic covariates.
 
@@ -82,6 +83,8 @@ def discrimination_join(
         save_path (str, optional): Where to save the joined dataframe.
             Defaults to None.
         verbose (bool, optional): Defaults to False.
+        include_moes (bool, optional): Whether to include moes with percents.
+            Defaults to False.
 
     Returns:
         pd.DataFrame: Joined dataframe.
@@ -94,11 +97,16 @@ def discrimination_join(
     # add race variables
     variables += [
         r for r in acs.columns
-        if r.endswith(&#34;(RACE) - pct&#34;)
+        if (
+            r.endswith(&#34;(RACE) - pct&#34;)
+            or (include_moes and r.endswith(&#34;(RACE) - pctmoe&#34;))
+        )
         and &#34;and&#34; not in r
         and &#34;races&#34; not in r
         and not r.startswith(&#34;One race&#34;)
     ] + [&#34;Two or more races (RACE) - pct&#34;]
+    if verbose and include_moes:
+        print(&#34;Including MOEs&#34;)
     # add ethnicity variables
     hisp = [
         r for r in acs.columns
@@ -179,7 +187,8 @@ def discrimination_treatments_join(
     treatments_name: dict,
     exclude: list = [],
     epsilon: float = 0.1,
-    delta: float = 0.0
+    delta: float = 0.0,
+    **join_kwargs
 ) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results to demographic covariates.
 
@@ -227,7 +236,8 @@ def discrimination_treatments_join(
     discrimination_joined = discrimination_join(
         joined,
         save_path=f&#34;{config.root}/results/policy_experiments/&#34;
-        f&#34;{treatments_name}_discrimination_laplace&#34;
+        f&#34;{treatments_name}_discrimination_laplace&#34;,
+        **join_kwargs
     )
     return discrimination_joined
 
@@ -993,7 +1003,7 @@ None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L631-L785" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L641-L795" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def compare_treatments(
   treatments: Dict[str, pd.DataFrame],
@@ -1160,14 +1170,14 @@ None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L445-L446" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L455-L456" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def cube(x):
     return np.sign(x)*np.power(np.abs(x), 1/3)</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.discrimination_join"><code class="name flex">
-<span>def <span class="ident">discrimination_join</span></span>(<span>results: pandas.core.frame.DataFrame, save_path: str = None, verbose: bool = False) ‑> pandas.core.frame.DataFrame</span>
+<span>def <span class="ident">discrimination_join</span></span>(<span>results: pandas.core.frame.DataFrame, save_path: str = None, verbose: bool = False, include_moes: bool = False) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Join results to demographic covariates.</p>
@@ -1180,6 +1190,9 @@ None.</dd>
 Defaults to None.</dd>
 <dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>Defaults to False.</dd>
+<dt><strong><code>include_moes</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to include moes with percents.
+Defaults to False.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1189,12 +1202,13 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L44-L146" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L44-L154" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_join(
     results: pd.DataFrame,
     save_path: str = None,
-    verbose: bool = False
+    verbose: bool = False,
+    include_moes: bool = False
 ) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results to demographic covariates.
 
@@ -1203,6 +1217,8 @@ Defaults to None.</dd>
         save_path (str, optional): Where to save the joined dataframe.
             Defaults to None.
         verbose (bool, optional): Defaults to False.
+        include_moes (bool, optional): Whether to include moes with percents.
+            Defaults to False.
 
     Returns:
         pd.DataFrame: Joined dataframe.
@@ -1215,11 +1231,16 @@ Defaults to None.</dd>
     # add race variables
     variables += [
         r for r in acs.columns
-        if r.endswith(&#34;(RACE) - pct&#34;)
+        if (
+            r.endswith(&#34;(RACE) - pct&#34;)
+            or (include_moes and r.endswith(&#34;(RACE) - pctmoe&#34;))
+        )
         and &#34;and&#34; not in r
         and &#34;races&#34; not in r
         and not r.startswith(&#34;One race&#34;)
     ] + [&#34;Two or more races (RACE) - pct&#34;]
+    if verbose and include_moes:
+        print(&#34;Including MOEs&#34;)
     # add ethnicity variables
     hisp = [
         r for r in acs.columns
@@ -1297,7 +1318,7 @@ Defaults to None.</dd>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.discrimination_treatments_join"><code class="name flex">
-<span>def <span class="ident">discrimination_treatments_join</span></span>(<span>treatments_name: dict, exclude: list = [], epsilon: float = 0.1, delta: float = 0.0) ‑> pandas.core.frame.DataFrame</span>
+<span>def <span class="ident">discrimination_treatments_join</span></span>(<span>treatments_name: dict, exclude: list = [], epsilon: float = 0.1, delta: float = 0.0, **join_kwargs) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Join results to demographic covariates.</p>
@@ -1321,13 +1342,14 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L149-L203" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L157-L213" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_treatments_join(
     treatments_name: dict,
     exclude: list = [],
     epsilon: float = 0.1,
-    delta: float = 0.0
+    delta: float = 0.0,
+    **join_kwargs
 ) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results to demographic covariates.
 
@@ -1375,7 +1397,8 @@ Defaults to None.</dd>
     discrimination_joined = discrimination_join(
         joined,
         save_path=f&#34;{config.root}/results/policy_experiments/&#34;
-        f&#34;{treatments_name}_discrimination_laplace&#34;
+        f&#34;{treatments_name}_discrimination_laplace&#34;,
+        **join_kwargs
     )
     return discrimination_joined</code></pre>
 </details>
@@ -1398,7 +1421,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L213-L357" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L223-L367" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results wwith shapefiles.
@@ -1560,7 +1583,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L17-L41" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L17-L41" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def get_geography() -&gt; pd.DataFrame:
     &#34;&#34;&#34;Load shapefiles for LEAs.
@@ -1629,7 +1652,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L449-L566" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L459-L576" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def heatmap(
     data: pd.DataFrame,
@@ -1773,7 +1796,7 @@ or individual set of results if <code>treatment_name</code> is specified.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L605-L628" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L615-L638" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def load_treatments(
     experiment_name: str,
@@ -1816,7 +1839,7 @@ or individual set of results if <code>treatment_name</code> is specified.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L788-L800" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L798-L810" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def match_true(
     df_true: pd.DataFrame,
@@ -1852,7 +1875,7 @@ statistics for. Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L803-L933" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L813-L943" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def misalloc_statistics(
     error: pd.Series,
@@ -1995,7 +2018,7 @@ statistics for. Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L206-L210" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L216-L220" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def percentile(n):
     def percentile_(x):
@@ -2039,7 +2062,7 @@ False.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L360-L442" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L370-L452" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot_treatments(
     treatments: Dict[str, pd.DataFrame],
@@ -2142,7 +2165,7 @@ mapped to results.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L569-L602" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/titlei/evaluation.py#L579-L612" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def save_treatments(
     treatments: Dict[str, pd.DataFrame],
