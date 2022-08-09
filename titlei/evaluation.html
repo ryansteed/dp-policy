@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L1-L847" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L1-L933" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -40,11 +40,14 @@ import pickle
 from dp_policy.titlei.utils import get_acs_unified
 import dp_policy.config as config
 
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 
 
-def get_geography():
+def get_geography() -&gt; pd.DataFrame:
     &#34;&#34;&#34;Load shapefiles for LEAs.
+
+    Returns:
+        pd.DataFrame: Shapefiles indexed by school district.
     &#34;&#34;&#34;
     geo = gpd.read_file(os.path.join(
         config.root,
@@ -188,7 +191,7 @@ def discrimination_treatments_join(
         delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
 
     Returns:
-        _type_: Combined dataframe for all treatments.
+        pd.DataFrame: Combined dataframe for all treatments.
     &#34;&#34;&#34;
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
@@ -229,6 +232,13 @@ def discrimination_treatments_join(
     return discrimination_joined
 
 
+def percentile(n):
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = &#39;percentile_{}&#39;.format(n*100)
+    return percentile_
+
+
 def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results wwith shapefiles.
 
@@ -252,7 +262,7 @@ def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
 
     results[&#34;percent_eligible&#34;] = \
         results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
-    results[&#34;switched_eligibility&#34;] = \
+    results[&#34;switched_eligibility&#34;] = (
         ~(
             (results.est_eligible_targeted == results.true_eligible_targeted)
             &amp; (results.est_eligible_basic == results.true_eligible_basic)
@@ -261,33 +271,36 @@ def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
                 results.true_eligible_concentration
             )
         )
-    results[&#34;became_eligible&#34;] = \
+    ).astype(int)
+    results[&#34;became_eligible&#34;] = (
         (
             results.est_eligible_targeted.astype(bool)
             &amp; ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_basic.astype(bool)
             &amp; ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_concentration.astype(bool)
             &amp; ~results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;became_ineligible&#34;] = \
+    ).astype(int)
+    results[&#34;became_ineligible&#34;] = (
         (
             ~results.est_eligible_targeted.astype(bool)
             &amp; results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_basic.astype(bool)
             &amp; results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_concentration.astype(bool)
             &amp; results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;switched_eligibility_dp&#34;] = \
+    ).astype(int)
+    results[&#34;switched_eligibility_dp&#34;] = (
         ~(
             (results.dpest_eligible_targeted == results.true_eligible_targeted)
             &amp; (results.dpest_eligible_basic == results.true_eligible_basic)
@@ -296,32 +309,35 @@ def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
                 results.true_eligible_concentration
             )
         )
-    results[&#34;became_eligible_dp&#34;] = \
+    ).astype(int)
+    results[&#34;became_eligible_dp&#34;] = (
         (
             results.dpest_eligible_targeted.astype(bool)
             &amp; ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_basic.astype(bool)
             &amp; ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_concentration.astype(bool)
             &amp; ~results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;became_ineligible_dp&#34;] = \
+    ).astype(int)
+    results[&#34;became_ineligible_dp&#34;] = (
         (
             ~results.dpest_eligible_targeted.astype(bool)
             &amp; results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_basic.astype(bool)
             &amp; results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_concentration.astype(bool)
             &amp; results.true_eligible_concentration.astype(bool)
         )
+    ).astype(int)
     results[&#34;dp_marginal&#34;] = \
         results[&#34;error_dp_per_child_eligible&#34;] -\
         results[&#34;error_per_child_eligible&#34;]
@@ -348,7 +364,7 @@ def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
             &#34;dp_marginal&#34;
         ]]
         .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
-        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;]),
+        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;, percentile(0.05)]),
         how=&#34;inner&#34;
     )
     joined.columns = [
@@ -447,8 +463,8 @@ def plot_treatments(
     plt.legend(loc=&#39;upper right&#39;)
     if filename:
         plt.savefig(
-            f&#34;{config.root}/plots/bootstrap/{filename}.png&#34;,
-            dpi=100,
+            f&#34;{config.root}/plots/bootstrap/{filename}.pdf&#34;,
+            transparent=True,
             bbox_inches=&#39;tight&#39;
         )
     plt.show()
@@ -494,20 +510,22 @@ def heatmap(
         dpi (int, optional): Figure DPI. Defaults to 300.
         alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
     &#34;&#34;&#34;
-    data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
-    sig = ~(
-        ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
-        ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
-    )
-    print(
-        &#34;All but&#34;,
-        len(data)-sig.sum(),
-        f&#34;are significantly different from zero at {alpha}&#34;
-    )
+    if alpha is not None:
+        data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * \
+            stats.norm.ppf(1 - alpha / 2)
+        sig = ~(
+            ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
+            ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
+        )
+        print(
+            &#34;All but&#34;,
+            len(data)-sig.sum(),
+            f&#34;are significantly different from zero at {alpha}&#34;
+        )
 
     fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
 
-    for key in [y, f&#34;{y}_moe&#34;]:
+    for key in [y, f&#34;{y}_moe&#34;] if alpha is not None else [y]:
         if transform == &#39;cube&#39;:
             data.loc[:, key] = cube(data[key])
         if transform == &#39;log&#39;:
@@ -529,13 +547,14 @@ def heatmap(
         norm = pltc.Normalize(vmin=min, vmax=max)
     sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
 
-    print(
-        f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
-        data[f&#34;{y}_moe&#34;].abs().max()
-    )
-    data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
+    if alpha is not None:
+        print(
+            f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
+            data[f&#34;{y}_moe&#34;].abs().max()
+        )
+        data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
     data.plot(
-        column=f&#34;{y}_sig&#34;,
+        column=f&#34;{y}_sig&#34; if alpha is not None else y,
         cmap=theme,
         norm=norm,
         ax=ax,
@@ -546,7 +565,8 @@ def heatmap(
             edgecolor=(0, 0, 0, 0.25),
             facecolor=&#39;none&#39;,
             label=f&#34;Not significant (p &lt; {alpha})&#34;
-        )
+        ),
+        rasterized=True
     )
     cb = fig.colorbar(
         sm,
@@ -561,14 +581,31 @@ def heatmap(
     if file is not None:
         plt.savefig(
             f&#34;{config.root}/plots/geo/{file}&#34;,
-            dpi=dpi, bbox_inches=&#39;tight&#39;
+            bbox_inches=&#39;tight&#39;,
+            transparent=True,
+            dpi=dpi
         )
+        # plt.savefig(
+        #     f&#34;{config.root}/plots/geo/{file}_large&#34;,
+        #     dpi=dpi, bbox_inches=&#39;tight&#39;,
+        #     transparent=True
+        # )
         plt.close()
     else:
         plt.show()
 
 
-def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
+def save_treatments(
+    treatments: Dict[str, pd.DataFrame],
+    experiment_name: str
+):
+    &#34;&#34;&#34;Save treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Dictionary of treatment names
+            mapped to results.
+        experiment_name (str): Name for this collection of treatments.
+    &#34;&#34;&#34;
     # minify treatments
     treatments = {
         treatment: df.loc[:, [
@@ -577,6 +614,7 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
             or c.endswith(&#34;- est&#34;)
             or c.startswith(&#34;true&#34;)
             or &#34;eligible&#34; in c
+            or &#34;children_total&#34; in c
             or &#34;grant&#34; in c
             or c in [
                 &#34;ALAND&#34;
@@ -593,13 +631,30 @@ def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
     )
 
 
-def load_treatments(experiment_name) -&gt; Dict[str, pd.DataFrame]:
-    return pickle.load(
+def load_treatments(
+    experiment_name: str,
+    treatment_name: str = None
+) -&gt; Union[Dict[str, pd.DataFrame], pd.DataFrame]:
+    &#34;&#34;&#34;Load treatment results from memory.
+
+    Args:
+        experiment_name (str): Experiment to load.
+        treatment_name (str, optional): Name of treatment to load. If not
+            specified, loads all treatments. Defaults to None.
+
+    Returns:
+        Dict[str, pd.DataFrame]: Dictionary of treatments mapped to results,
+            or individual set of results if `treatment_name` is specified.
+    &#34;&#34;&#34;
+    treatments = pickle.load(
         open(
             f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
             &#39;rb&#39;
         )
     )
+    if treatment_name is None:
+        return treatments
+    return treatments[treatment_name]
 
 
 def compare_treatments(
@@ -750,7 +805,7 @@ def compare_treatments(
             y=&#34;error_per_child_eligible&#34;,
             label=&#34;Misallocation per eligible child (cube root)&#34;,
             title=treatment,
-            file=f&#34;{experiment_name}_{treatment}.png&#34;,
+            file=f&#34;{experiment_name}_{treatment}.pdf&#34;,
             figsize=(15, 10),
             bar_location=&#39;right&#39;,
             min=ymin,
@@ -779,6 +834,15 @@ def misalloc_statistics(
     allocations: pd.DataFrame = None,
     grant_type: str = None
 ):
+    &#34;&#34;&#34;Print statistics describing misallocation in a set of simulations.
+
+    Args:
+        error (pd.Series): Error in allocation indexed by district.
+        allocations (pd.DataFrame, optional): Full set of allocations.
+            Defaults to None.
+        grant_type (str, optional): Optionally, a grant type to print specific
+            statistics for. Defaults to None.
+    &#34;&#34;&#34;
     err_grouped = error.groupby(
         [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
     )
@@ -821,10 +885,16 @@ def misalloc_statistics(
         exp_error[exp_error &lt; 0].abs().sum()
     )
     print(
+        &#34;SD in total. exp. losses&#34;,
+        np.sqrt(error.groupby(
+            [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
+        ).std()[exp_error &lt; 0].pow(2).sum())
+    )
+    print(
         &#34;Average exp loss&#34;,
         exp_error[exp_error &lt; 0].abs().mean()
     )
-    lowerr = error.groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).quantile(0.05)
+    lowerr = err_grouped.quantile(0.05)
     print(
         &#34;Total 5% quantile losses:&#34;,
         lowerr[lowerr &lt; 0].abs().sum()
@@ -846,12 +916,6 @@ def misalloc_statistics(
 
     if allocations is not None:
         print(&#34;-- Other stats --&#34;)
-        print(
-            &#34;Avg total true alloc:&#34;,
-            allocations[f&#34;true_grant_{grant_type}&#34;]
-            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
-            .first().abs().sum()
-        )
         small_district = allocations[&#34;true_pop_total&#34;]\
             .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])\
             .first() &lt; 20000
@@ -867,10 +931,32 @@ def misalloc_statistics(
             &#34;Total exp misalloc to small districts:&#34;,
             exp_error[small_district].abs().sum()
         )
+
         if grant_type is not None:
+            print(
+                &#34;Total true alloc:&#34;,
+                allocations[f&#34;true_grant_{grant_type}&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().abs().sum()
+            )
+            print(
+                &#34;Total true alloc per child eligible&#34;,
+                allocations[f&#34;true_grant_{grant_type}&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().sum() / allocations[f&#34;true_children_eligible&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().sum()
+            )
             print(&#34;Average true alloc: {}&#34;.format(
                 allocations[f&#34;true_grant_{grant_type}&#34;].mean()
             ))
+            print(
+                &#34;Average true alloc per child eligible&#34;,
+                (
+                    allocations[f&#34;true_grant_{grant_type}&#34;] /
+                    allocations[&#34;true_children_eligible&#34;]
+                ).mean()
+            )
             print(&#34;Max true alloc: {}&#34;.format(
                 allocations[f&#34;true_grant_{grant_type}&#34;].max()
             ))</code></pre>
@@ -907,7 +993,7 @@ None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L576-L730" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L631-L785" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def compare_treatments(
   treatments: Dict[str, pd.DataFrame],
@@ -1057,7 +1143,7 @@ None.</dd>
             y=&#34;error_per_child_eligible&#34;,
             label=&#34;Misallocation per eligible child (cube root)&#34;,
             title=treatment,
-            file=f&#34;{experiment_name}_{treatment}.png&#34;,
+            file=f&#34;{experiment_name}_{treatment}.pdf&#34;,
             figsize=(15, 10),
             bar_location=&#39;right&#39;,
             min=ymin,
@@ -1074,7 +1160,7 @@ None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L429-L430" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L445-L446" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def cube(x):
     return np.sign(x)*np.power(np.abs(x), 1/3)</code></pre>
@@ -1103,7 +1189,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L41-L143" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L44-L146" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_join(
     results: pd.DataFrame,
@@ -1229,13 +1315,13 @@ Defaults to None.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>_type_</code></dt>
+<dt><code>pd.DataFrame</code></dt>
 <dd>Combined dataframe for all treatments.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L146-L200" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L149-L203" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_treatments_join(
     treatments_name: dict,
@@ -1253,7 +1339,7 @@ Defaults to None.</dd>
         delta (float, optional): Delta to use (one allowed). Defaults to 0.0.
 
     Returns:
-        _type_: Combined dataframe for all treatments.
+        pd.DataFrame: Combined dataframe for all treatments.
     &#34;&#34;&#34;
     # output a concatenated DF with a new index column indicating which
     # treatment was applied
@@ -1312,7 +1398,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L203-L341" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L213-L357" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def geo_join(results: pd.DataFrame) -&gt; pd.DataFrame:
     &#34;&#34;&#34;Join results wwith shapefiles.
@@ -1337,7 +1423,7 @@ Defaults to None.</dd>
 
     results[&#34;percent_eligible&#34;] = \
         results[&#34;true_children_eligible&#34;] / results[&#34;true_children_total&#34;]
-    results[&#34;switched_eligibility&#34;] = \
+    results[&#34;switched_eligibility&#34;] = (
         ~(
             (results.est_eligible_targeted == results.true_eligible_targeted)
             &amp; (results.est_eligible_basic == results.true_eligible_basic)
@@ -1346,33 +1432,36 @@ Defaults to None.</dd>
                 results.true_eligible_concentration
             )
         )
-    results[&#34;became_eligible&#34;] = \
+    ).astype(int)
+    results[&#34;became_eligible&#34;] = (
         (
             results.est_eligible_targeted.astype(bool)
             &amp; ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_basic.astype(bool)
             &amp; ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.est_eligible_concentration.astype(bool)
             &amp; ~results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;became_ineligible&#34;] = \
+    ).astype(int)
+    results[&#34;became_ineligible&#34;] = (
         (
             ~results.est_eligible_targeted.astype(bool)
             &amp; results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_basic.astype(bool)
             &amp; results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.est_eligible_concentration.astype(bool)
             &amp; results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;switched_eligibility_dp&#34;] = \
+    ).astype(int)
+    results[&#34;switched_eligibility_dp&#34;] = (
         ~(
             (results.dpest_eligible_targeted == results.true_eligible_targeted)
             &amp; (results.dpest_eligible_basic == results.true_eligible_basic)
@@ -1381,32 +1470,35 @@ Defaults to None.</dd>
                 results.true_eligible_concentration
             )
         )
-    results[&#34;became_eligible_dp&#34;] = \
+    ).astype(int)
+    results[&#34;became_eligible_dp&#34;] = (
         (
             results.dpest_eligible_targeted.astype(bool)
             &amp; ~results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_basic.astype(bool)
             &amp; ~results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             results.dpest_eligible_concentration.astype(bool)
             &amp; ~results.true_eligible_concentration.astype(bool)
         )
-    results[&#34;became_ineligible_dp&#34;] = \
+    ).astype(int)
+    results[&#34;became_ineligible_dp&#34;] = (
         (
             ~results.dpest_eligible_targeted.astype(bool)
             &amp; results.true_eligible_targeted.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_basic.astype(bool)
             &amp; results.true_eligible_basic.astype(bool)
-        ) \
+        )
         | (
             ~results.dpest_eligible_concentration.astype(bool)
             &amp; results.true_eligible_concentration.astype(bool)
         )
+    ).astype(int)
     results[&#34;dp_marginal&#34;] = \
         results[&#34;error_dp_per_child_eligible&#34;] -\
         results[&#34;error_per_child_eligible&#34;]
@@ -1433,7 +1525,7 @@ Defaults to None.</dd>
             &#34;dp_marginal&#34;
         ]]
         .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
-        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;]),
+        .agg([&#39;mean&#39;, &#39;std&#39;, &#39;sem&#39;, percentile(0.05)]),
         how=&#34;inner&#34;
     )
     joined.columns = [
@@ -1456,17 +1548,25 @@ Defaults to None.</dd>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.get_geography"><code class="name flex">
-<span>def <span class="ident">get_geography</span></span>(<span>)</span>
+<span>def <span class="ident">get_geography</span></span>(<span>) ‑> pandas.core.frame.DataFrame</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load shapefiles for LEAs.</p></div>
+<div class="desc"><p>Load shapefiles for LEAs.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.DataFrame</code></dt>
+<dd>Shapefiles indexed by school district.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L17-L38" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L17-L41" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def get_geography():
+<pre><code class="python">def get_geography() -&gt; pd.DataFrame:
     &#34;&#34;&#34;Load shapefiles for LEAs.
+
+    Returns:
+        pd.DataFrame: Shapefiles indexed by school district.
     &#34;&#34;&#34;
     geo = gpd.read_file(os.path.join(
         config.root,
@@ -1529,7 +1629,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L433-L539" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L449-L566" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def heatmap(
     data: pd.DataFrame,
@@ -1566,20 +1666,22 @@ Defaults to None.</dd>
         dpi (int, optional): Figure DPI. Defaults to 300.
         alpha (float, optional): Confidence level for t-test. Defaults to 0.1.
     &#34;&#34;&#34;
-    data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * stats.norm.ppf(1 - alpha / 2)
-    sig = ~(
-        ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
-        ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
-    )
-    print(
-        &#34;All but&#34;,
-        len(data)-sig.sum(),
-        f&#34;are significantly different from zero at {alpha}&#34;
-    )
+    if alpha is not None:
+        data[f&#34;{y}_moe&#34;] = data.loc[:, f&#34;{y}_sem&#34;] * \
+            stats.norm.ppf(1 - alpha / 2)
+        sig = ~(
+            ((data[y] + data[f&#34;{y}_moe&#34;]) &gt;= 0) &amp;
+            ((data[y] - data[f&#34;{y}_moe&#34;]) &lt;= 0)
+        )
+        print(
+            &#34;All but&#34;,
+            len(data)-sig.sum(),
+            f&#34;are significantly different from zero at {alpha}&#34;
+        )
 
     fig, ax = plt.subplots(1, figsize=figsize, dpi=dpi)
 
-    for key in [y, f&#34;{y}_moe&#34;]:
+    for key in [y, f&#34;{y}_moe&#34;] if alpha is not None else [y]:
         if transform == &#39;cube&#39;:
             data.loc[:, key] = cube(data[key])
         if transform == &#39;log&#39;:
@@ -1601,13 +1703,14 @@ Defaults to None.</dd>
         norm = pltc.Normalize(vmin=min, vmax=max)
     sm = plt.cm.ScalarMappable(cmap=theme, norm=norm)
 
-    print(
-        f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
-        data[f&#34;{y}_moe&#34;].abs().max()
-    )
-    data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
+    if alpha is not None:
+        print(
+            f&#34;None of the {(1-alpha)*100}% MOEs exceeds&#34;,
+            data[f&#34;{y}_moe&#34;].abs().max()
+        )
+        data[f&#34;{y}_sig&#34;] = np.where(sig, data[y], np.nan)
     data.plot(
-        column=f&#34;{y}_sig&#34;,
+        column=f&#34;{y}_sig&#34; if alpha is not None else y,
         cmap=theme,
         norm=norm,
         ax=ax,
@@ -1618,7 +1721,8 @@ Defaults to None.</dd>
             edgecolor=(0, 0, 0, 0.25),
             facecolor=&#39;none&#39;,
             label=f&#34;Not significant (p &lt; {alpha})&#34;
-        )
+        ),
+        rasterized=True
     )
     cb = fig.colorbar(
         sm,
@@ -1633,30 +1737,68 @@ Defaults to None.</dd>
     if file is not None:
         plt.savefig(
             f&#34;{config.root}/plots/geo/{file}&#34;,
-            dpi=dpi, bbox_inches=&#39;tight&#39;
+            bbox_inches=&#39;tight&#39;,
+            transparent=True,
+            dpi=dpi
         )
+        # plt.savefig(
+        #     f&#34;{config.root}/plots/geo/{file}_large&#34;,
+        #     dpi=dpi, bbox_inches=&#39;tight&#39;,
+        #     transparent=True
+        # )
         plt.close()
     else:
         plt.show()</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.load_treatments"><code class="name flex">
-<span>def <span class="ident">load_treatments</span></span>(<span>experiment_name) ‑> Dict[str, pandas.core.frame.DataFrame]</span>
+<span>def <span class="ident">load_treatments</span></span>(<span>experiment_name: str, treatment_name: str = None) ‑> Union[Dict[str, pandas.core.frame.DataFrame], pandas.core.frame.DataFrame]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Load treatment results from memory.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiment_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment to load.</dd>
+<dt><strong><code>treatment_name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Name of treatment to load. If not
+specified, loads all treatments. Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Dict[str, pd.DataFrame]</code></dt>
+<dd>Dictionary of treatments mapped to results,
+or individual set of results if <code>treatment_name</code> is specified.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L567-L573" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L605-L628" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def load_treatments(experiment_name) -&gt; Dict[str, pd.DataFrame]:
-    return pickle.load(
+<pre><code class="python">def load_treatments(
+    experiment_name: str,
+    treatment_name: str = None
+) -&gt; Union[Dict[str, pd.DataFrame], pd.DataFrame]:
+    &#34;&#34;&#34;Load treatment results from memory.
+
+    Args:
+        experiment_name (str): Experiment to load.
+        treatment_name (str, optional): Name of treatment to load. If not
+            specified, loads all treatments. Defaults to None.
+
+    Returns:
+        Dict[str, pd.DataFrame]: Dictionary of treatments mapped to results,
+            or individual set of results if `treatment_name` is specified.
+    &#34;&#34;&#34;
+    treatments = pickle.load(
         open(
             f&#34;{config.root}/results/policy_experiments/{experiment_name}.pkl&#34;,
             &#39;rb&#39;
         )
-    )</code></pre>
+    )
+    if treatment_name is None:
+        return treatments
+    return treatments[treatment_name]</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.match_true"><code class="name flex">
@@ -1674,7 +1816,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L733-L745" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L788-L800" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def match_true(
     df_true: pd.DataFrame,
@@ -1695,17 +1837,37 @@ Defaults to None.</dd>
 <span>def <span class="ident">misalloc_statistics</span></span>(<span>error: pandas.core.series.Series, allocations: pandas.core.frame.DataFrame = None, grant_type: str = None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Print statistics describing misallocation in a set of simulations.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>error</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Error in allocation indexed by district.</dd>
+<dt><strong><code>allocations</code></strong> :&ensp;<code>pd.DataFrame</code>, optional</dt>
+<dd>Full set of allocations.
+Defaults to None.</dd>
+<dt><strong><code>grant_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Optionally, a grant type to print specific
+statistics for. Defaults to None.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L748-L847" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L803-L933" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def misalloc_statistics(
     error: pd.Series,
     allocations: pd.DataFrame = None,
     grant_type: str = None
 ):
+    &#34;&#34;&#34;Print statistics describing misallocation in a set of simulations.
+
+    Args:
+        error (pd.Series): Error in allocation indexed by district.
+        allocations (pd.DataFrame, optional): Full set of allocations.
+            Defaults to None.
+        grant_type (str, optional): Optionally, a grant type to print specific
+            statistics for. Defaults to None.
+    &#34;&#34;&#34;
     err_grouped = error.groupby(
         [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
     )
@@ -1748,10 +1910,16 @@ Defaults to None.</dd>
         exp_error[exp_error &lt; 0].abs().sum()
     )
     print(
+        &#34;SD in total. exp. losses&#34;,
+        np.sqrt(error.groupby(
+            [&#34;State FIPS Code&#34;, &#34;District ID&#34;]
+        ).std()[exp_error &lt; 0].pow(2).sum())
+    )
+    print(
         &#34;Average exp loss&#34;,
         exp_error[exp_error &lt; 0].abs().mean()
     )
-    lowerr = error.groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;]).quantile(0.05)
+    lowerr = err_grouped.quantile(0.05)
     print(
         &#34;Total 5% quantile losses:&#34;,
         lowerr[lowerr &lt; 0].abs().sum()
@@ -1773,12 +1941,6 @@ Defaults to None.</dd>
 
     if allocations is not None:
         print(&#34;-- Other stats --&#34;)
-        print(
-            &#34;Avg total true alloc:&#34;,
-            allocations[f&#34;true_grant_{grant_type}&#34;]
-            .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
-            .first().abs().sum()
-        )
         small_district = allocations[&#34;true_pop_total&#34;]\
             .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])\
             .first() &lt; 20000
@@ -1794,13 +1956,52 @@ Defaults to None.</dd>
             &#34;Total exp misalloc to small districts:&#34;,
             exp_error[small_district].abs().sum()
         )
+
         if grant_type is not None:
+            print(
+                &#34;Total true alloc:&#34;,
+                allocations[f&#34;true_grant_{grant_type}&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().abs().sum()
+            )
+            print(
+                &#34;Total true alloc per child eligible&#34;,
+                allocations[f&#34;true_grant_{grant_type}&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().sum() / allocations[f&#34;true_children_eligible&#34;]
+                .groupby([&#34;State FIPS Code&#34;, &#34;District ID&#34;])
+                .first().sum()
+            )
             print(&#34;Average true alloc: {}&#34;.format(
                 allocations[f&#34;true_grant_{grant_type}&#34;].mean()
             ))
+            print(
+                &#34;Average true alloc per child eligible&#34;,
+                (
+                    allocations[f&#34;true_grant_{grant_type}&#34;] /
+                    allocations[&#34;true_children_eligible&#34;]
+                ).mean()
+            )
             print(&#34;Max true alloc: {}&#34;.format(
                 allocations[f&#34;true_grant_{grant_type}&#34;].max()
             ))</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.titlei.evaluation.percentile"><code class="name flex">
+<span>def <span class="ident">percentile</span></span>(<span>n)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L206-L210" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def percentile(n):
+    def percentile_(x):
+        return x.quantile(n)
+    percentile_.__name__ = &#39;percentile_{}&#39;.format(n*100)
+    return percentile_</code></pre>
 </details>
 </dd>
 <dt id="dp_policy.titlei.evaluation.plot_treatments"><code class="name flex">
@@ -1838,7 +2039,7 @@ False.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L344-L426" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L360-L442" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot_treatments(
     treatments: Dict[str, pd.DataFrame],
@@ -1917,8 +2118,8 @@ False.</dd>
     plt.legend(loc=&#39;upper right&#39;)
     if filename:
         plt.savefig(
-            f&#34;{config.root}/plots/bootstrap/{filename}.png&#34;,
-            dpi=100,
+            f&#34;{config.root}/plots/bootstrap/{filename}.pdf&#34;,
+            transparent=True,
             bbox_inches=&#39;tight&#39;
         )
     plt.show()
@@ -1929,13 +2130,31 @@ False.</dd>
 <span>def <span class="ident">save_treatments</span></span>(<span>treatments: Dict[str, pandas.core.frame.DataFrame], experiment_name: str)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Save treatment results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>treatments</code></strong> :&ensp;<code>Dict[str, pd.DataFrame]</code></dt>
+<dd>Dictionary of treatment names
+mapped to results.</dd>
+<dt><strong><code>experiment_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name for this collection of treatments.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/evaluation.py#L542-L564" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/evaluation.py#L569-L602" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def save_treatments(treatments: Dict[str, pd.DataFrame], experiment_name: str):
+<pre><code class="python">def save_treatments(
+    treatments: Dict[str, pd.DataFrame],
+    experiment_name: str
+):
+    &#34;&#34;&#34;Save treatment results.
+
+    Args:
+        treatments (Dict[str, pd.DataFrame]): Dictionary of treatment names
+            mapped to results.
+        experiment_name (str): Name for this collection of treatments.
+    &#34;&#34;&#34;
     # minify treatments
     treatments = {
         treatment: df.loc[:, [
@@ -1944,6 +2163,7 @@ False.</dd>
             or c.endswith(&#34;- est&#34;)
             or c.startswith(&#34;true&#34;)
             or &#34;eligible&#34; in c
+            or &#34;children_total&#34; in c
             or &#34;grant&#34; in c
             or c in [
                 &#34;ALAND&#34;
@@ -1988,6 +2208,7 @@ False.</dd>
 <li><code><a title="dp_policy.titlei.evaluation.load_treatments" href="#dp_policy.titlei.evaluation.load_treatments">load_treatments</a></code></li>
 <li><code><a title="dp_policy.titlei.evaluation.match_true" href="#dp_policy.titlei.evaluation.match_true">match_true</a></code></li>
 <li><code><a title="dp_policy.titlei.evaluation.misalloc_statistics" href="#dp_policy.titlei.evaluation.misalloc_statistics">misalloc_statistics</a></code></li>
+<li><code><a title="dp_policy.titlei.evaluation.percentile" href="#dp_policy.titlei.evaluation.percentile">percentile</a></code></li>
 <li><code><a title="dp_policy.titlei.evaluation.plot_treatments" href="#dp_policy.titlei.evaluation.plot_treatments">plot_treatments</a></code></li>
 <li><code><a title="dp_policy.titlei.evaluation.save_treatments" href="#dp_policy.titlei.evaluation.save_treatments">save_treatments</a></code></li>
 </ul>

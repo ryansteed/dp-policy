@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L1-L596" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L1-L646" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">from dp_policy.titlei.utils import \
     weighting
@@ -338,6 +338,17 @@ class Authorizer(Allocator):
         prefix: str,
         segment_appropriation: float
     ):
+        &#34;&#34;&#34;Normalize the budget for a segment of the districts.
+
+        Args:
+            segment (pd.Series): A boolean mask indicating the segment to
+                normalize.
+            hold_harmless (pd.Series): Which districts should be held harmless.
+            grant_type (str): Grant type to normalize.
+            prefix (str): Which treatment to normalize (generally &#34;true&#34;,
+                &#34;est&#34; or &#34;dpest&#34;).
+            segment_appropriation (float): The total budget for this segment.
+        &#34;&#34;&#34;
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
                 segment &amp; hold_harmless, f&#34;{prefix}_grant_{grant_type}&#34;
@@ -353,11 +364,18 @@ class Authorizer(Allocator):
             )
 
     @staticmethod
-    def normalize_to_budget(authorizations, total_budget):
+    def normalize_to_budget(
+        authorizations: pd.Series,
+        total_budget: int
+    ) -&gt; pd.Series:
         &#34;&#34;&#34;Scale authorizations proportional to total federal budget.
 
         Args:
+            authorizations (pd.Series): Authorization amounts.
             total_budget (int): Estimated total budget for Title I this year.
+
+        Returns:
+            pd.Series: Normalized authorization amounts.
         &#34;&#34;&#34;
         return authorizations / authorizations.sum() * total_budget
 
@@ -488,6 +506,11 @@ class SonnenbergAuthorizer(Authorizer):
         self.calc_total()
 
     def _provisions(self):
+        &#34;&#34;&#34;
+        Apply post-formula provisions (hold harmless and state minimum).
+        Achieved by recursively updating allocations until all provisions are
+        satisfied.
+        &#34;&#34;&#34;
         if self.verbose:
             if self.hold_harmless:
                 print(&#34;Applying hold harmless&#34;)
@@ -529,14 +552,27 @@ class SonnenbergAuthorizer(Authorizer):
 
     def _provisions_recursive(
         self,
-        depth,
-        prefix,
-        grant_type,
-        appropriation,
-        alloc_previous,
-        held_harmless=None,
-        max_depth=10
+        depth: int,
+        prefix: str,
+        grant_type: str,
+        appropriation: float,
+        alloc_previous: pd.Series,
+        held_harmless: bool = None,
+        max_depth: int = 10
     ):
+        &#34;&#34;&#34;Apply one iteration of post-formula provisions.
+
+        Args:
+            depth (int): Current iteration of recursion.
+            prefix (str): Prefix of allocation to adjust.
+            grant_type (str): Grant type to adjust.
+            appropriation (float): Appropriation for this grant type.
+            alloc_previous (pd.Series): Previous year&#39;s allocations.
+            held_harmless (bool, optional): Boolena mask for districts to hold
+                harmless. Defaults to None.
+            max_depth (int, optional): Maximum number of iterations to run
+                before stopping. Defaults to 10.
+        &#34;&#34;&#34;
         # assume no LEAs in violation of provisions
         leas_in_violation = np.zeros(len(self.estimates)).astype(bool)
 
@@ -593,15 +629,29 @@ class SonnenbergAuthorizer(Authorizer):
         )
 
     def _excessive_loss(
-        self, prefix, grant_type, alloc_previous, harmless_rate
-    ):
+        self,
+        prefix: str,
+        grant_type: str,
+        alloc_previous: pd.Series,
+        harmless_rate: pd.Series
+    ) -&gt; pd.Series:
+        &#34;&#34;&#34;Determine whether a district has suffered excessive loss.
+
+        Returns:
+            pd.Series: Boolean mask for each district indicating whether it
+                has suffered excessive loss compared to the previous
+                year&#39;s allocation.
+        &#34;&#34;&#34;
         return (
             self.estimates[f&#34;{prefix}_grant_{grant_type}&#34;] &lt;
             harmless_rate * alloc_previous
         )
 
     @staticmethod
-    def _hold_harmless_rate(prop_eligible):
+    def _hold_harmless_rate(prop_eligible: pd.Series) -&gt; np.ndarray:
+        &#34;&#34;&#34;Determine the hold harmless rate for a district based on the
+        proportion of eligible children.
+        &#34;&#34;&#34;
         return np.where(
             prop_eligible &lt; 0.15,
             0.85,
@@ -613,9 +663,9 @@ class SonnenbergAuthorizer(Authorizer):
         )
 
     @staticmethod
-    def _state_minimum_global(grant_type):
+    def _state_minimum_global(grant_type: str) -&gt; int:
         # drawing this manually from the FY 2021 state-level data
-        # NOTE: only works (truly) for 2021 data
+        # NOTE: only works for 2021 data
         if grant_type == &#34;basic&#34;:
             return 17744098
         if grant_type == &#34;concentration&#34;:
@@ -666,7 +716,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L103-L120" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L103-L120" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class AbowdAllocator(Allocator):
     &#34;&#34;&#34;
@@ -701,7 +751,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L107-L110" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L107-L110" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     return (
@@ -753,7 +803,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L11-L100" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L11-L100" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Allocator:
     def __init__(
@@ -861,7 +911,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L79-L100" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L79-L100" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def adj_sppe(self):
     &#34;&#34;&#34;Calculate adjusted SPPE using Sonnenberg, 2016 pg. 18 algorithm.
@@ -906,7 +956,7 @@ amounts. Defaults to False.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L46-L62" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L46-L62" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def allocations(
     self,
@@ -938,7 +988,7 @@ pd.DataFrame: current estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L64-L73" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L64-L73" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def calc_auth(self):
     &#34;&#34;&#34;
@@ -960,7 +1010,7 @@ pd.DataFrame: current estimates</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L75-L77" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L75-L77" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def normalize(self):
     &#34;&#34;&#34;Normalize authorization amounts to allocation amounts.
@@ -1002,7 +1052,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L123-L333" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L123-L351" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Authorizer(Allocator):
     &#34;&#34;&#34;An allocator that uses a normalization strategy to convert
@@ -1193,6 +1243,17 @@ Defaults to None.</dd>
         prefix: str,
         segment_appropriation: float
     ):
+        &#34;&#34;&#34;Normalize the budget for a segment of the districts.
+
+        Args:
+            segment (pd.Series): A boolean mask indicating the segment to
+                normalize.
+            hold_harmless (pd.Series): Which districts should be held harmless.
+            grant_type (str): Grant type to normalize.
+            prefix (str): Which treatment to normalize (generally &#34;true&#34;,
+                &#34;est&#34; or &#34;dpest&#34;).
+            segment_appropriation (float): The total budget for this segment.
+        &#34;&#34;&#34;
         # available budget is the full budget minus hold harmless districts
         remaining_budget = segment_appropriation - self.estimates.loc[
                 segment &amp; hold_harmless, f&#34;{prefix}_grant_{grant_type}&#34;
@@ -1208,11 +1269,18 @@ Defaults to None.</dd>
             )
 
     @staticmethod
-    def normalize_to_budget(authorizations, total_budget):
+    def normalize_to_budget(
+        authorizations: pd.Series,
+        total_budget: int
+    ) -&gt; pd.Series:
         &#34;&#34;&#34;Scale authorizations proportional to total federal budget.
 
         Args:
+            authorizations (pd.Series): Authorization amounts.
             total_budget (int): Estimated total budget for Title I this year.
+
+        Returns:
+            pd.Series: Normalized authorization amounts.
         &#34;&#34;&#34;
         return authorizations / authorizations.sum() * total_budget</code></pre>
 </details>
@@ -1227,26 +1295,40 @@ Defaults to None.</dd>
 <h3>Static methods</h3>
 <dl>
 <dt id="dp_policy.titlei.allocators.Authorizer.normalize_to_budget"><code class="name flex">
-<span>def <span class="ident">normalize_to_budget</span></span>(<span>authorizations, total_budget)</span>
+<span>def <span class="ident">normalize_to_budget</span></span>(<span>authorizations: pandas.core.series.Series, total_budget: int) ‑> pandas.core.series.Series</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Scale authorizations proportional to total federal budget.</p>
 <h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>authorizations</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Authorization amounts.</dd>
 <dt><strong><code>total_budget</code></strong> :&ensp;<code>int</code></dt>
 <dd>Estimated total budget for Title I this year.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.Series</code></dt>
+<dd>Normalized authorization amounts.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L326-L333" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L337-L351" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
-def normalize_to_budget(authorizations, total_budget):
+def normalize_to_budget(
+    authorizations: pd.Series,
+    total_budget: int
+) -&gt; pd.Series:
     &#34;&#34;&#34;Scale authorizations proportional to total federal budget.
 
     Args:
+        authorizations (pd.Series): Authorization amounts.
         total_budget (int): Estimated total budget for Title I this year.
+
+    Returns:
+        pd.Series: Normalized authorization amounts.
     &#34;&#34;&#34;
     return authorizations / authorizations.sum() * total_budget</code></pre>
 </details>
@@ -1262,7 +1344,7 @@ def normalize_to_budget(authorizations, total_budget):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L130-L136" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L130-L136" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def calc_total(self):
     for prefix in self.prefixes:
@@ -1281,7 +1363,7 @@ def normalize_to_budget(authorizations, total_budget):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L127-L128" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L127-L128" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     raise NotImplementedError</code></pre>
@@ -1333,7 +1415,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L336-L596" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L354-L646" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class SonnenbergAuthorizer(Authorizer):
     &#34;&#34;&#34;Authorizer allocator described by Sonnenberg (2007). Official process
@@ -1461,6 +1543,11 @@ Defaults to None.</dd>
         self.calc_total()
 
     def _provisions(self):
+        &#34;&#34;&#34;
+        Apply post-formula provisions (hold harmless and state minimum).
+        Achieved by recursively updating allocations until all provisions are
+        satisfied.
+        &#34;&#34;&#34;
         if self.verbose:
             if self.hold_harmless:
                 print(&#34;Applying hold harmless&#34;)
@@ -1502,14 +1589,27 @@ Defaults to None.</dd>
 
     def _provisions_recursive(
         self,
-        depth,
-        prefix,
-        grant_type,
-        appropriation,
-        alloc_previous,
-        held_harmless=None,
-        max_depth=10
+        depth: int,
+        prefix: str,
+        grant_type: str,
+        appropriation: float,
+        alloc_previous: pd.Series,
+        held_harmless: bool = None,
+        max_depth: int = 10
     ):
+        &#34;&#34;&#34;Apply one iteration of post-formula provisions.
+
+        Args:
+            depth (int): Current iteration of recursion.
+            prefix (str): Prefix of allocation to adjust.
+            grant_type (str): Grant type to adjust.
+            appropriation (float): Appropriation for this grant type.
+            alloc_previous (pd.Series): Previous year&#39;s allocations.
+            held_harmless (bool, optional): Boolena mask for districts to hold
+                harmless. Defaults to None.
+            max_depth (int, optional): Maximum number of iterations to run
+                before stopping. Defaults to 10.
+        &#34;&#34;&#34;
         # assume no LEAs in violation of provisions
         leas_in_violation = np.zeros(len(self.estimates)).astype(bool)
 
@@ -1566,15 +1666,29 @@ Defaults to None.</dd>
         )
 
     def _excessive_loss(
-        self, prefix, grant_type, alloc_previous, harmless_rate
-    ):
+        self,
+        prefix: str,
+        grant_type: str,
+        alloc_previous: pd.Series,
+        harmless_rate: pd.Series
+    ) -&gt; pd.Series:
+        &#34;&#34;&#34;Determine whether a district has suffered excessive loss.
+
+        Returns:
+            pd.Series: Boolean mask for each district indicating whether it
+                has suffered excessive loss compared to the previous
+                year&#39;s allocation.
+        &#34;&#34;&#34;
         return (
             self.estimates[f&#34;{prefix}_grant_{grant_type}&#34;] &lt;
             harmless_rate * alloc_previous
         )
 
     @staticmethod
-    def _hold_harmless_rate(prop_eligible):
+    def _hold_harmless_rate(prop_eligible: pd.Series) -&gt; np.ndarray:
+        &#34;&#34;&#34;Determine the hold harmless rate for a district based on the
+        proportion of eligible children.
+        &#34;&#34;&#34;
         return np.where(
             prop_eligible &lt; 0.15,
             0.85,
@@ -1586,9 +1700,9 @@ Defaults to None.</dd>
         )
 
     @staticmethod
-    def _state_minimum_global(grant_type):
+    def _state_minimum_global(grant_type: str) -&gt; int:
         # drawing this manually from the FY 2021 state-level data
-        # NOTE: only works (truly) for 2021 data
+        # NOTE: only works for 2021 data
         if grant_type == &#34;basic&#34;:
             return 17744098
         if grant_type == &#34;concentration&#34;:
@@ -1612,7 +1726,7 @@ Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/allocators.py#L363-L368" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/allocators.py#L381-L386" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def grant_types(self):
     return (

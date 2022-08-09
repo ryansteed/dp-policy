@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L1-L682" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L1-L805" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -33,6 +33,7 @@ from tqdm import tqdm
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 import dp_policy.config as config
 from dp_policy.titlei.evaluation import \
@@ -101,6 +102,7 @@ def titlei_grid(
     verbose: bool = True,
     print_results: list = [2.52, 0.1],
     plot_results: bool = False,
+    noise_to_plot: str = &#34;children_eligible&#34;,
     alpha: float = 0.05,
     results: pd.DataFrame = None
 ):
@@ -128,6 +130,8 @@ def titlei_grid(
             results for. Defaults to [2.52, 0.1].
         plot_results (bool, optional): Whether to plot results. Defaults to
             False.
+        noise_to_plot (str, optional): Which variable to plot noise for.
+            Defaults to children_eligible.
         alpha (float, optional): Confidence level for confidence bands.
             Defaults to 0.05.
         results (pd.DataFrame, optional): Pre-computed results to plot. If
@@ -141,7 +145,7 @@ def titlei_grid(
         thresholder = allocator_kwargs.get(&#39;thresholder&#39;)
         if verbose:
             print(f&#34;{len(eps)*len(delta)*trials} iters:&#34;)
-        for trial in tqdm(range(trials), desc=&#39;trial&#39;, disable=(not verbose)):
+        for _ in tqdm(range(trials), desc=&#39;trial&#39;, disable=(not verbose)):
             for d in tqdm(delta, desc=&#39;delta&#39;, leave=False, disable=True):
                 for e in tqdm(eps, desc=&#39;eps&#39;, leave=False, disable=True):
                     mechanism = mech(e, d, **mech_kwargs)
@@ -178,41 +182,124 @@ def titlei_grid(
     if print_results:
         prefixes = [&#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;]
 
-        for e, alloc in results.groupby(&#34;epsilon&#34;):
-            if e in print_results:
-                print(f&#34;--- eps={e} ---&#34;)
-                data_error = alloc[&#34;est_children_eligible&#34;] \
-                    - alloc[&#34;true_children_eligible&#34;]
-                dp_error = alloc[&#34;dpest_children_eligible&#34;] \
-                    - alloc[&#34;est_children_eligible&#34;]
-                s = 0.5
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;], data_error,
-                    s, label=&#34;data&#34;
-                )
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;], dp_error,
-                    s, label=&#34;dp&#34;
-                )
-                plt.legend()
-                plt.xlabel(&#34;# children in poverty&#34;)
-                plt.ylabel(&#34;Noise&#34;)
-                plt.show()
+        if plot_results:
+            for e, alloc in results.groupby(&#34;epsilon&#34;):
+                if e in print_results:
+                    print(f&#34;--- eps={e} ---&#34;)
+                    data_error = alloc[f&#34;est_{noise_to_plot}&#34;] \
+                        - alloc[f&#34;true_{noise_to_plot}&#34;]
+                    dp_error = alloc[f&#34;dpest_{noise_to_plot}&#34;] \
+                        - alloc[f&#34;est_{noise_to_plot}&#34;]
 
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;],
-                    data_error/alloc[&#34;true_children_eligible&#34;],
-                    s, label=&#34;data&#34;
-                )
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;],
-                    dp_error/alloc[&#34;true_children_eligible&#34;],
-                    s, label=&#34;dp&#34;
-                )
-                plt.legend()
-                plt.xlabel(&#34;# children in poverty&#34;)
-                plt.ylabel(&#34;Noise per child in poverty&#34;)
-                plt.show()
+                    s = 1
+                    # plt.scatter(
+                    #     np.log(alloc[&#34;true_children_eligible&#34;]), data_error,
+                    #     s, label=&#34;Data deviations&#34;
+                    # )
+                    # plt.scatter(
+                    #     np.log(alloc[&#34;true_children_eligible&#34;]), dp_error,
+                    #     s, label=&#34;Privacy deviations&#34;
+                    # )
+                    df = pd.melt(
+                        pd.DataFrame({
+                            &#34;Privacy&#34;: dp_error,
+                            &#34;Data&#34;: data_error,
+                            &#34;Log count&#34;:
+                                np.log(alloc[f&#34;true_{noise_to_plot}&#34;])
+                        }).reset_index(),
+                        id_vars=[
+                            &#34;trial&#34;,
+                            &#34;State FIPS Code&#34;,
+                            &#34;District ID&#34;,
+                            &#34;Log count&#34;
+                        ],
+                        value_vars=[&#34;Data&#34;, &#34;Privacy&#34;],
+                        var_name=&#34;Deviation&#34;,
+                        value_name=&#34;Noise&#34;
+                    )
+
+                    sns.scatterplot(
+                        data=df,
+                        x=&#34;Log count&#34;,
+                        y=&#34;Noise&#34;,
+                        hue=&#34;Deviation&#34;,
+                        s=s,
+                        alpha=0.5,
+                        palette=(&#39;#5D3A9B&#39;, &#34;#E66100&#34;),
+                        rasterized=True
+                    )
+                    plt.legend()
+                    plt.xlabel(&#34;Log count&#34;)
+                    plt.ylabel(&#34;Noise&#34;)
+                    plt.savefig(os.path.join(
+                        config.root,
+                        f&#34;plots/robustness/noise_poverty_eps={e}.pdf&#34;
+                        if noise_to_plot == &#34;children_eligible&#34; else
+                        &#34;plots/robustness/noise_poverty_eps={}_{}.pdf&#34;.format(
+                            e,
+                            noise_to_plot
+                        )
+                    ), transparent=True, dpi=100)
+                    plt.show()
+
+                    # plt.scatter(
+                    #     alloc[&#34;true_children_eligible&#34;],
+                    #     data_error/alloc[&#34;true_children_eligible&#34;],
+                    #     s, label=&#34;data&#34;
+                    # )
+                    # plt.scatter(
+                    #     alloc[&#34;true_children_eligible&#34;],
+                    #     dp_error/alloc[&#34;true_children_eligible&#34;],
+                    #     s, label=&#34;dp&#34;
+                    # )
+                    # plt.legend()
+                    # plt.xlabel(&#34;# children in poverty&#34;)
+                    # plt.ylabel(&#34;Noise per child in poverty&#34;)
+                    # plt.show()
+
+                    r = (
+                        min(
+                            data_error.quantile(0.05),
+                            dp_error.quantile(0.05)
+                        ),
+                        max(
+                            data_error.quantile(0.95),
+                            dp_error.quantile(0.95)
+                        )
+                    )
+                    alpha = 0.25
+                    sns.histplot(
+                        df,
+                        x=&#34;Noise&#34;,
+                        hue=&#34;Deviation&#34;,
+                        bins=75,
+                        binrange=r,
+                        alpha=alpha,
+                        # kde=True,
+                        # stat=&#34;density&#34;,
+                        # linewidth=0,
+                        # kde_kws=dict(
+                        #     clip=range
+                        # ),
+                        palette=(&#39;#5D3A9B&#39;, &#34;#E66100&#34;)
+                        # label=&#34;Data deviations&#34;,
+                        # color=&#39;#5D3A9B&#39;
+                    )
+                    # plt.legend()
+                    plt.xlabel(&#34;Added noise&#34;)
+                    plt.savefig(
+                        os.path.join(
+                            config.root,
+                            f&#34;plots/robustness/noise_eps={e}.pdf&#34;
+                            if noise_to_plot == &#34;children_eligible&#34; else
+                            &#34;plots/robustness/noise_eps={}_{}.pdf&#34;.format(
+                                e,
+                                noise_to_plot
+                            )
+                        ),
+                        transparent=True
+                    )
+                    plt.show()
 
         for prefix in prefixes:
             print(&#34;##&#34;, prefix)
@@ -230,7 +317,7 @@ def titlei_grid(
                             grant_type=grant_type
                         )
 
-            if plot_results:
+            if plot_results and len(eps) &gt; 2:
                 trials = len(np.unique(
                     results.index.get_level_values(&#34;trial&#34;)
                 ))
@@ -264,7 +351,7 @@ def titlei_grid(
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        &#34;plots/robustness/eps_sensitivity_frontier.png&#34;
+                        &#34;plots/robustness/eps_sensitivity_frontier.pdf&#34;
                     ),
                     dpi=300
                 )
@@ -283,7 +370,8 @@ class Experiment:
         year: int = 2021,
         trials: int = 1000,
         eps: List[float] = [0.1],
-        delta: List[float] = [0.0]
+        delta: List[float] = [0.0],
+        no_match_true: bool = False
     ):
         &#34;&#34;&#34;Initialize experiment and set baseline.
 
@@ -299,11 +387,15 @@ class Experiment:
                 [0.1].
             delta (List[float], optional): Values of delta to try. Defaults to
                 [0.0].
+            no_match_true (bool, optional): Whether to use different baselines
+                for policies that modify the allocation procedure. Default is
+                to use the same baseline for both.
         &#34;&#34;&#34;
-        self.name = name
+        self.name = name if not no_match_true else f&#34;{name}_unmatched&#34;
         self.trials = trials
         self.eps = eps
         self.delta = delta
+        self.match_true = not no_match_true
         self.saipe = get_inputs(year)
 
         if str(baseline) == &#34;cached&#34;:
@@ -380,7 +472,8 @@ class Experiment:
             &#39;epsilon&#39;: Epsilon,
             &#39;moving_average&#39;: MovingAverage,
             &#39;budget&#39;: Budget,
-            &#39;sampling&#39;: Sampling
+            &#39;sampling&#39;: Sampling,
+            &#39;vary_total_children&#39;: VaryTotalChildren
         }
         Exp = experiments.get(name)
         if Exp is None:
@@ -422,8 +515,9 @@ class HoldHarmless(Experiment):
                 &#39;state_minimum&#39;: True
             }
         )
-        # ground truths are the same
-        match_true(self.baseline, [hold_harmless, state_minimum, both])
+        if self.match_true:
+            # ground truths are the same
+            match_true(self.baseline, [hold_harmless, state_minimum, both])
 
         # save treatments to file for later
         return {
@@ -461,7 +555,8 @@ class PostProcessing(Experiment):
             ),
             print_results=False
         )
-        match_true(self.baseline, [none, rounding])
+        if self.match_true:
+            match_true(self.baseline, [none, rounding])
         return {
             &#39;None&#39;: none,
             &#39;Clipping (baseline)&#39;: clipping,
@@ -506,7 +601,8 @@ class MovingAverage(Experiment):
             )
             for i in range(4)
         ]
-        match_true(averaged[-1], [single_year] + averaged[:-1])
+        if self.match_true:
+            match_true(averaged[-1], [single_year] + averaged[:-1])
         return {
             &#39;Lag 0&#39;: single_year,
             **{f&#34;Lag {i+1}&#34;: a for i, a in enumerate(averaged)}
@@ -584,8 +680,8 @@ class Thresholds(Experiment):
             },
             print_results=False
         )
-
-        match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
+        if self.match_true:
+            match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
         return {
             &#39;None&#39;: none,
             &#39;Hard (baseline)&#39;: hard,
@@ -601,7 +697,12 @@ class Budget(Experiment):
     &#34;&#34;&#34;
     def _get_treatments(self):
         if len(self.eps) &gt; 0:
-            print(&#34;[WARN] Using first value of epsilon for budget calcs.&#34;)
+            print(
+                &#34;[WARN] Using first value of epsilon &#34;
+                &#34;{} for budget calcs.&#34;.format(
+                    self.baseline.index.get_level_values(&#34;epsilon&#34;)[0]
+                )
+            )
 
         e = self.eps[0]
         alpha = 0.05
@@ -650,7 +751,8 @@ class Budget(Experiment):
                 }
             ) for name, budget in budgets.items()
         }
-        match_true(self.baseline, list(treatments.values()))
+        if self.match_true:
+            match_true(self.baseline, list(treatments.values()))
         treatments[&#34;FY2019 appropriation (baseline)&#34;] = test
 
         return treatments
@@ -708,6 +810,27 @@ class Sampling(Experiment):
         return {
             **gaussian,
             **laplace
+        }
+
+
+class VaryTotalChildren(Experiment):
+    &#34;&#34;&#34;Robustness check: what happens if the # of total children is not fixed?
+    &#34;&#34;&#34;
+    def _get_treatments(self):
+        varies = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials, print_results=False,
+            mech_kwargs=dict(
+                noise_total=True
+            ),
+            sampling_kwargs=dict(
+                noise_total=True
+            )
+        )
+        return {
+            &#39;Total number of children is fixed (baseline)&#39;: self.baseline,
+            &#39;Total number of children varies&#39;: varies
         }</code></pre>
 </details>
 </section>
@@ -753,7 +876,7 @@ ground truth, sampling, and privacy randomization.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L22-L59" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L23-L60" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_funding(
     allocator: Allocator,
@@ -796,7 +919,7 @@ ground truth, sampling, and privacy randomization.</dd>
 </details>
 </dd>
 <dt id="dp_policy.experiments.titlei_grid"><code class="name flex">
-<span>def <span class="ident">titlei_grid</span></span>(<span>inputs: pandas.core.frame.DataFrame, mech: <a title="dp_policy.titlei.mechanisms.Mechanism" href="titlei/mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, eps: list = [0.001, 0.027825594022071243, 0.774263682681127, 21.54434690031882, 599.4842503189409, 16681.005372000593, 464158.8833612772, 12915496.650148828, 359381366.3804626, 10000000000.0, 2.52], delta: list = [0.0], trials: int = 100, mech_kwargs: dict = {}, auth: bool = False, allocator_kwargs: dict = {}, sampling_kwargs: dict = {}, verbose: bool = True, print_results: list = [2.52, 0.1], plot_results: bool = False, alpha: float = 0.05, results: pandas.core.frame.DataFrame = None)</span>
+<span>def <span class="ident">titlei_grid</span></span>(<span>inputs: pandas.core.frame.DataFrame, mech: <a title="dp_policy.titlei.mechanisms.Mechanism" href="titlei/mechanisms.html#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a>, eps: list = [0.001, 0.027825594022071243, 0.774263682681127, 21.54434690031882, 599.4842503189409, 16681.005372000593, 464158.8833612772, 12915496.650148828, 359381366.3804626, 10000000000.0, 2.52], delta: list = [0.0], trials: int = 100, mech_kwargs: dict = {}, auth: bool = False, allocator_kwargs: dict = {}, sampling_kwargs: dict = {}, verbose: bool = True, print_results: list = [2.52, 0.1], plot_results: bool = False, noise_to_plot: str = 'children_eligible', alpha: float = 0.05, results: pandas.core.frame.DataFrame = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run many trials of Title I process under different privacy parameters.</p>
@@ -835,6 +958,9 @@ results for. Defaults to [2.52, 0.1].</dd>
 <dt><strong><code>plot_results</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>Whether to plot results. Defaults to
 False.</dd>
+<dt><strong><code>noise_to_plot</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Which variable to plot noise for.
+Defaults to children_eligible.</dd>
 <dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>Confidence level for confidence bands.
 Defaults to 0.05.</dd>
@@ -850,7 +976,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L62-L244" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L63-L331" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_grid(
     inputs: pd.DataFrame,
@@ -865,6 +991,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
     verbose: bool = True,
     print_results: list = [2.52, 0.1],
     plot_results: bool = False,
+    noise_to_plot: str = &#34;children_eligible&#34;,
     alpha: float = 0.05,
     results: pd.DataFrame = None
 ):
@@ -892,6 +1019,8 @@ provided, will skip grid calculation. Defaults to None.</dd>
             results for. Defaults to [2.52, 0.1].
         plot_results (bool, optional): Whether to plot results. Defaults to
             False.
+        noise_to_plot (str, optional): Which variable to plot noise for.
+            Defaults to children_eligible.
         alpha (float, optional): Confidence level for confidence bands.
             Defaults to 0.05.
         results (pd.DataFrame, optional): Pre-computed results to plot. If
@@ -905,7 +1034,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
         thresholder = allocator_kwargs.get(&#39;thresholder&#39;)
         if verbose:
             print(f&#34;{len(eps)*len(delta)*trials} iters:&#34;)
-        for trial in tqdm(range(trials), desc=&#39;trial&#39;, disable=(not verbose)):
+        for _ in tqdm(range(trials), desc=&#39;trial&#39;, disable=(not verbose)):
             for d in tqdm(delta, desc=&#39;delta&#39;, leave=False, disable=True):
                 for e in tqdm(eps, desc=&#39;eps&#39;, leave=False, disable=True):
                     mechanism = mech(e, d, **mech_kwargs)
@@ -942,41 +1071,124 @@ provided, will skip grid calculation. Defaults to None.</dd>
     if print_results:
         prefixes = [&#34;est&#34;, &#34;dp&#34;, &#34;dpest&#34;]
 
-        for e, alloc in results.groupby(&#34;epsilon&#34;):
-            if e in print_results:
-                print(f&#34;--- eps={e} ---&#34;)
-                data_error = alloc[&#34;est_children_eligible&#34;] \
-                    - alloc[&#34;true_children_eligible&#34;]
-                dp_error = alloc[&#34;dpest_children_eligible&#34;] \
-                    - alloc[&#34;est_children_eligible&#34;]
-                s = 0.5
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;], data_error,
-                    s, label=&#34;data&#34;
-                )
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;], dp_error,
-                    s, label=&#34;dp&#34;
-                )
-                plt.legend()
-                plt.xlabel(&#34;# children in poverty&#34;)
-                plt.ylabel(&#34;Noise&#34;)
-                plt.show()
+        if plot_results:
+            for e, alloc in results.groupby(&#34;epsilon&#34;):
+                if e in print_results:
+                    print(f&#34;--- eps={e} ---&#34;)
+                    data_error = alloc[f&#34;est_{noise_to_plot}&#34;] \
+                        - alloc[f&#34;true_{noise_to_plot}&#34;]
+                    dp_error = alloc[f&#34;dpest_{noise_to_plot}&#34;] \
+                        - alloc[f&#34;est_{noise_to_plot}&#34;]
 
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;],
-                    data_error/alloc[&#34;true_children_eligible&#34;],
-                    s, label=&#34;data&#34;
-                )
-                plt.scatter(
-                    alloc[&#34;true_children_eligible&#34;],
-                    dp_error/alloc[&#34;true_children_eligible&#34;],
-                    s, label=&#34;dp&#34;
-                )
-                plt.legend()
-                plt.xlabel(&#34;# children in poverty&#34;)
-                plt.ylabel(&#34;Noise per child in poverty&#34;)
-                plt.show()
+                    s = 1
+                    # plt.scatter(
+                    #     np.log(alloc[&#34;true_children_eligible&#34;]), data_error,
+                    #     s, label=&#34;Data deviations&#34;
+                    # )
+                    # plt.scatter(
+                    #     np.log(alloc[&#34;true_children_eligible&#34;]), dp_error,
+                    #     s, label=&#34;Privacy deviations&#34;
+                    # )
+                    df = pd.melt(
+                        pd.DataFrame({
+                            &#34;Privacy&#34;: dp_error,
+                            &#34;Data&#34;: data_error,
+                            &#34;Log count&#34;:
+                                np.log(alloc[f&#34;true_{noise_to_plot}&#34;])
+                        }).reset_index(),
+                        id_vars=[
+                            &#34;trial&#34;,
+                            &#34;State FIPS Code&#34;,
+                            &#34;District ID&#34;,
+                            &#34;Log count&#34;
+                        ],
+                        value_vars=[&#34;Data&#34;, &#34;Privacy&#34;],
+                        var_name=&#34;Deviation&#34;,
+                        value_name=&#34;Noise&#34;
+                    )
+
+                    sns.scatterplot(
+                        data=df,
+                        x=&#34;Log count&#34;,
+                        y=&#34;Noise&#34;,
+                        hue=&#34;Deviation&#34;,
+                        s=s,
+                        alpha=0.5,
+                        palette=(&#39;#5D3A9B&#39;, &#34;#E66100&#34;),
+                        rasterized=True
+                    )
+                    plt.legend()
+                    plt.xlabel(&#34;Log count&#34;)
+                    plt.ylabel(&#34;Noise&#34;)
+                    plt.savefig(os.path.join(
+                        config.root,
+                        f&#34;plots/robustness/noise_poverty_eps={e}.pdf&#34;
+                        if noise_to_plot == &#34;children_eligible&#34; else
+                        &#34;plots/robustness/noise_poverty_eps={}_{}.pdf&#34;.format(
+                            e,
+                            noise_to_plot
+                        )
+                    ), transparent=True, dpi=100)
+                    plt.show()
+
+                    # plt.scatter(
+                    #     alloc[&#34;true_children_eligible&#34;],
+                    #     data_error/alloc[&#34;true_children_eligible&#34;],
+                    #     s, label=&#34;data&#34;
+                    # )
+                    # plt.scatter(
+                    #     alloc[&#34;true_children_eligible&#34;],
+                    #     dp_error/alloc[&#34;true_children_eligible&#34;],
+                    #     s, label=&#34;dp&#34;
+                    # )
+                    # plt.legend()
+                    # plt.xlabel(&#34;# children in poverty&#34;)
+                    # plt.ylabel(&#34;Noise per child in poverty&#34;)
+                    # plt.show()
+
+                    r = (
+                        min(
+                            data_error.quantile(0.05),
+                            dp_error.quantile(0.05)
+                        ),
+                        max(
+                            data_error.quantile(0.95),
+                            dp_error.quantile(0.95)
+                        )
+                    )
+                    alpha = 0.25
+                    sns.histplot(
+                        df,
+                        x=&#34;Noise&#34;,
+                        hue=&#34;Deviation&#34;,
+                        bins=75,
+                        binrange=r,
+                        alpha=alpha,
+                        # kde=True,
+                        # stat=&#34;density&#34;,
+                        # linewidth=0,
+                        # kde_kws=dict(
+                        #     clip=range
+                        # ),
+                        palette=(&#39;#5D3A9B&#39;, &#34;#E66100&#34;)
+                        # label=&#34;Data deviations&#34;,
+                        # color=&#39;#5D3A9B&#39;
+                    )
+                    # plt.legend()
+                    plt.xlabel(&#34;Added noise&#34;)
+                    plt.savefig(
+                        os.path.join(
+                            config.root,
+                            f&#34;plots/robustness/noise_eps={e}.pdf&#34;
+                            if noise_to_plot == &#34;children_eligible&#34; else
+                            &#34;plots/robustness/noise_eps={}_{}.pdf&#34;.format(
+                                e,
+                                noise_to_plot
+                            )
+                        ),
+                        transparent=True
+                    )
+                    plt.show()
 
         for prefix in prefixes:
             print(&#34;##&#34;, prefix)
@@ -994,7 +1206,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
                             grant_type=grant_type
                         )
 
-            if plot_results:
+            if plot_results and len(eps) &gt; 2:
                 trials = len(np.unique(
                     results.index.get_level_values(&#34;trial&#34;)
                 ))
@@ -1028,7 +1240,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
                 plt.savefig(
                     os.path.join(
                         config.root,
-                        &#34;plots/robustness/eps_sensitivity_frontier.png&#34;
+                        &#34;plots/robustness/eps_sensitivity_frontier.pdf&#34;
                     ),
                     dpi=300
                 )
@@ -1044,7 +1256,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
 <dl>
 <dt id="dp_policy.experiments.Baseline"><code class="flex name class">
 <span>class <span class="ident">Baseline</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Baseline condition only.</p>
@@ -1068,11 +1280,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L362-L368" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L455-L461" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Baseline(Experiment):
     &#34;&#34;&#34;Baseline condition only.
@@ -1100,7 +1316,7 @@ Defaults to 1000.</dd>
 </dd>
 <dt id="dp_policy.experiments.Budget"><code class="flex name class">
 <span>class <span class="ident">Budget</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Budget experiments.</p>
@@ -1124,18 +1340,27 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L570-L627" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L666-L729" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Budget(Experiment):
     &#34;&#34;&#34;Budget experiments.
     &#34;&#34;&#34;
     def _get_treatments(self):
         if len(self.eps) &gt; 0:
-            print(&#34;[WARN] Using first value of epsilon for budget calcs.&#34;)
+            print(
+                &#34;[WARN] Using first value of epsilon &#34;
+                &#34;{} for budget calcs.&#34;.format(
+                    self.baseline.index.get_level_values(&#34;epsilon&#34;)[0]
+                )
+            )
 
         e = self.eps[0]
         alpha = 0.05
@@ -1184,7 +1409,8 @@ Defaults to 1000.</dd>
                 }
             ) for name, budget in budgets.items()
         }
-        match_true(self.baseline, list(treatments.values()))
+        if self.match_true:
+            match_true(self.baseline, list(treatments.values()))
         treatments[&#34;FY2019 appropriation (baseline)&#34;] = test
 
         return treatments</code></pre>
@@ -1207,7 +1433,7 @@ Defaults to 1000.</dd>
 </dd>
 <dt id="dp_policy.experiments.Epsilon"><code class="flex name class">
 <span>class <span class="ident">Epsilon</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Privacy parameter experiments.</p>
@@ -1231,11 +1457,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L630-L648" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L732-L750" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Epsilon(Experiment):
     &#34;&#34;&#34;Privacy parameter experiments.
@@ -1275,7 +1505,7 @@ Defaults to 1000.</dd>
 </dd>
 <dt id="dp_policy.experiments.Experiment"><code class="flex name class">
 <span>class <span class="ident">Experiment</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Handles running and setting experiments.</p>
@@ -1299,11 +1529,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L247-L359" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L334-L452" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Experiment:
     &#34;&#34;&#34;Handles running and setting experiments.
@@ -1315,7 +1549,8 @@ Defaults to 1000.</dd>
         year: int = 2021,
         trials: int = 1000,
         eps: List[float] = [0.1],
-        delta: List[float] = [0.0]
+        delta: List[float] = [0.0],
+        no_match_true: bool = False
     ):
         &#34;&#34;&#34;Initialize experiment and set baseline.
 
@@ -1331,11 +1566,15 @@ Defaults to 1000.</dd>
                 [0.1].
             delta (List[float], optional): Values of delta to try. Defaults to
                 [0.0].
+            no_match_true (bool, optional): Whether to use different baselines
+                for policies that modify the allocation procedure. Default is
+                to use the same baseline for both.
         &#34;&#34;&#34;
-        self.name = name
+        self.name = name if not no_match_true else f&#34;{name}_unmatched&#34;
         self.trials = trials
         self.eps = eps
         self.delta = delta
+        self.match_true = not no_match_true
         self.saipe = get_inputs(year)
 
         if str(baseline) == &#34;cached&#34;:
@@ -1412,7 +1651,8 @@ Defaults to 1000.</dd>
             &#39;epsilon&#39;: Epsilon,
             &#39;moving_average&#39;: MovingAverage,
             &#39;budget&#39;: Budget,
-            &#39;sampling&#39;: Sampling
+            &#39;sampling&#39;: Sampling,
+            &#39;vary_total_children&#39;: VaryTotalChildren
         }
         Exp = experiments.get(name)
         if Exp is None:
@@ -1429,6 +1669,7 @@ Defaults to 1000.</dd>
 <li><a title="dp_policy.experiments.PostProcessing" href="#dp_policy.experiments.PostProcessing">PostProcessing</a></li>
 <li><a title="dp_policy.experiments.Sampling" href="#dp_policy.experiments.Sampling">Sampling</a></li>
 <li><a title="dp_policy.experiments.Thresholds" href="#dp_policy.experiments.Thresholds">Thresholds</a></li>
+<li><a title="dp_policy.experiments.VaryTotalChildren" href="#dp_policy.experiments.VaryTotalChildren">VaryTotalChildren</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
@@ -1452,7 +1693,7 @@ Defaults to 1000.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L331-L359" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L423-L452" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
 def get_experiment(
@@ -1477,7 +1718,8 @@ def get_experiment(
         &#39;epsilon&#39;: Epsilon,
         &#39;moving_average&#39;: MovingAverage,
         &#39;budget&#39;: Budget,
-        &#39;sampling&#39;: Sampling
+        &#39;sampling&#39;: Sampling,
+        &#39;vary_total_children&#39;: VaryTotalChildren
     }
     Exp = experiments.get(name)
     if Exp is None:
@@ -1496,7 +1738,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L320-L323" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L412-L415" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_join(self, **join_kwargs):
     &#34;&#34;&#34;Join the results to demographic covariates and save.
@@ -1512,7 +1754,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L325-L329" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L417-L421" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot(self, **kwargs):
     &#34;&#34;&#34;Print and plot the results, comparing treatments.
@@ -1529,7 +1771,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L308-L313" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L400-L405" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def run(self):
     &#34;&#34;&#34;Run the experiment, save results, and create joined covariate file.
@@ -1543,7 +1785,7 @@ def get_experiment(
 </dd>
 <dt id="dp_policy.experiments.HoldHarmless"><code class="flex name class">
 <span>class <span class="ident">HoldHarmless</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Hold harmless and state minimum provisions.</p>
@@ -1567,11 +1809,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L371-L405" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L464-L499" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class HoldHarmless(Experiment):
     &#34;&#34;&#34;Hold harmless and state minimum provisions.
@@ -1598,8 +1844,9 @@ Defaults to 1000.</dd>
                 &#39;state_minimum&#39;: True
             }
         )
-        # ground truths are the same
-        match_true(self.baseline, [hold_harmless, state_minimum, both])
+        if self.match_true:
+            # ground truths are the same
+            match_true(self.baseline, [hold_harmless, state_minimum, both])
 
         # save treatments to file for later
         return {
@@ -1645,7 +1892,7 @@ the 5-year average as the baseline. Defaults to "average".</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L443-L484" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L538-L580" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class MovingAverage(Experiment):
     &#34;&#34;&#34;Moving average inputs, with multiple lag conditions.
@@ -1684,7 +1931,8 @@ the 5-year average as the baseline. Defaults to "average".</dd>
             )
             for i in range(4)
         ]
-        match_true(averaged[-1], [single_year] + averaged[:-1])
+        if self.match_true:
+            match_true(averaged[-1], [single_year] + averaged[:-1])
         return {
             &#39;Lag 0&#39;: single_year,
             **{f&#34;Lag {i+1}&#34;: a for i, a in enumerate(averaged)}
@@ -1708,7 +1956,7 @@ the 5-year average as the baseline. Defaults to "average".</dd>
 </dd>
 <dt id="dp_policy.experiments.PostProcessing"><code class="flex name class">
 <span>class <span class="ident">PostProcessing</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Post-processing variations: none, clipping, and clipping + rounding.</p>
@@ -1732,11 +1980,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L408-L440" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L502-L535" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class PostProcessing(Experiment):
     &#34;&#34;&#34;Post-processing variations: none, clipping, and clipping + rounding.
@@ -1765,7 +2017,8 @@ Defaults to 1000.</dd>
             ),
             print_results=False
         )
-        match_true(self.baseline, [none, rounding])
+        if self.match_true:
+            match_true(self.baseline, [none, rounding])
         return {
             &#39;None&#39;: none,
             &#39;Clipping (baseline)&#39;: clipping,
@@ -1790,7 +2043,7 @@ Defaults to 1000.</dd>
 </dd>
 <dt id="dp_policy.experiments.Sampling"><code class="flex name class">
 <span>class <span class="ident">Sampling</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Sampling error experiments.</p>
@@ -1814,11 +2067,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L651-L682" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L753-L784" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Sampling(Experiment):
     &#34;&#34;&#34;Sampling error experiments.
@@ -1871,7 +2128,7 @@ Defaults to 1000.</dd>
 </dd>
 <dt id="dp_policy.experiments.Thresholds"><code class="flex name class">
 <span>class <span class="ident">Thresholds</span></span>
-<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0])</span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Thresholding experiments.</p>
@@ -1895,11 +2152,15 @@ Defaults to 1000.</dd>
 <dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
 <dd>Values of delta to try. Defaults to
 [0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/experiments.py#L487-L567" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L583-L663" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Thresholds(Experiment):
     &#34;&#34;&#34;Thresholding experiments.
@@ -1972,8 +2233,8 @@ Defaults to 1000.</dd>
             },
             print_results=False
         )
-
-        match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
+        if self.match_true:
+            match_true(hard, [averaged, repeat2, repeat3, none, moe_01])
         return {
             &#39;None&#39;: none,
             &#39;Hard (baseline)&#39;: hard,
@@ -1981,6 +2242,78 @@ Defaults to 1000.</dd>
             &#39;Repeated years (2)&#39;: repeat2,
             &#39;Repeated years (3)&#39;: repeat3,
             &#39;Margin of error (90%)&#39;: moe_01
+        }</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="dp_policy.experiments.Experiment" href="#dp_policy.experiments.Experiment">Experiment</a></b></code>:
+<ul class="hlist">
+<li><code><a title="dp_policy.experiments.Experiment.discrimination_join" href="#dp_policy.experiments.Experiment.discrimination_join">discrimination_join</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.get_experiment" href="#dp_policy.experiments.Experiment.get_experiment">get_experiment</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.plot" href="#dp_policy.experiments.Experiment.plot">plot</a></code></li>
+<li><code><a title="dp_policy.experiments.Experiment.run" href="#dp_policy.experiments.Experiment.run">run</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="dp_policy.experiments.VaryTotalChildren"><code class="flex name class">
+<span>class <span class="ident">VaryTotalChildren</span></span>
+<span>(</span><span>name: str, baseline: Union[str, pandas.core.frame.DataFrame] = 'cached', year: int = 2021, trials: int = 1000, eps: List[float] = [0.1], delta: List[float] = [0.0], no_match_true: bool = False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Robustness check: what happens if the # of total children is not fixed?</p>
+<p>Initialize experiment and set baseline.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Experiment name.</dd>
+<dt><strong><code>baseline</code></strong> :&ensp;<code>Union[str, pd.DataFrame]</code>, optional</dt>
+<dd>What baseline
+(control) results to use. Defaults to "cached".</dd>
+<dt><strong><code>year</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>What year to get inputs for. Defaults to
+2021.</dd>
+<dt><strong><code>trials</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of trials to run for each condition.
+Defaults to 1000.</dd>
+<dt><strong><code>eps</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of epsilon to try. Defaults to
+[0.1].</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>List[float]</code>, optional</dt>
+<dd>Values of delta to try. Defaults to
+[0.0].</dd>
+<dt><strong><code>no_match_true</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to use different baselines
+for policies that modify the allocation procedure. Default is
+to use the same baseline for both.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/experiments.py#L787-L805" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">class VaryTotalChildren(Experiment):
+    &#34;&#34;&#34;Robustness check: what happens if the # of total children is not fixed?
+    &#34;&#34;&#34;
+    def _get_treatments(self):
+        varies = titlei_grid(
+            self.saipe, Laplace,
+            eps=self.eps, delta=self.delta,
+            trials=self.trials, print_results=False,
+            mech_kwargs=dict(
+                noise_total=True
+            ),
+            sampling_kwargs=dict(
+                noise_total=True
+            )
+        )
+        return {
+            &#39;Total number of children is fixed (baseline)&#39;: self.baseline,
+            &#39;Total number of children varies&#39;: varies
         }</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -2053,6 +2386,9 @@ Defaults to 1000.</dd>
 </li>
 <li>
 <h4><code><a title="dp_policy.experiments.Thresholds" href="#dp_policy.experiments.Thresholds">Thresholds</a></code></h4>
+</li>
+<li>
+<h4><code><a title="dp_policy.experiments.VaryTotalChildren" href="#dp_policy.experiments.VaryTotalChildren">VaryTotalChildren</a></code></h4>
 </li>
 </ul>
 </li>

@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L1-L165" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L1-L204" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import pandas as pd
 from typing import Tuple
@@ -41,22 +41,42 @@ class Mechanism:
     poverty estimates.
     &#34;&#34;&#34;
     def __init__(
-        self, sensitivity=2.0, round=False, clip=True
+        self, sensitivity=2.0, round=False, clip=True, noise_total=False
     ):
         self.sensitivity = sensitivity
         self.round = round
         self.clip = clip
+        self.noise_total = noise_total
 
     def poverty_estimates(
-        self, pop_total, children_total, children_poverty
+        self,
+        pop_total: pd.Series,
+        children_total: pd.Series,
+        children_poverty: pd.Series
     ) -&gt; Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        &#34;&#34;&#34;
-        Returns dataframe for children in poverty, children total, and total
+        &#34;&#34;&#34;Returns dataframe for children in poverty, children total, and total
         population indexed by district ID.
+
+        Args:
+            pop_total (pd.Series): Total population in each district.
+            children_total (pd.Series): Total children in each district.
+            children_poverty (pd.Series): Children in poverty in each district.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Noised versions
+                of the input tuples.
         &#34;&#34;&#34;
         raise NotImplementedError
 
-    def post_processing(self, count):
+    def post_processing(self, count: pd.Series) -&gt; pd.Series:
+        &#34;&#34;&#34;Post processing methods for noised counts. (Rounding or clipping.)
+
+        Args:
+            count (pd.Series): Noised count to process.
+
+        Returns:
+            pd.Series: Processed count.
+        &#34;&#34;&#34;
         if self.round:
             count = np.round(count)
         if self.clip:
@@ -104,11 +124,11 @@ class DiffPriv(Mechanism):
         if self.mechanism is None:
             raise NotImplementedError
 
-        # NOTE: as of 3/21, only adding noise to poverty estimate
+        # NOTE: as of 3/21, by default only adding noise to poverty estimate
         # (for consistency with sampling, where est. var. is unavailable)
-        # pop_total = pop_total.apply(self.mechanism.randomise)
-        # children_total = children_total.apply(self.mechanism.randomise)
         children_poverty = children_poverty.apply(self.mechanism.randomise)
+        if self.noise_total:
+            children_total = children_total.apply(self.mechanism.randomise)
 
         # print(&#34;After estimation, privacy acc:&#34;, self.accountant.total())
         # no negative values, please
@@ -168,30 +188,49 @@ class Sampled(Mechanism):
     def poverty_estimates(
         self, pop_total, children_total, children_poverty, cv
     ):
+        children_poverty = self._noise(children_poverty, cv)
+        if self.noise_total:
+            # NOTE: assuming CVs are same for total children.
+            # This is beyond Census guidance.
+            children_total = self._noise(children_total, cv)
+
+        return self.post_processing(pop_total), \
+            self.post_processing(children_total), \
+            self.post_processing(children_poverty)
+
+    def _noise(self, count: pd.Series, cv: pd.Series) -&gt; pd.Series:
+        &#34;&#34;&#34;Add sampling noise.
+
+        Args:
+            count (pd.Series): Count to add sampling noise to.
+            cv (pd.Series): Coefficients of variation to use for sampling
+                variance.
+
+        Returns:
+            pd.Series: Noised counts.
+        &#34;&#34;&#34;
         if self.distribution == &#34;gaussian&#34;:
             noised = np.random.normal(
-                children_poverty,  # mean
-                children_poverty * cv * self.multiplier  # stderr
+                count,  # mean
+                count * cv * self.multiplier  # stderr
             )
         elif self.distribution == &#34;laplace&#34;:
             noised = np.random.laplace(
                 # mean
-                children_poverty,
-                # variance is 2b^2, so b = stderr * np.sqrt ( 1/2 )
-                np.sqrt(0.5) * children_poverty * cv * self.multiplier
+                count,
+                # variance is 2b^2 = (count * cv)^2
+                # b = count * cv * sqrt(1/2)
+                np.sqrt(0.5) * count * cv * self.multiplier
             )
         else:
             raise ValueError(
                 f&#34;{self.distribution} is not a valid distribution.&#34;
             )
-        children_poverty = np.clip(
+        return np.clip(
             noised,
             0,
             None
-        )
-        return self.post_processing(pop_total), \
-            self.post_processing(children_total), \
-            self.post_processing(children_poverty)</code></pre>
+        )</code></pre>
 </details>
 </section>
 <section>
@@ -212,7 +251,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L57-L89" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L77-L109" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class DiffPriv(Mechanism):
     &#34;&#34;&#34;Differentially private mechanisms wrapping `diffprivlib`.
@@ -235,11 +274,11 @@ class Sampled(Mechanism):
         if self.mechanism is None:
             raise NotImplementedError
 
-        # NOTE: as of 3/21, only adding noise to poverty estimate
+        # NOTE: as of 3/21, by default only adding noise to poverty estimate
         # (for consistency with sampling, where est. var. is unavailable)
-        # pop_total = pop_total.apply(self.mechanism.randomise)
-        # children_total = children_total.apply(self.mechanism.randomise)
         children_poverty = children_poverty.apply(self.mechanism.randomise)
+        if self.noise_total:
+            children_total = children_total.apply(self.mechanism.randomise)
 
         # print(&#34;After estimation, privacy acc:&#34;, self.accountant.total())
         # no negative values, please
@@ -261,6 +300,7 @@ class Sampled(Mechanism):
 <ul class="hlist">
 <li><code><b><a title="dp_policy.titlei.mechanisms.Mechanism" href="#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a></b></code>:
 <ul class="hlist">
+<li><code><a title="dp_policy.titlei.mechanisms.Mechanism.post_processing" href="#dp_policy.titlei.mechanisms.Mechanism.post_processing">post_processing</a></code></li>
 <li><code><a title="dp_policy.titlei.mechanisms.Mechanism.poverty_estimates" href="#dp_policy.titlei.mechanisms.Mechanism.poverty_estimates">poverty_estimates</a></code></li>
 </ul>
 </li>
@@ -274,7 +314,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L50-L54" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L70-L74" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class DummyMechanism():
     &#34;&#34;&#34;No randomization.
@@ -292,7 +332,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L53-L54" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L73-L74" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def randomise(self, x):
     return x</code></pre>
@@ -309,7 +349,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L102-L109" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L122-L129" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Gaussian(DiffPriv):
     def __init__(self, *args, **kwargs):
@@ -329,6 +369,7 @@ class Sampled(Mechanism):
 <ul class="hlist">
 <li><code><b><a title="dp_policy.titlei.mechanisms.DiffPriv" href="#dp_policy.titlei.mechanisms.DiffPriv">DiffPriv</a></b></code>:
 <ul class="hlist">
+<li><code><a title="dp_policy.titlei.mechanisms.DiffPriv.post_processing" href="#dp_policy.titlei.mechanisms.Mechanism.post_processing">post_processing</a></code></li>
 <li><code><a title="dp_policy.titlei.mechanisms.DiffPriv.poverty_estimates" href="#dp_policy.titlei.mechanisms.Mechanism.poverty_estimates">poverty_estimates</a></code></li>
 </ul>
 </li>
@@ -343,7 +384,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L38-L47" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L58-L67" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class GroundTruth(Mechanism):
     &#34;&#34;&#34;No randomization.
@@ -364,6 +405,7 @@ class Sampled(Mechanism):
 <ul class="hlist">
 <li><code><b><a title="dp_policy.titlei.mechanisms.Mechanism" href="#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a></b></code>:
 <ul class="hlist">
+<li><code><a title="dp_policy.titlei.mechanisms.Mechanism.post_processing" href="#dp_policy.titlei.mechanisms.Mechanism.post_processing">post_processing</a></code></li>
 <li><code><a title="dp_policy.titlei.mechanisms.Mechanism.poverty_estimates" href="#dp_policy.titlei.mechanisms.Mechanism.poverty_estimates">poverty_estimates</a></code></li>
 </ul>
 </li>
@@ -378,7 +420,7 @@ class Sampled(Mechanism):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L92-L99" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L112-L119" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Laplace(DiffPriv):
     def __init__(self, *args, **kwargs):
@@ -398,6 +440,7 @@ class Sampled(Mechanism):
 <ul class="hlist">
 <li><code><b><a title="dp_policy.titlei.mechanisms.DiffPriv" href="#dp_policy.titlei.mechanisms.DiffPriv">DiffPriv</a></b></code>:
 <ul class="hlist">
+<li><code><a title="dp_policy.titlei.mechanisms.DiffPriv.post_processing" href="#dp_policy.titlei.mechanisms.Mechanism.post_processing">post_processing</a></code></li>
 <li><code><a title="dp_policy.titlei.mechanisms.DiffPriv.poverty_estimates" href="#dp_policy.titlei.mechanisms.Mechanism.poverty_estimates">poverty_estimates</a></code></li>
 </ul>
 </li>
@@ -405,7 +448,7 @@ class Sampled(Mechanism):
 </dd>
 <dt id="dp_policy.titlei.mechanisms.Mechanism"><code class="flex name class">
 <span>class <span class="ident">Mechanism</span></span>
-<span>(</span><span>sensitivity=2.0, round=False, clip=True)</span>
+<span>(</span><span>sensitivity=2.0, round=False, clip=True, noise_total=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class for the different privacy mechanisms we employ to compute
@@ -413,7 +456,7 @@ poverty estimates.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L9-L35" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L9-L55" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Mechanism:
     &#34;&#34;&#34;
@@ -421,22 +464,42 @@ poverty estimates.</p></div>
     poverty estimates.
     &#34;&#34;&#34;
     def __init__(
-        self, sensitivity=2.0, round=False, clip=True
+        self, sensitivity=2.0, round=False, clip=True, noise_total=False
     ):
         self.sensitivity = sensitivity
         self.round = round
         self.clip = clip
+        self.noise_total = noise_total
 
     def poverty_estimates(
-        self, pop_total, children_total, children_poverty
+        self,
+        pop_total: pd.Series,
+        children_total: pd.Series,
+        children_poverty: pd.Series
     ) -&gt; Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        &#34;&#34;&#34;
-        Returns dataframe for children in poverty, children total, and total
+        &#34;&#34;&#34;Returns dataframe for children in poverty, children total, and total
         population indexed by district ID.
+
+        Args:
+            pop_total (pd.Series): Total population in each district.
+            children_total (pd.Series): Total children in each district.
+            children_poverty (pd.Series): Children in poverty in each district.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Noised versions
+                of the input tuples.
         &#34;&#34;&#34;
         raise NotImplementedError
 
-    def post_processing(self, count):
+    def post_processing(self, count: pd.Series) -&gt; pd.Series:
+        &#34;&#34;&#34;Post processing methods for noised counts. (Rounding or clipping.)
+
+        Args:
+            count (pd.Series): Noised count to process.
+
+        Returns:
+            pd.Series: Processed count.
+        &#34;&#34;&#34;
         if self.round:
             count = np.round(count)
         if self.clip:
@@ -452,16 +515,34 @@ poverty estimates.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="dp_policy.titlei.mechanisms.Mechanism.post_processing"><code class="name flex">
-<span>def <span class="ident">post_processing</span></span>(<span>self, count)</span>
+<span>def <span class="ident">post_processing</span></span>(<span>self, count: pandas.core.series.Series) ‑> pandas.core.series.Series</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Post processing methods for noised counts. (Rounding or clipping.)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>count</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Noised count to process.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pd.Series</code></dt>
+<dd>Processed count.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L30-L35" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L42-L55" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">def post_processing(self, count):
+<pre><code class="python">def post_processing(self, count: pd.Series) -&gt; pd.Series:
+    &#34;&#34;&#34;Post processing methods for noised counts. (Rounding or clipping.)
+
+    Args:
+        count (pd.Series): Noised count to process.
+
+    Returns:
+        pd.Series: Processed count.
+    &#34;&#34;&#34;
     if self.round:
         count = np.round(count)
     if self.clip:
@@ -470,22 +551,48 @@ poverty estimates.</p></div>
 </details>
 </dd>
 <dt id="dp_policy.titlei.mechanisms.Mechanism.poverty_estimates"><code class="name flex">
-<span>def <span class="ident">poverty_estimates</span></span>(<span>self, pop_total, children_total, children_poverty) ‑> Tuple[pandas.core.frame.DataFrame, pandas.core.frame.DataFrame, pandas.core.frame.DataFrame]</span>
+<span>def <span class="ident">poverty_estimates</span></span>(<span>self, pop_total: pandas.core.series.Series, children_total: pandas.core.series.Series, children_poverty: pandas.core.series.Series) ‑> Tuple[pandas.core.frame.DataFrame, pandas.core.frame.DataFrame, pandas.core.frame.DataFrame]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns dataframe for children in poverty, children total, and total
-population indexed by district ID.</p></div>
+population indexed by district ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>pop_total</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Total population in each district.</dd>
+<dt><strong><code>children_total</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Total children in each district.</dd>
+<dt><strong><code>children_poverty</code></strong> :&ensp;<code>pd.Series</code></dt>
+<dd>Children in poverty in each district.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]</code></dt>
+<dd>Noised versions
+of the input tuples.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L21-L28" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L22-L40" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def poverty_estimates(
-    self, pop_total, children_total, children_poverty
+    self,
+    pop_total: pd.Series,
+    children_total: pd.Series,
+    children_poverty: pd.Series
 ) -&gt; Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    &#34;&#34;&#34;
-    Returns dataframe for children in poverty, children total, and total
+    &#34;&#34;&#34;Returns dataframe for children in poverty, children total, and total
     population indexed by district ID.
+
+    Args:
+        pop_total (pd.Series): Total population in each district.
+        children_total (pd.Series): Total children in each district.
+        children_poverty (pd.Series): Children in poverty in each district.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Noised versions
+            of the input tuples.
     &#34;&#34;&#34;
     raise NotImplementedError</code></pre>
 </details>
@@ -511,7 +618,7 @@ Supported options are 'gaussian' and 'laplace'. Defaults to
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/f6ff850d7a3a8e0ff469840db8976273d3896ba5/dp_policy/titlei/mechanisms.py#L112-L165" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c57acbbeb2b6788dfc968208be850dddcbc5efbe/dp_policy/titlei/mechanisms.py#L132-L204" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Sampled(Mechanism):
     &#34;&#34;&#34;Mechanism for simulating sampling errors.
@@ -543,30 +650,49 @@ Supported options are 'gaussian' and 'laplace'. Defaults to
     def poverty_estimates(
         self, pop_total, children_total, children_poverty, cv
     ):
+        children_poverty = self._noise(children_poverty, cv)
+        if self.noise_total:
+            # NOTE: assuming CVs are same for total children.
+            # This is beyond Census guidance.
+            children_total = self._noise(children_total, cv)
+
+        return self.post_processing(pop_total), \
+            self.post_processing(children_total), \
+            self.post_processing(children_poverty)
+
+    def _noise(self, count: pd.Series, cv: pd.Series) -&gt; pd.Series:
+        &#34;&#34;&#34;Add sampling noise.
+
+        Args:
+            count (pd.Series): Count to add sampling noise to.
+            cv (pd.Series): Coefficients of variation to use for sampling
+                variance.
+
+        Returns:
+            pd.Series: Noised counts.
+        &#34;&#34;&#34;
         if self.distribution == &#34;gaussian&#34;:
             noised = np.random.normal(
-                children_poverty,  # mean
-                children_poverty * cv * self.multiplier  # stderr
+                count,  # mean
+                count * cv * self.multiplier  # stderr
             )
         elif self.distribution == &#34;laplace&#34;:
             noised = np.random.laplace(
                 # mean
-                children_poverty,
-                # variance is 2b^2, so b = stderr * np.sqrt ( 1/2 )
-                np.sqrt(0.5) * children_poverty * cv * self.multiplier
+                count,
+                # variance is 2b^2 = (count * cv)^2
+                # b = count * cv * sqrt(1/2)
+                np.sqrt(0.5) * count * cv * self.multiplier
             )
         else:
             raise ValueError(
                 f&#34;{self.distribution} is not a valid distribution.&#34;
             )
-        children_poverty = np.clip(
+        return np.clip(
             noised,
             0,
             None
-        )
-        return self.post_processing(pop_total), \
-            self.post_processing(children_total), \
-            self.post_processing(children_poverty)</code></pre>
+        )</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -576,6 +702,7 @@ Supported options are 'gaussian' and 'laplace'. Defaults to
 <ul class="hlist">
 <li><code><b><a title="dp_policy.titlei.mechanisms.Mechanism" href="#dp_policy.titlei.mechanisms.Mechanism">Mechanism</a></b></code>:
 <ul class="hlist">
+<li><code><a title="dp_policy.titlei.mechanisms.Mechanism.post_processing" href="#dp_policy.titlei.mechanisms.Mechanism.post_processing">post_processing</a></code></li>
 <li><code><a title="dp_policy.titlei.mechanisms.Mechanism.poverty_estimates" href="#dp_policy.titlei.mechanisms.Mechanism.poverty_estimates">poverty_estimates</a></code></li>
 </ul>
 </li>
