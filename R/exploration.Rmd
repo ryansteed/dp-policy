@@ -93,78 +93,109 @@ ggplot(experiment, aes(x=prop_white, y=log(true_pop_total))) +
 
 # Robustness check: ACS-derived variability in race-weighted misallocation
 ```{r}
-experiment = load_experiment("baseline", 100)
+experiment = load_experiment("baseline", 1000)
+comparison = readRDS("results/policy_experiments/baseline_comparison_trials=1000.rds")
+comparison
 ```
 
 ```{r}
-# BOOTSTRAP
-
-# std = (margin of error / 1.645)
-draw_sample = function(x, moe) {
-  # rtruncnorm(
-  #   n = length(x),
-  #   a = 0,
-  #   b = 100,
-  #   mean=x,
-  #   sd=moe / 1.645 # std
-  # )
-  rnorm(
-    length(x),
-    x,
-    moe / 1.645
+# Expected standard deviation, based on MOEs
+stdev <- function(race_pct, race_pctmoe, name) {
+  # Assuming we use nation-wide # of children for the denominator (low error),
+  # then the std dev of the numerator is as follows:
+  sse <- sum((experiment$misalloc_sampling * race_pctmoe / 1.645)**2)
+  # divide by the denominator to get the stdev of race-weighted misalloc:
+  Sys.sleep(1)
+  print(sprintf(
+    "%s: %.2f",
+    name,
+    sqrt(sse) / sum(race_pct * experiment$true_children_total))
   )
+  # sse_dp <- sum((experiment$misalloc_dp_sampling * race_pctmoe / 1.645)**2)
+  # print(sqrt(sse_dp) / sum(race_pct * experiment$true_children_total))
 }
-
-filter_comparison = function(comparison) {
-  comparison %>%
-    filter(race %in% c(
-      "Black or African American",
-      "White",
-      "Asian",
-      "Some other race"
-    ))
-}
-
-N = 100
-bootstrap = filter_comparison(race_comparison(experiment, "race_aggregate"))
-for (i in 1:N) {
-  print(i)
-  sample = race_comparison(
-    experiment %>%
-      mutate(
-        black_or_african_american_race_pct = draw_sample(
-          black_or_african_american_race_pct,
-          black_or_african_american_race_pctmoe
-        ),
-        white_race_pct = draw_sample(
-          white_race_pct,
-          white_race_pctmoe
-        ),
-        asian_race_pct = draw_sample(
-          asian_race_pct,
-          asian_race_pctmoe
-        ),
-        some_other_race_race_pct = draw_sample(
-          some_other_race_race_pct,
-          some_other_race_race_pctmoe
-        )
-      ),
-    "race_aggregate"
-  )
-  bootstrap = rbind(bootstrap, filter_comparison(sample))
-}
-```
-
-```{r}
-readRDS("results/policy_experiments/baseline_comparison_trials=1000.rds")
-bootstrap %>%
-  group_by(race) %>%
-  summarise(
-    moe = quantile(dp_sampling_benefit_per_child_eligible_mean, probs=0.9) - quantile(dp_sampling_benefit_per_child_eligible_mean, probs=0.1)
-  )
-```
-
-```{r}
-# ANALYTIC
-sqrt(sum((experiment$misalloc_sampling*experiment$black_or_african_american_race_pctmoe/1.645)**2))/sum(experiment$black_or_african_american_race_pct*experiment$true_children_total)
+stdev(
+  experiment$black_or_african_american_race_pct,
+  experiment$black_or_african_american_race_pctmoe,
+  "Black"
+)
+stdev(
+  experiment$white_race_pct,
+  experiment$white_race_pctmoe,
+  "White"
+)
+stdev(
+  experiment$asian_race_pct,
+  experiment$asian_race_pctmoe,
+  "Asian"
+)
+stdev(
+  experiment$chinese_race_pct,
+  experiment$chinese_race_pctmoe,
+  "Chinese"
+)
+stdev(
+  experiment$filipino_race_pct,
+  experiment$filipino_race_pctmoe
+)
+stdev(
+  experiment$japanese_race_pct,
+  experiment$japanese_race_pctmoe,
+  "Japenese"
+)
+stdev(
+  experiment$korean_race_pct,
+  experiment$korean_race_pctmoe,
+  "Korean"
+)
+stdev(
+  experiment$vietnamese_race_pct,
+  experiment$vietnamese_race_pctmoe,
+  "Vietnamese"
+)
+stdev(
+  experiment$other_asian_race_pct,
+  experiment$other_asian_race_pctmoe,
+  "Other asian"
+)
+stdev(
+  experiment$some_other_race_race_pct,
+  experiment$some_other_race_race_pctmoe,
+  "Some other"
+)
+stdev(
+  experiment$cherokee_tribal_grouping_race_pct,
+  experiment$cherokee_tribal_grouping_race_pctmoe,
+  "Cherokee"
+)
+stdev(
+  experiment$chippewa_tribal_grouping_race_pct,
+  experiment$chippewa_tribal_grouping_race_pctmoe,
+  "Chippewa"
+)
+stdev(
+  experiment$navajo_tribal_grouping_race_pct,
+  experiment$navajo_tribal_grouping_race_pctmoe,
+  "Navajo"
+)
+stdev(
+  experiment$sioux_tribal_grouping_race_pct,
+  experiment$sioux_tribal_grouping_race_pctmoe,
+  "Sioux"
+)
+stdev(
+  experiment$native_hawaiian_race_pct,
+  experiment$native_hawaiian_race_pctmoe,
+  "Hawaiian"
+)
+stdev(
+  experiment$guamanian_or_chamorro_race_pct,
+  experiment$guamanian_or_chamorro_race_pctmoe,
+  "Guamanian or Chamorro"
+)
+stdev(
+  experiment$samoan_race_pct,
+  experiment$samoan_race_pctmoe,
+  "Samoan"
+)
 ```
