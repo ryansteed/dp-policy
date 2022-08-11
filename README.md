@@ -1,6 +1,10 @@
 # Impacts of Uncertainty & Differential Privacy on Title I
 
-Author: Ryan Steed, with code contributions from Terrance Liu
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+Author: [Ryan Steed](rbsteed.com), with help from Terrance Liu
+
+Paper co-authors: [Steven Wu](https://zstevenwu.com/), [Alessandro Acquisti](https://www.heinz.cmu.edu/~acquisti/)
 
 ## Installation
 
