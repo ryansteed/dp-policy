@@ -39,7 +39,7 @@ gam_experiment <- function(experiment, sampling_only) {
 
   for (t in unique(experiment$treatment)) {
     print(sprintf("%s: %s", experiment_name, t))
-    gam_mr -> get_gam(
+    gam_mr <- get_gam(
       sprintf("%s_%s", experiment_name, t),
       sampling_only,
       from_cache,  # load gam from cache?
@@ -50,7 +50,6 @@ gam_experiment <- function(experiment, sampling_only) {
     } else {
       plotname <- sprintf("%s_%s", experiment_name, t)
     }
-
     gam_table(gam_mr, sprintf("plots/tables/%s.tex", plotname))
 
     viz <- get_gam_viz(

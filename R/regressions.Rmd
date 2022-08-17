@@ -52,20 +52,18 @@ plot_uv_gam <- function(uv_gam, label) {
   lower <- min(plot_obj$data$fit$y - mul * plot_obj$data$fit$se)
   p <- plot_obj +
     theme_minimal() +
-    # ylab("Smoothed effect (in terms of $$ misallocated)") +
-    l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
-    # l_dens("joint") +
+    # ggrastr::rasterise(
+      l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
+    # ) +
     l_ciPoly(level = level, alpha = 0.5, size = 0.25) +
     l_ciLine(level = level) +
     l_fitLine() +
-    # l_rug(alpha=0.5) +
     geom_hline(yintercept = 0, linetype = 2) +
     theme(
-      axis.title.x = element_blank(),
       axis.title.y = element_blank()
     ) +
     coord_cartesian(ylim = c(lower, upper)) +
-    ggtitle(label)
+    xlab(label)
   p$ggObj
 }
 

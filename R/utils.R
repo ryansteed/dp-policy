@@ -23,6 +23,7 @@ pacman::p_load(
   xtable,
   comprehenr,
   truncnorm
+  # ggrastr
 )
 
 boot_runs <- 1000
@@ -761,22 +762,6 @@ plot_gam <- function(viz, plotname) {
     "Median income",
     "% renter-occupied housing"
   )
-  lower_limits <- c(
-    -1500000, # pop density
-    -70000, # HHI
-    -120000, # white-only
-    -30000, # hispanic
-    -50000, # income
-    -200000 # housing
-  )
-  upper_limits <- c(
-    300000, # pop density
-    30000, # HHI
-    70000, # white-only
-    80000, # hispanic
-    100000, # income
-    400000 # housing
-  )
 
   level <- 0.95
   mul <- qnorm((level + 1) / 2)
@@ -787,22 +772,26 @@ plot_gam <- function(viz, plotname) {
     lower <- min(plot_obj$data$fit$y - mul * plot_obj$data$fit$se)
     p <- plot_obj +
       theme_minimal() +
-      l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
+      # ggrastr::rasterise(
+        l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
+      # ) +
       l_ciPoly(level = level, alpha = 0.5, size = 0.25) +
       l_ciLine(level = level) +
       l_fitLine() +
       geom_hline(yintercept = 0, linetype = 2) +
       theme(
-        axis.title.x = element_blank(),
         axis.title.y = element_blank()
       ) +
       coord_cartesian(ylim = c(lower, upper)) +
-      ggtitle(labels[i])
+      xlab(labels[i])
     p$ggObj
   }
 
   # generate smooth plot for each covariate
-  cplt <- cowplot::plot_grid(plotlist = map(1:length(labels), plt), nrow = 3)
+  cplt <- cowplot::plot_grid(
+    plotlist = purrr::map(1:length(labels), plt),
+    nrow = 3
+  )
   ygrob <- textGrob(
     "Smoothed effect (in terms of $$ misallocated)",
     gp <- gpar(fontface = "bold"),
