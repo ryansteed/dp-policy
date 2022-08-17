@@ -22,8 +22,8 @@ pacman::p_load(
   itsadug,
   xtable,
   comprehenr,
-  truncnorm
-  # ggrastr
+  truncnorm,
+  ggrastr
 )
 
 boot_runs <- 1000
@@ -767,12 +767,16 @@ plot_gam = function(viz, plotname) {
     upper = max(plot_obj$data$fit$y + mul*plot_obj$data$fit$se)
     lower = min(plot_obj$data$fit$y - mul*plot_obj$data$fit$se)
     p = plot_obj +
-      theme_minimal() +
-      l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+      ggrastr::rasterise(geom_point(
+          data = plot_obj$data$res[plot_obj$data$res$sub, ],
+          aes(x = x, y = y),
+          shape = 16, size = 0.5, alpha = 0.08, color="blue"
+      ), dpi=100) +
       l_ciPoly(level=level, alpha=0.5, size=0.25) +
       l_ciLine(level=level) +
       l_fitLine() +
       geom_hline(yintercept = 0, linetype = 2) +
+      theme_minimal() +
       theme(
         axis.title.y = element_blank()
       ) +
@@ -781,13 +785,13 @@ plot_gam = function(viz, plotname) {
     p$ggObj
   }
   
-  cplt = cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
-  y.grob = textGrob(
+  cplt <- cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
+  ygrob <- textGrob(
     "Smoothed effect (in terms of $$ misallocated)",
     gp=gpar(fontface="bold"),
     rot=90
   )
-  plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+  plot = grid.arrange(arrangeGrob(cplt, left=ygrob))
   # print(plot)
   
   if (!missing(plotname)) {

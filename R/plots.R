@@ -43,14 +43,13 @@ gam_experiment <- function(experiment_name, trials, sampling_only) {
     experiment = NULL
     treatments = list.files(
       path = "results/regressions",
-      sprintf("^%s_*._sampling=%s", experiment_name, sampling_only)
+      sprintf("^%s_.*_sampling=%s", experiment_name, sampling_only)
     ) %>%
       str_remove(".rds") %>%
-      str_remove("sampling=TRUE|sampling=FALSE") %>%
-      str_remove(sprintf("%s_", experiment_name))
-    if (experiment_name == "hold_harmless") {
-      treatments = treatments %>% filter(grepl("unmatched", treatments))
-    }
+      str_remove("_sampling=TRUE|_sampling=FALSE") %>%
+      str_remove(sprintf("%s_", experiment_name)) %>%
+      str_remove(".*_") %>%
+      unique()
     if (experiment_name == "baseline") {
       treatments = c("baseline")
     }
@@ -67,7 +66,7 @@ gam_experiment <- function(experiment_name, trials, sampling_only) {
       sprintf("%s_%s", experiment_name, t),
       sampling_only,
       from_cache,  # load gam from cache?
-      experiment %>% filter(treatment == t)
+      if (from_cache) experiment %>% filter(treatment == t) else NULL
     )
     if (sampling_only) {
       plotname <- sprintf("%s_%s_sampling", experiment_name, t)

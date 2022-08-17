@@ -23,7 +23,7 @@ experiment
 ```{r}
 thresholds = data.frame(raw=c(10, 6500, 10), prop=c(0.02, 0.15, 0.05), grant=c("Basic", "Concentration", "Targeted"))
 
-point_plot = geom_point(alpha=0.5, size=0.25, color="#3a3b3c")
+point_plot = ggrastr::rasterise(geom_point(alpha=0.3, size=0.25, color="#3a3b3c"), dpi=100)
 formatting = list(
   geom_smooth(method="lm", linetype="dashed", color="red"),
   theme(
