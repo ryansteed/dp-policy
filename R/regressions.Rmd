@@ -142,12 +142,12 @@ cplt <- cowplot::plot_grid(
   ),
   nrow = 5
 )
-ygrob <- textGrob(
+y.grob <- textGrob(
   "Smoothed effect (in terms of $$ misallocated)",
   gp <- gpar(fontface = "bold"),
   rot <- 90
 )
-plot <- grid.arrange(arrangeGrob(cplt, left = ygrob))
+plot <- grid.arrange(arrangeGrob(cplt, left = y.grob))
 ggsave(
   "plots/smooths/baseline_univariate.pdf",
   plot, width = 12, height = 9, dpi = 300

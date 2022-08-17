@@ -750,11 +750,8 @@ sanitize <- function(string) {
   return(str_replace(string, "%", ""))
 }
 
-plot_gam <- function(viz, plotname) {
-  #' Plot GAM smooths.
-  #' @param viz `mcgviz` visualization object.
-  #' @param plotname Name of plot to save with.
-  labels <- c(
+plot_gam = function(viz, plotname) {
+  labels = c(
     "Log population density",
     "Racial homogeneity (HHI)",
     "% white-only",
@@ -762,49 +759,43 @@ plot_gam <- function(viz, plotname) {
     "Median income",
     "% renter-occupied housing"
   )
-
-  level <- 0.95
-  mul <- qnorm((level + 1) / 2)
-  plt <- function(i) {
-    #' Function to generate plot of smooth effects for a covariate.
-    plot_obj <- plot(sm(viz, i))
-    upper <- max(plot_obj$data$fit$y + mul * plot_obj$data$fit$se)
-    lower <- min(plot_obj$data$fit$y - mul * plot_obj$data$fit$se)
-    p <- plot_obj +
+  
+  level = 0.95
+  mul = qnorm((level+1)/2)
+  plt = function(i) {
+    plot_obj = plot(sm(viz, i))
+    upper = max(plot_obj$data$fit$y + mul*plot_obj$data$fit$se)
+    lower = min(plot_obj$data$fit$y - mul*plot_obj$data$fit$se)
+    p = plot_obj +
       theme_minimal() +
-      # ggrastr::rasterise(
-        l_points(shape = 19, size = 0.5, alpha = 0.05, color = "blue") +
-      # ) +
-      l_ciPoly(level = level, alpha = 0.5, size = 0.25) +
-      l_ciLine(level = level) +
+      l_points(shape = 19, size = 0.5, alpha = 0.05, color="blue") +
+      l_ciPoly(level=level, alpha=0.5, size=0.25) +
+      l_ciLine(level=level) +
       l_fitLine() +
       geom_hline(yintercept = 0, linetype = 2) +
       theme(
         axis.title.y = element_blank()
       ) +
-      coord_cartesian(ylim = c(lower, upper)) +
+      coord_cartesian(ylim=c(lower, upper)) +
       xlab(labels[i])
     p$ggObj
   }
-
-  # generate smooth plot for each covariate
-  cplt <- cowplot::plot_grid(
-    plotlist = purrr::map(1:length(labels), plt),
-    nrow = 3
-  )
-  ygrob <- textGrob(
+  
+  cplt = cowplot::plot_grid(plotlist=map(1:length(labels), plt), nrow=3)
+  y.grob = textGrob(
     "Smoothed effect (in terms of $$ misallocated)",
-    gp <- gpar(fontface = "bold"),
-    rot <- 90
+    gp=gpar(fontface="bold"),
+    rot=90
   )
-  plot <- grid.arrange(arrangeGrob(cplt, left = ygrob))
-
+  plot = grid.arrange(arrangeGrob(cplt, left=y.grob))
+  # print(plot)
+  
   if (!missing(plotname)) {
     ggsave(
       sprintf("plots/smooths/%s.pdf", sanitize(plotname)),
-      plot, width = 12, height = 6, dpi = 300, bg = "transparent"
+      plot, width=12, height=6, dpi=300, bg='transparent'
     )
   }
-
+  
   check(viz)
 }

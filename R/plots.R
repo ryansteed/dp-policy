@@ -25,7 +25,7 @@ plot_experiment <- function(experiment_name, trials) {
   }
 }
 
-gam_experiment <- function(experiment, sampling_only) {
+gam_experiment <- function(experiment_name, trials, sampling_only) {
   #' Run GAM and plot smooths for a given experiment.
   #' If `sampling_only`, show the effects for only data deviations.
   #' Otherwise, show effects for combined privacy and data deviations.
@@ -35,9 +35,33 @@ gam_experiment <- function(experiment, sampling_only) {
   }
 
   print("- GAM")
+  
   from_cache <- TRUE
-
-  for (t in unique(experiment$treatment)) {
+  
+  if (from_cache) {
+    # infer treatments from filenames
+    experiment = NULL
+    treatments = list.files(
+      path = "results/regressions",
+      sprintf("^%s_*._sampling=%s", experiment_name, sampling_only)
+    ) %>%
+      str_remove(".rds") %>%
+      str_remove("sampling=TRUE|sampling=FALSE") %>%
+      str_remove(sprintf("%s_", experiment_name))
+    if (experiment_name == "hold_harmless") {
+      treatments = treatments %>% filter(grepl("unmatched", treatments))
+    }
+    if (experiment_name == "baseline") {
+      treatments = c("baseline")
+    }
+  } else {
+    experiment = load_experiment(experiment_name, trials)
+    treatments = unique(experiment$treatment)
+  }
+  
+  for (t in treatments) {
+    print(t)
+    
     print(sprintf("%s: %s", experiment_name, t))
     gam_mr <- get_gam(
       sprintf("%s_%s", experiment_name, t),
