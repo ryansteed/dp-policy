@@ -487,8 +487,8 @@ def weighting(eligible: float, pop: float) -> float:
     Returns weighted eligibility counts.
 
     Args:
-        eligible (float): # of eligible children.
-        pop (float): # total children.
+        eligible (float): Number of eligible children.
+        pop (float): Number total children.
 
     Returns:
         float: Weighted count.

@@ -90,33 +90,16 @@ of FIPS codes to postal codes and state names</li>
 <li><code>regressions/</code> - for regressions</li>
 <li><code>scripts/</code> - miscellaneous bash scripts to make server runs easier</li>
 </ul>
-<h2 id="administration">Administration</h2>
-<h3 id="documentation">Documentation</h3>
+<h2 id="documentation">Documentation</h2>
 <p>Documentation for the <code>dp-policy</code> API is published at <a href="https://rbsteed.com/dp-policy">rbsteed.com/dp-policy</a>.</p>
 <p>To generate the documentation, use pdoc3:</p>
 <pre><code class="language-bash">pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
 git subtree push --prefix docs/dp_policy origin gh-pages
 </code></pre>
-<h3 id="running-on-server">Running on server</h3>
-<p>To sync discrimination files:</p>
-<pre><code class="language-bash">rsync -avz results/policy_experiments/*.feather heinz:/home/rsteed/dp-policy/results/policy_experiments
-</code></pre>
-<p>To sync data files:</p>
-<pre><code class="language-bash">rsync -avz data/* heinz:/home/rsteed/dp-policy/data
-</code></pre>
-<p>To run R files, first <a href="https://www.msi.umn.edu/support/faq/how-can-i-install-r-packages-my-home-directory">set the lib path</a>.</p>
-<p>Managing jobs:</p>
-<pre><code class="language-bash">scripts/kickoff.sh # or cp paste for jobs management
-jobs
-watch -n 60 ps
-</code></pre>
-<h3 id="compressing-for-simple-release">Compressing for simple release</h3>
-<pre><code class="language-bash">make zip
-</code></pre>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/c3e15a827900ffb23e70d0cd56e36a33c56c62b7/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 .. include:: ../README.md
@@ -160,12 +143,7 @@ watch -n 60 ps
 <li><a href="#running-the-cli">Running the CLI</a></li>
 <li><a href="#replicating-results">Replicating Results</a></li>
 <li><a href="#contents">Contents</a></li>
-<li><a href="#administration">Administration</a><ul>
 <li><a href="#documentation">Documentation</a></li>
-<li><a href="#running-on-server">Running on server</a></li>
-<li><a href="#compressing-for-simple-release">Compressing for simple release</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
