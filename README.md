@@ -71,8 +71,7 @@ dp_policy run_all
   - `regressions/` - for regressions
 - `scripts/` - miscellaneous bash scripts to make server runs easier
 
-## Administration
-### Documentation
+## Documentation
 Documentation for the `dp-policy` API is published at [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy).
 
 To generate the documentation, use pdoc3:
