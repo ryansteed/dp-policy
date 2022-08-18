@@ -23,7 +23,9 @@
 </header>
 <section id="section-intro">
 <h1 id="impacts-of-uncertainty-differential-privacy-on-title-i">Impacts of Uncertainty &amp; Differential Privacy on Title I</h1>
-<p>Author: Ryan Steed</p>
+<p><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="License: CC BY-NC-SA 4.0" src="https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg"></a></p>
+<p>Author: <a href="rbsteed.com">Ryan Steed</a>, with help from Terrance Liu</p>
+<p>Paper co-authors: Terrance Liu, <a href="https://zstevenwu.com/">Steven Wu</a>, <a href="https://www.heinz.cmu.edu/~acquisti/">Alessandro Acquisti</a></p>
 <h2 id="installation">Installation</h2>
 <pre><code>make dp_policy
 </code></pre>
@@ -40,7 +42,6 @@ dp_policy run_all
 <h2 id="replicating-results">Replicating Results</h2>
 <ol>
 <li>For general results, run cells in <code>notebooks/results.ipynb</code>.</li>
-<li>Experimental results.</li>
 <li>Generate all the experimental results by running <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run_all</code> or running chosen experiments sindividually with <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run [experiment]</code>.</li>
 <li>Visualize experiment results with <code>notebooks/policy_experiments.ipynb</code>. (For example, Fig. 1 was produced with statistics from the Epsilon Sensitivity section of <code>notebooks/policy_experiments.ipynb</code>.)</li>
 <li>Produce disparity plots and GAM smooth plots with <code>R/plot_all.R</code>. (For example, Fig. 2 is the race disparity plot for the hold_harmless experiment.)</li>
@@ -112,18 +113,10 @@ watch -n 60 ps
 <h3 id="compressing-for-simple-release">Compressing for simple release</h3>
 <pre><code class="language-bash">make zip
 </code></pre>
-<h3 id="compressing-pdfs-for-overleaf">Compressing PDFs for Overleaf</h3>
-<pre><code class="language-bash"># NOTE: reduces DPI
-# `/prepress` is highest DPI; then `/printer`; then `/ebook`
-gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -r100 -dPDFSETTINGS=/printer \
--dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
-# gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer \
-# -dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
-</code></pre>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c3e15a827900ffb23e70d0cd56e36a33c56c62b7/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 .. include:: ../README.md
@@ -171,7 +164,6 @@ gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -r100 -dPDFSETTINGS=/printer \
 <li><a href="#documentation">Documentation</a></li>
 <li><a href="#running-on-server">Running on server</a></li>
 <li><a href="#compressing-for-simple-release">Compressing for simple release</a></li>
-<li><a href="#compressing-pdfs-for-overleaf">Compressing PDFs for Overleaf</a></li>
 </ul>
 </li>
 </ul>

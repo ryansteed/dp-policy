@@ -25,11 +25,17 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/90e9032796236deea5f948376ffa8b74808d5adb/dp_policy/api.py#L1-L55" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/c3e15a827900ffb23e70d0cd56e36a33c56c62b7/dp_policy/api.py#L1-L83" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">from dp_policy.experiments import Experiment
 import click
 from typing import Dict
+
+# force inclusion in docs
+__pdoc__ = {
+    &#34;_run&#34;: True,
+    &#34;_run_all&#34;: True
+}
 
 
 @click.group(chain=True)
@@ -42,7 +48,11 @@ def cli():
 @click.option(&#39;--just-join&#39;, is_flag=True)
 @click.option(&#39;--no-match-true&#39;, is_flag=True)
 @click.option(&#39;--trials&#39;, type=int, default=1000)
-def run(
+def run(*args, **kwargs):
+    _run(*args, **kwargs)
+
+
+def _run(
     name: str,
     just_join: bool = False,
     **kwargs
@@ -69,15 +79,33 @@ def run(
 
 @cli.command(&#39;run_all&#39;)
 @click.option(&#39;--just-join&#39;, is_flag=True)
-def run_all(experiments: Dict[str, dict], **options):
+def run_all(**kwargs):
+    experiments = {
+        exp: {} for exp in [
+            &#39;baseline&#39;,
+            &#39;hold_harmless&#39;,
+            &#39;post_processing&#39;,
+            &#39;thresholds&#39;,
+            &#39;epsilon&#39;,
+            &#39;moving_average&#39;,
+            &#39;budget&#39;,
+            &#39;sampling&#39;,
+            &#39;vary_total_children&#39;
+        ]
+    }
+    _run_all(experiments, **kwargs)
+
+
+def _run_all(experiments: Dict[str, dict], **options):
     &#34;&#34;&#34;Run multiple experiments.
 
     Args:
         experiments (Dict[str, dict]): Dictionary of experiment names mapped
             to experiment parameters.
     &#34;&#34;&#34;
-    for name, options in experiments.items():
-        run(name, **options)
+    for name, o in experiments.items():
+        o.update(options)
+        _run(name, **o)
 
 
 if __name__ == &#34;__main__&#34;:
@@ -89,6 +117,80 @@ if __name__ == &#34;__main__&#34;:
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dp_policy.api._run"><code class="name flex">
+<span>def <span class="ident">_run</span></span>(<span>name: str, just_join: bool = False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run an experiment and save the results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>The experiment name.</dd>
+<dt><strong><code>just_join</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to just join existing results to
+covariates and save the results. Defaults to False.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/c3e15a827900ffb23e70d0cd56e36a33c56c62b7/dp_policy/api.py#L26-L48" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def _run(
+    name: str,
+    just_join: bool = False,
+    **kwargs
+):
+    &#34;&#34;&#34;Run an experiment and save the results.
+
+    Args:
+        name (str): The experiment name.
+        just_join (bool, optional): Whether to just join existing results to
+            covariates and save the results. Defaults to False.
+    &#34;&#34;&#34;
+    print(&#34;--- Running&#34;, name, &#34;---&#34;)
+    print(&#34;options:&#34;, kwargs)
+    experiment = Experiment.get_experiment(
+        name,
+        **kwargs
+    )
+    if just_join:
+        click.echo(&#34;Skipping run, straight to join&#34;)
+        experiment.discrimination_join(include_moes=(name == &#34;baseline&#34;))
+    else:
+        experiment.run()</code></pre>
+</details>
+</dd>
+<dt id="dp_policy.api._run_all"><code class="name flex">
+<span>def <span class="ident">_run_all</span></span>(<span>experiments: Dict[str, dict], **options)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run multiple experiments.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>experiments</code></strong> :&ensp;<code>Dict[str, dict]</code></dt>
+<dd>Dictionary of experiment names mapped
+to experiment parameters.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ryansteed/dp-policy/blob/c3e15a827900ffb23e70d0cd56e36a33c56c62b7/dp_policy/api.py#L70-L79" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def _run_all(experiments: Dict[str, dict], **options):
+    &#34;&#34;&#34;Run multiple experiments.
+
+    Args:
+        experiments (Dict[str, dict]): Dictionary of experiment names mapped
+            to experiment parameters.
+    &#34;&#34;&#34;
+    for name, o in experiments.items():
+        o.update(options)
+        _run(name, **o)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -102,6 +204,12 @@ if __name__ == &#34;__main__&#34;:
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="dp_policy" href="index.html">dp_policy</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="dp_policy.api._run" href="#dp_policy.api._run">_run</a></code></li>
+<li><code><a title="dp_policy.api._run_all" href="#dp_policy.api._run_all">_run_all</a></code></li>
 </ul>
 </li>
 </ul>

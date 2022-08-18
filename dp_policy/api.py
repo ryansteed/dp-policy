@@ -2,6 +2,12 @@ from dp_policy.experiments import Experiment
 import click
 from typing import Dict
 
+# force inclusion in docs
+__pdoc__ = {
+    "_run": True,
+    "_run_all": True
+}
+
 
 @click.group(chain=True)
 def cli():
@@ -13,7 +19,11 @@ def cli():
 @click.option('--just-join', is_flag=True)
 @click.option('--no-match-true', is_flag=True)
 @click.option('--trials', type=int, default=1000)
-def run(
+def run(*args, **kwargs):
+    _run(*args, **kwargs)
+
+
+def _run(
     name: str,
     just_join: bool = False,
     **kwargs
@@ -40,15 +50,33 @@ def run(
 
 @cli.command('run_all')
 @click.option('--just-join', is_flag=True)
-def run_all(experiments: Dict[str, dict], **options):
+def run_all(**kwargs):
+    experiments = {
+        exp: {} for exp in [
+            'baseline',
+            'hold_harmless',
+            'post_processing',
+            'thresholds',
+            'epsilon',
+            'moving_average',
+            'budget',
+            'sampling',
+            'vary_total_children'
+        ]
+    }
+    _run_all(experiments, **kwargs)
+
+
+def _run_all(experiments: Dict[str, dict], **options):
     """Run multiple experiments.
 
     Args:
         experiments (Dict[str, dict]): Dictionary of experiment names mapped
             to experiment parameters.
     """
-    for name, options in experiments.items():
-        run(name, **options)
+    for name, o in experiments.items():
+        o.update(options)
+        _run(name, **o)
 
 
 if __name__ == "__main__":
