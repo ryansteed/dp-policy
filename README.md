@@ -108,13 +108,3 @@ watch -n 60 ps
 ```bash
 make zip
 ```
-
-### Compressing PDFs for Overleaf
-```bash
-# NOTE: reduces DPI
-# `/prepress` is highest DPI; then `/printer`; then `/ebook`
-gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -r100 -dPDFSETTINGS=/printer \
--dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
-# gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer \
-# -dNOPAUSE -dQUIET -dBATCH -sOutputFile=[input]_compressed.pdf [input].pdf
-```
