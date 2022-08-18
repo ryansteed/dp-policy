@@ -4,7 +4,7 @@
 
 Author: [Ryan Steed](rbsteed.com), with help from Terrance Liu
 
-Paper co-authors: [Steven Wu](https://zstevenwu.com/), [Alessandro Acquisti](https://www.heinz.cmu.edu/~acquisti/)
+Paper co-authors: Terrance Liu, [Steven Wu](https://zstevenwu.com/), [Alessandro Acquisti](https://www.heinz.cmu.edu/~acquisti/)
 
 ## Installation
 
