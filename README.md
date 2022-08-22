@@ -6,6 +6,8 @@ Author: [Ryan Steed](rbsteed.com), with help from Terrance Liu
 
 Paper co-authors: Terrance Liu, [Steven Wu](https://zstevenwu.com/), [Alessandro Acquisti](https://www.heinz.cmu.edu/~acquisti/)
 
+API documentation: [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy/)
+
 ## Installation
 
 ```
@@ -13,7 +15,7 @@ make dp_policy
 ```
 
 ## Running the CLI
-CLI endpoints in `dp_policy/api.py`.
+Use the [CLI endpoints](https://rbsteed.com/dp-policy/api.html) in `dp_policy/api.py`.
 
 ```bash
 dp_policy --help
