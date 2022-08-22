@@ -26,10 +26,10 @@ dp_policy run_all
 ```
 
 ## Replicating Results
-1. For general results, run cells in `notebooks/results.ipynb`.
-2. Generate all the experimental results by running `dp_policy run_all` or running chosen experiments sindividually with `dp_policy run [experiment]`.
+1. For general statistics, run cells in `notebooks/results.ipynb`.
+2. Generate all the experimental results by running `dp_policy run_all` or running chosen experiments individually with `dp_policy run [experiment]`.
 3. Visualize experiment results with `notebooks/policy_experiments.ipynb`. (For example, Fig. 1 was produced with statistics from the Epsilon Sensitivity section of `notebooks/policy_experiments.ipynb`.)
-4. Produce disparity plots and GAM smooth plots with `R/plot_all.R`. (For example, Fig. 2 is the race disparity plot for the hold_harmless experiment.)
+4. Produce disparity plots and GAM smooth plots with `R/plot_all.R`. (For example, Fig. 2 is the race disparity plot for the `"hold_harmless"` experiment.)
 
 ## Contents
 - `data/`
@@ -45,7 +45,7 @@ dp_policy run_all
     - `allocators.py` - allocation procedures
     - `bootstrap.py` - exploratory functions for sampling experiments
     - `evaluation.py` - utility functions for evaluating results
-    - `mechanisms.py` - randomization mechanisms
+    - `mechanisms.py` - randomization (noise injection) mechanisms
     - `thresholders.py` - thresholding mechanisms for formula
     - `utils.py` - utility functions
   - `api.py` - endpoints for CLI
