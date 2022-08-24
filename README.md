@@ -27,6 +27,19 @@ dp_policy run --just-join [name]
 dp_policy run_all
 ```
 
+Experiment options (described in detail the SI) include:
+- `"baseline"` - just the baseline settings (no experimental modifications).
+- Policy changes
+  - `"hold_harmless"` - treatments which add one or both of the post-formula provisions (hold harmless and the state minimum).
+  - `"thresholds"` - treatments which modify the thresholds for district funding eligibility.
+  - `"moving_average"` - treatments which use multiyear averages of varying size.
+  - `"budget`" - treatments which vary the overall Title I appropriation.
+- Robustness checks
+  - `"post_processing"` - treatments which modify the post-processing applied after noise injection.
+  - `"epsilon"` - treatments which modify the privacy parameter epsilon.
+  - `"sampling`" - treatments which vary the variance of simulated data error.
+  - `"vary_total_children"` - treatment where the number of total children is also noised.
+
 ## Replicating Results
 1. For general statistics, run cells in `notebooks/results.ipynb`.
 2. Generate all the experimental results by running `dp_policy run_all` or running chosen experiments individually with `dp_policy run [experiment]`.
