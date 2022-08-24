@@ -430,7 +430,7 @@ class Experiment:
         Args:
             name (str): Experiment name to fetch. Options include "baseline",
                 "hold_harmless", "post_processing", "thresholds", "epsilon",
-                "moving_average", "budget", "sampling".
+                "moving_average", "budget", "sampling", "vary_total_children".
 
         Returns:
             Experiment: The experiment object.

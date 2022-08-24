@@ -25,7 +25,7 @@
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L1-L805" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L1-L805" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">import os
 import pandas as pd
@@ -459,7 +459,7 @@ class Experiment:
         Args:
             name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
                 &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
-                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;, &#34;vary_total_children&#34;.
 
         Returns:
             Experiment: The experiment object.
@@ -876,7 +876,7 @@ ground truth, sampling, and privacy randomization.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L23-L60" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L23-L60" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_funding(
     allocator: Allocator,
@@ -976,7 +976,7 @@ provided, will skip grid calculation. Defaults to None.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L63-L331" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L63-L331" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def titlei_grid(
     inputs: pd.DataFrame,
@@ -1288,7 +1288,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L455-L461" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L455-L461" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Baseline(Experiment):
     &#34;&#34;&#34;Baseline condition only.
@@ -1348,7 +1348,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L666-L729" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L666-L729" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Budget(Experiment):
     &#34;&#34;&#34;Budget experiments.
@@ -1465,7 +1465,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L732-L750" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L732-L750" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Epsilon(Experiment):
     &#34;&#34;&#34;Privacy parameter experiments.
@@ -1537,7 +1537,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L334-L452" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L334-L452" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Experiment:
     &#34;&#34;&#34;Handles running and setting experiments.
@@ -1638,7 +1638,7 @@ to use the same baseline for both.</dd>
         Args:
             name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
                 &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
-                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+                &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;, &#34;vary_total_children&#34;.
 
         Returns:
             Experiment: The experiment object.
@@ -1683,7 +1683,7 @@ to use the same baseline for both.</dd>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
 <dd>Experiment name to fetch. Options include "baseline",
 "hold_harmless", "post_processing", "thresholds", "epsilon",
-"moving_average", "budget", "sampling".</dd>
+"moving_average", "budget", "sampling", "vary_total_children".</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1693,7 +1693,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L423-L452" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L423-L452" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
 def get_experiment(
@@ -1705,7 +1705,7 @@ def get_experiment(
     Args:
         name (str): Experiment name to fetch. Options include &#34;baseline&#34;,
             &#34;hold_harmless&#34;, &#34;post_processing&#34;, &#34;thresholds&#34;, &#34;epsilon&#34;,
-            &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;.
+            &#34;moving_average&#34;, &#34;budget&#34;, &#34;sampling&#34;, &#34;vary_total_children&#34;.
 
     Returns:
         Experiment: The experiment object.
@@ -1738,7 +1738,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L412-L415" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L412-L415" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def discrimination_join(self, **join_kwargs):
     &#34;&#34;&#34;Join the results to demographic covariates and save.
@@ -1754,7 +1754,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L417-L421" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L417-L421" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def plot(self, **kwargs):
     &#34;&#34;&#34;Print and plot the results, comparing treatments.
@@ -1771,7 +1771,7 @@ def get_experiment(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L400-L405" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L400-L405" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def run(self):
     &#34;&#34;&#34;Run the experiment, save results, and create joined covariate file.
@@ -1817,7 +1817,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L464-L499" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L464-L499" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class HoldHarmless(Experiment):
     &#34;&#34;&#34;Hold harmless and state minimum provisions.
@@ -1892,7 +1892,7 @@ the 5-year average as the baseline. Defaults to "average".</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L538-L580" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L538-L580" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class MovingAverage(Experiment):
     &#34;&#34;&#34;Moving average inputs, with multiple lag conditions.
@@ -1988,7 +1988,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L502-L535" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L502-L535" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class PostProcessing(Experiment):
     &#34;&#34;&#34;Post-processing variations: none, clipping, and clipping + rounding.
@@ -2075,7 +2075,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L753-L784" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L753-L784" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Sampling(Experiment):
     &#34;&#34;&#34;Sampling error experiments.
@@ -2160,7 +2160,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L583-L663" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L583-L663" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class Thresholds(Experiment):
     &#34;&#34;&#34;Thresholding experiments.
@@ -2294,7 +2294,7 @@ to use the same baseline for both.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/experiments.py#L787-L805" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/experiments.py#L787-L805" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">class VaryTotalChildren(Experiment):
     &#34;&#34;&#34;Robustness check: what happens if the # of total children is not fixed?

@@ -26,11 +26,12 @@
 <p><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="License: CC BY-NC-SA 4.0" src="https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg"></a></p>
 <p>Author: <a href="rbsteed.com">Ryan Steed</a>, with help from Terrance Liu</p>
 <p>Paper co-authors: Terrance Liu, <a href="https://zstevenwu.com/">Steven Wu</a>, <a href="https://www.heinz.cmu.edu/~acquisti/">Alessandro Acquisti</a></p>
+<p>API documentation: <a href="https://rbsteed.com/dp-policy/">rbsteed.com/dp-policy</a></p>
 <h2 id="installation">Installation</h2>
 <pre><code>make dp_policy
 </code></pre>
 <h2 id="running-the-cli">Running the CLI</h2>
-<p>CLI endpoints in <code>dp_policy/api.py</code>.</p>
+<p>Use the <a href="https://rbsteed.com/dp-policy/api.html">CLI endpoints</a> in <code>dp_policy/api.py</code>.</p>
 <pre><code class="language-bash">dp_policy --help
 # to run a specific experiment
 dp_policy run [experiment]
@@ -39,16 +40,34 @@ dp_policy run --just-join [name]
 # to run all experiments
 dp_policy run_all
 </code></pre>
+<p>Experiment options (described in detail the SI and passed to the <a href="https://rbsteed.com/dp-policy/experiments.html#dp_policy.experiments.Experiment.get_experiment"><code>Experiment.get_experiment</code></a> factory method) include:</p>
+<ul>
+<li><code>"baseline"</code> - just the baseline settings (no experimental modifications).</li>
+<li>Policy changes<ul>
+<li><code>"hold_harmless"</code> - treatments which add one or both of the post-formula provisions (hold harmless and the state minimum).</li>
+<li><code>"thresholds"</code> - treatments which modify the thresholds for district funding eligibility.</li>
+<li><code>"moving_average"</code> - treatments which use multiyear averages of varying size.</li>
+<li><code>"budget</code>" - treatments which vary the overall Title I appropriation.</li>
+</ul>
+</li>
+<li>Robustness checks<ul>
+<li><code>"post_processing"</code> - treatments which modify the post-processing applied after noise injection.</li>
+<li><code>"epsilon"</code> - treatments which modify the privacy parameter epsilon.</li>
+<li><code>"sampling</code>" - treatments which vary the variance of simulated data error.</li>
+<li><code>"vary_total_children"</code> - treatment where the number of total children is also noised.</li>
+</ul>
+</li>
+</ul>
 <h2 id="replicating-results">Replicating Results</h2>
 <ol>
-<li>For general results, run cells in <code>notebooks/results.ipynb</code>.</li>
-<li>Generate all the experimental results by running <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run_all</code> or running chosen experiments sindividually with <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run [experiment]</code>.</li>
+<li>For general statistics, run cells in <code>notebooks/results.ipynb</code>.</li>
+<li>Generate all the experimental results by running <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run_all</code> or running chosen experiments individually with <code><a title="dp_policy" href="#dp_policy">dp_policy</a> run [experiment]</code>.</li>
 <li>Visualize experiment results with <code>notebooks/policy_experiments.ipynb</code>. (For example, Fig. 1 was produced with statistics from the Epsilon Sensitivity section of <code>notebooks/policy_experiments.ipynb</code>.)</li>
-<li>Produce disparity plots and GAM smooth plots with <code>R/plot_all.R</code>. (For example, Fig. 2 is the race disparity plot for the hold_harmless experiment.)</li>
+<li>Produce disparity plots and GAM smooth plots with <code>R/plot_all.R</code>. (For example, Fig. 2 is the race disparity plot for the <code>"hold_harmless"</code> experiment.)</li>
 </ol>
 <h2 id="contents">Contents</h2>
 <ul>
-<li><code>data/</code></li>
+<li><code>data/</code><ul>
 <li><code>discrimination/</code> - <a href="https://nces.ed.gov/programs/edge/tableviewer/acsProfile/2019">ACS 5-year data for discrimination analysis</a></li>
 <li><code>shapefiles/</code> - <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html">TIGER shapefiles for school districts</a></li>
 <li><code>titlei-allocations</code> - official dep. of ed. figures, from Todd Stephenson</li>
@@ -57,12 +76,14 @@ dp_policy run_all
 of FIPS codes to postal codes and state names</li>
 <li><code>nslp19.csv</code> - <a href="https://nces.ed.gov/ccd/files.asp#Fiscal:2,LevelId:7,SchoolYearId:34,Page:1">National School Lunch program data</a> (exploration only)</li>
 <li><code>sppe*</code> - <a href="https://nces.ed.gov/ccd/pub_rev_exp.asp">state per-pupil expenditure data</a></li>
-<li><code>dp_policy/</code> - codebase</li>
+</ul>
+</li>
+<li><code>dp_policy/</code> - codebase<ul>
 <li><code>titlei/</code> - submodule for replicating the Title I allocation procedure, with noise<ul>
 <li><code>allocators.py</code> - allocation procedures</li>
 <li><code>bootstrap.py</code> - exploratory functions for sampling experiments</li>
 <li><code>evaluation.py</code> - utility functions for evaluating results</li>
-<li><code>mechanisms.py</code> - randomization mechanisms</li>
+<li><code>mechanisms.py</code> - randomization (noise injection) mechanisms</li>
 <li><code>thresholders.py</code> - thresholding mechanisms for formula</li>
 <li><code>utils.py</code> - utility functions</li>
 </ul>
@@ -70,14 +91,18 @@ of FIPS codes to postal codes and state names</li>
 <li><code>api.py</code> - endpoints for CLI</li>
 <li><code>config.py</code> - settings</li>
 <li><code>experiments.py</code> - set of experiment configurations for replicating results</li>
+</ul>
+</li>
 <li><code>logs/</code> - logs for recording runs</li>
-<li><code>notebooks/</code> - Jupyter notebooks for exploration and visualization</li>
+<li><code>notebooks/</code> - Jupyter notebooks for exploration and visualization<ul>
 <li><code>results.ipynb</code> - main notebook for replicating and visualizing auxiliary experiment results</li>
 <li><code>policy-experiments.ipynb</code> - notebook for visualizing results of policy experiments</li>
 <li><code>nslp.ipynb</code> - exploring NSLP data as an alternative ground truth</li>
 <li><code>plot_sampling.ipynb</code> - developing sampling mechanisms</li>
+</ul>
+</li>
 <li><code>plots/</code> - output plots</li>
-<li><code>R/</code> - R scripts for regression and visualization</li>
+<li><code>R/</code> - R scripts for regression and visualization<ul>
 <li><code>exploration.Rmd</code> - exploring results</li>
 <li><code>plot_all.R</code> - plots/regressions for all experiments</li>
 <li><code>plot_experiment.R</code> - plots/regressions for one experiment</li>
@@ -85,9 +110,13 @@ of FIPS codes to postal codes and state names</li>
 <li><code>regression_tables.R</code> - endpoint for recording regression tables</li>
 <li><code>regressions.Rmd</code> - exploring regression specifications</li>
 <li><code>utils.R</code> - utility functions for plotting and regressions</li>
-<li><code>results/</code> - cached results files</li>
+</ul>
+</li>
+<li><code>results/</code> - cached results files<ul>
 <li><code>policy_experiments/</code> - for experiment runs</li>
 <li><code>regressions/</code> - for regressions</li>
+</ul>
+</li>
 <li><code>scripts/</code> - miscellaneous bash scripts to make server runs easier</li>
 </ul>
 <h2 id="documentation">Documentation</h2>
@@ -99,7 +128,7 @@ git subtree push --prefix docs/dp_policy origin gh-pages
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/9301cc05bf6a52c38a0fcac1348ad5139445dc78/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 .. include:: ../README.md
