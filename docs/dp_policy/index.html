@@ -27,6 +27,7 @@
 <p>Author: <a href="rbsteed.com">Ryan Steed</a>, with help from Terrance Liu</p>
 <p>Paper co-authors: Terrance Liu, <a href="https://zstevenwu.com/">Steven Wu</a>, <a href="https://www.heinz.cmu.edu/~acquisti/">Alessandro Acquisti</a></p>
 <p>API documentation: <a href="https://rbsteed.com/dp-policy/">rbsteed.com/dp-policy</a></p>
+<p>For more, check out the <a href="https://www.science.org/doi/10.1126/science.abq4481">paper</a> (free authors' copy <a href="https://rbsteed.com/docs/dp-policy.pdf">here</a>) and <a href="https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf">SI</a>.</p>
 <h2 id="installation">Installation</h2>
 <pre><code>make dp_policy
 </code></pre>
@@ -40,7 +41,7 @@ dp_policy run --just-join [name]
 # to run all experiments
 dp_policy run_all
 </code></pre>
-<p>Experiment options (described in detail the SI and passed to the <a href="https://rbsteed.com/dp-policy/experiments.html#dp_policy.experiments.Experiment.get_experiment"><code>Experiment.get_experiment</code></a> factory method) include:</p>
+<p>Experiment options (described in detail the <a href="https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf">SI</a> and passed to the <a href="https://rbsteed.com/dp-policy/experiments.html#dp_policy.experiments.Experiment.get_experiment"><code>Experiment.get_experiment</code></a> factory method) include:</p>
 <ul>
 <li><code>"baseline"</code> - just the baseline settings (no experimental modifications).</li>
 <li>Policy changes<ul>
@@ -122,13 +123,13 @@ of FIPS codes to postal codes and state names</li>
 <h2 id="documentation">Documentation</h2>
 <p>Documentation for the <code>dp-policy</code> API is published at <a href="https://rbsteed.com/dp-policy">rbsteed.com/dp-policy</a>.</p>
 <p>To generate the documentation, use pdoc3:</p>
-<pre><code class="language-bash">pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
+<pre><code class="language-bash">pdoc --html --output-dir docs --force dp_policy --template-dir docs/templates
 git subtree push --prefix docs/dp_policy origin gh-pages
 </code></pre>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ryansteed/dp-policy/blob/cd30e376bcd1ca5ea021175103bba1e324ff2447/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
+<a href="https://github.com/ryansteed/dp-policy/blob/cc3432cb84c5639b9f6e33c8dff0ffff95528680/dp_policy/__init__.py#L1-L3" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 .. include:: ../README.md

@@ -8,6 +8,8 @@ Paper co-authors: Terrance Liu, [Steven Wu](https://zstevenwu.com/), [Alessandro
 
 API documentation: [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy/)
 
+For more, check out the [paper](https://www.science.org/doi/10.1126/science.abq4481) (free authors' copy [here](https://rbsteed.com/docs/dp-policy.pdf)) and [SI](https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf).
+
 ## Installation
 
 ```
@@ -27,7 +29,7 @@ dp_policy run --just-join [name]
 dp_policy run_all
 ```
 
-Experiment options (described in detail the SI and passed to the [`Experiment.get_experiment`](https://rbsteed.com/dp-policy/experiments.html#dp_policy.experiments.Experiment.get_experiment) factory method) include:
+Experiment options (described in detail the [SI](https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf) and passed to the [`Experiment.get_experiment`](https://rbsteed.com/dp-policy/experiments.html#dp_policy.experiments.Experiment.get_experiment) factory method) include:
 
 - `"baseline"` - just the baseline settings (no experimental modifications).
 - Policy changes
@@ -93,6 +95,6 @@ Documentation for the `dp-policy` API is published at [rbsteed.com/dp-policy](ht
 To generate the documentation, use pdoc3:
 
 ```bash
-pdoc3 --html --output-dir docs --force dp_policy --template-dir docs/templates
+pdoc --html --output-dir docs --force dp_policy --template-dir docs/templates
 git subtree push --prefix docs/dp_policy origin gh-pages
 ```
