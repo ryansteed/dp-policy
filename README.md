@@ -8,7 +8,7 @@ Paper co-authors: Terrance Liu, [Steven Wu](https://zstevenwu.com/), [Alessandro
 
 API documentation: [rbsteed.com/dp-policy](https://rbsteed.com/dp-policy/)
 
-For more, check out the [paper](https://www.science.org/doi/10.1126/science.abq4481) (free authors' copy [here](https://rbsteed.com/docs/dp-policy.pdf)) and [SI](https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf).
+For more, check out the [paper](https://rbsteed.com/referral/dp-policy) and [SI](https://www-science-org.cmu.idm.oclc.org/doi/suppl/10.1126/science.abq4481/suppl_file/science.abq4481_sm.pdf).
 
 ## Installation
 
